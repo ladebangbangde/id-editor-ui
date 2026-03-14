@@ -1,0 +1,21 @@
+<view class="record-card" bindtap="handleTap">
+  <image class="thumb" mode="aspectFill" src="{{record.previewUrl || record.originalUrl}}"></image>
+  <view class="right">
+    <view class="row">
+      <text class="label">Size</text>
+      <text class="value">{{displaySize}}</text>
+    </view>
+    <view class="row">
+      <text class="label">Background</text>
+      <text class="value">{{displayColor}}</text>
+    </view>
+    <view class="row">
+      <text class="label">Created</text>
+      <text class="value">{{displayTime}}</text>
+    </view>
+    <view class="row">
+      <text class="label">Status</text>
+      <text class="value status">{{displayStatus}}</text>
+    </view>
+  </view>
+</view>

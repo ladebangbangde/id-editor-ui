@@ -1,0 +1,24 @@
+.size-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.size-item {
+  min-width: 150rpx;
+  padding: 18rpx 24rpx;
+  border-radius: 16rpx;
+  background: #f3f4f6;
+  text-align: center;
+  border: 2rpx solid transparent;
+}
+
+.size-item.active {
+  border-color: #2d6bff;
+  background: #eef3ff;
+}
+
+.size-name {
+  font-size: 26rpx;
+  color: #111827;
+}

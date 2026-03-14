@@ -1,0 +1,35 @@
+<view class="container">
+  <view class="card profile-card">
+    <view class="avatar-wrap">
+      <block wx:if="{{profile.avatarUrl}}">
+        <image class="avatar" src="{{profile.avatarUrl}}" mode="aspectFill"></image>
+      </block>
+      <block wx:else>
+        <view class="avatar placeholder">U</view>
+      </block>
+    </view>
+    <view class="nickname">{{profile.nickname || 'User'}}</view>
+  </view>
+
+  <view class="card list-card">
+    <view class="section-title">History</view>
+
+    <block wx:if="{{loading}}">
+      <view class="state-text">Loading records...</view>
+    </block>
+
+    <block wx:elif="{{errorText}}">
+      <view class="state-text error">{{errorText}}</view>
+    </block>
+
+    <block wx:elif="{{empty}}">
+      <view class="state-text">No records yet. Create your first ID photo on the home page.</view>
+    </block>
+
+    <block wx:else>
+      <view class="record-list">
+        <record-card wx:for="{{list}}" wx:key="imageId" record="{{item}}" bind:tap="goDetail"></record-card>
+      </view>
+    </block>
+  </view>
+</view>

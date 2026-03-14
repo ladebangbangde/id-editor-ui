@@ -1,0 +1,3 @@
+<button class="btn {{disabled ? 'disabled' : ''}}" bindtap="handleTap" loading="{{loading}}" disabled="{{disabled || loading}}">
+  {{loading ? 'Loading...' : text}}
+</button>
