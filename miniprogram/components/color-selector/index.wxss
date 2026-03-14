@@ -1,0 +1,36 @@
+.color-list {
+  display: flex;
+  gap: 20rpx;
+}
+
+.color-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  background: #f3f4f6;
+  border-radius: 16rpx;
+  padding: 16rpx 8rpx;
+  border: 2rpx solid transparent;
+}
+
+.color-item.active {
+  border-color: #2d6bff;
+  background: #eef3ff;
+}
+
+.dot {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 50%;
+}
+
+.white-dot {
+  border: 2rpx solid #d1d5db;
+}
+
+.name {
+  font-size: 24rpx;
+}

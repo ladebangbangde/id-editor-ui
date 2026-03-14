@@ -1,0 +1,8 @@
+{
+  "navigationBarTitleText": "AI证件照制作",
+  "usingComponents": {
+    "size-selector": "/components/size-selector/index",
+    "color-selector": "/components/color-selector/index",
+    "primary-button": "/components/primary-button/index"
+  }
+}

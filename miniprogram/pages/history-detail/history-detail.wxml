@@ -1,0 +1,40 @@
+<view class="container">
+  <block wx:if="{{loading}}">
+    <view class="card">Loading detail...</view>
+  </block>
+
+  <block wx:elif="{{record}}">
+    <view class="card section">
+      <view class="section-title">History Detail</view>
+      <view class="img-group">
+        <view class="img-item">
+          <view class="img-title">Original</view>
+          <image class="img" src="{{record.originalUrl}}" mode="aspectFill"></image>
+        </view>
+        <view class="img-item">
+          <view class="img-title">Preview</view>
+          <image class="img" src="{{record.previewUrl}}" mode="aspectFill"></image>
+        </view>
+      </view>
+    </view>
+
+    <view class="card section">
+      <view class="meta-row"><text>Size</text><text>{{sizeLabel}}</text></view>
+      <view class="meta-row"><text>Background</text><text>{{colorLabel}}</text></view>
+      <view class="meta-row"><text>Created At</text><text>{{timeLabel}}</text></view>
+      <view class="meta-row"><text>Status</text><text>{{statusLabel}}</text></view>
+    </view>
+
+    <view class="section">
+      <primary-button text="再次下载高清图" loading="{{actionLoading}}" bind:tap="handleDownloadAgain"></primary-button>
+    </view>
+
+    <view class="section">
+      <primary-button text="重新制作同款" bind:tap="handleRemakeSame"></primary-button>
+    </view>
+  </block>
+
+  <block wx:else>
+    <view class="card">Record not found.</view>
+  </block>
+</view>

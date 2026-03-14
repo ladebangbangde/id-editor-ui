@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "生成结果",
+  "usingComponents": {
+    "primary-button": "/components/primary-button/index"
+  }
+}

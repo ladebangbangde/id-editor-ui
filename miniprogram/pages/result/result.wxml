@@ -1,0 +1,46 @@
+<view class="container">
+  <block wx:if="{{loading}}">
+    <view class="card">Loading result...</view>
+  </block>
+
+  <block wx:elif="{{result}}">
+    <view class="card section">
+      <view class="section-title">Result Preview</view>
+      <view class="images-wrap">
+        <view class="img-col">
+          <text class="img-title">Original</text>
+          <image class="img" src="{{result.originalUrl}}" mode="aspectFill"></image>
+        </view>
+        <view class="img-col">
+          <text class="img-title">ID Photo</text>
+          <block wx:if="{{!imageError}}">
+            <image class="img" src="{{result.previewUrl}}" mode="aspectFill" binderror="handleImageError"></image>
+          </block>
+          <block wx:else>
+            <view class="img img-fallback">Image unavailable</view>
+          </block>
+        </view>
+      </view>
+      <view class="meta">Size: {{sizeLabel}}</view>
+      <view class="meta">Background: {{colorLabel}}</view>
+    </view>
+
+    <view class="card section notice">{{pageText.PAYMENT_HINT}}</view>
+
+    <view class="section">
+      <primary-button text="重新制作" bind:tap="handleRetry"></primary-button>
+    </view>
+
+    <view class="section">
+      <primary-button text="下载高清图" loading="{{downloading}}" bind:tap="handleDownloadHd"></primary-button>
+    </view>
+
+    <view class="section">
+      <primary-button text="生成排版图" bind:tap="handlePrintLayout"></primary-button>
+    </view>
+  </block>
+
+  <block wx:else>
+    <view class="card">No result data found.</view>
+  </block>
+</view>

@@ -1,0 +1,9 @@
+{
+  "desc": "Sitemap for AI ID Photo Mini Program",
+  "rules": [
+    {
+      "action": "allow",
+      "page": "*"
+    }
+  ]
+}
