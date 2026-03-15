@@ -1,0 +1,31 @@
+<view class="container">
+  <view class="card section brand">
+    <view class="title-xl">AI证件照制作</view>
+    <view class="text-body subtitle">快速生成正规、专业、合规的证件照片</view>
+  </view>
+
+  <view class="card section block">
+    <view class="title-md">固定场景模板</view>
+    <view class="text-muted desc">优先推荐护照、签证、驾驶证等高频场景</view>
+    <view class="scene-list">
+      <scene-card wx:for="{{scenes}}" wx:key="sceneKey" item="{{item}}" bind:tap="handleSceneTap"></scene-card>
+    </view>
+  </view>
+
+  <view class="card section custom-card" bindtap="goCustomSize">
+    <view class="row-between">
+      <view>
+        <view class="title-md">自定义尺寸</view>
+        <view class="text-muted">适用于特殊证件、报名表、国外签证等尺寸需求</view>
+      </view>
+      <view class="arrow">›</view>
+    </view>
+  </view>
+
+  <view class="card section tips">
+    <view class="title-md">功能说明</view>
+    <view class="tip-item">支持白底 / 蓝底 / 红底</view>
+    <view class="tip-item">支持标准证件照规格</view>
+    <view class="tip-item">支持高清下载与排版导出</view>
+  </view>
+</view>

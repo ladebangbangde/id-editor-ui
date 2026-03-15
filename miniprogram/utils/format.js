@@ -1,42 +1,29 @@
-const { COLOR_OPTIONS, SIZE_OPTIONS, ORDER_STATUS_MAP } = require('./constants');
+const { COLOR_OPTIONS, STATUS_MAP } = require('./constants');
 
-function pad2(num) {
-  return num < 10 ? `0${num}` : `${num}`;
-}
-
-function formatTime(input) {
-  if (!input) return '--';
-  if (typeof input === 'string') return input;
-
-  const date = new Date(input);
-  if (Number.isNaN(date.getTime())) return '--';
-
-  const y = date.getFullYear();
-  const m = pad2(date.getMonth() + 1);
-  const d = pad2(date.getDate());
-  const h = pad2(date.getHours());
-  const min = pad2(date.getMinutes());
-  const s = pad2(date.getSeconds());
-  return `${y}-${m}-${d} ${h}:${min}:${s}`;
+function formatTime(dateValue) {
+  if (!dateValue) return '--';
+  if (typeof dateValue === 'string') return dateValue;
+  const d = new Date(dateValue);
+  if (Number.isNaN(d.getTime())) return '--';
+  const y = d.getFullYear();
+  const m = `${d.getMonth() + 1}`.padStart(2, '0');
+  const day = `${d.getDate()}`.padStart(2, '0');
+  const h = `${d.getHours()}`.padStart(2, '0');
+  const min = `${d.getMinutes()}`.padStart(2, '0');
+  return `${y}-${m}-${day} ${h}:${min}`;
 }
 
 function getColorLabel(value) {
-  const item = COLOR_OPTIONS.find((option) => option.value === value);
-  return item ? item.label : 'Unknown';
+  const item = COLOR_OPTIONS.find((color) => color.value === value);
+  return item ? item.label : '未知';
 }
 
-function getSizeLabel(value) {
-  const item = SIZE_OPTIONS.find((option) => option.value === value);
-  return item ? item.label : 'Unknown';
-}
-
-function getOrderStatusLabel(status) {
-  return ORDER_STATUS_MAP[status] || 'Unknown';
+function getStatusLabel(status) {
+  return STATUS_MAP[status] || '未知';
 }
 
 module.exports = {
   formatTime,
   getColorLabel,
-  getSizeLabel,
-  getOrderStatusLabel
+  getStatusLabel
 };

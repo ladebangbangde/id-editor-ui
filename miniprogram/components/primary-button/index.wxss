@@ -1,18 +1,5 @@
-.btn {
-  width: 100%;
-  height: 88rpx;
-  line-height: 88rpx;
-  border-radius: 16rpx;
-  background: #2d6bff;
-  color: #ffffff;
-  font-size: 30rpx;
-  border: none;
-}
-
-.btn::after {
-  border: none;
-}
-
-.btn.disabled {
-  background: #9db8ff;
-}
+.btn { width:100%; height:88rpx; line-height:88rpx; border-radius:22rpx; font-size:30rpx; border:none; }
+.btn::after { border:none; }
+.btn-primary { background:#111827; color:#fff; }
+.btn-secondary { background:#f4f6f9; color:#111827; border:1rpx solid #e5eaf1; }
+.btn.disabled { opacity:.45; }

@@ -1,18 +1,13 @@
-# AI ID Photo Mini Program
+# AI证件照制作（微信小程序前端）
 
-A complete WeChat Mini Program front-end project for AI ID photo generation.
+这是一个可商用扩展的微信小程序前端项目，采用“固定场景模板 + 自定义尺寸”的产品策略，覆盖求职、护照、签证、驾驶证、考试报名等证件照需求。
 
-## Features
+## 技术栈
 
-- Upload selfie from camera or album
-- Select ID photo size and background color
-- Generate AI ID photo preview via backend API
-- View result with retry and HD download entry
-- Create order (payment flow placeholder)
-- View personal history and open detail page
-- Unified request/upload/storage/format utilities
+- 微信小程序原生开发
+- JavaScript + WXML + WXSS
 
-## Project Structure
+## 目录结构
 
 ```text
 miniprogram/
@@ -21,38 +16,41 @@ miniprogram/
   app.wxss
   sitemap.json
   project.config.json
-  components/
   pages/
+    home/
+    upload/
+    editor/
+    result/
+    custom-size/
+    history/
+    history-detail/
+    profile/
+  components/
+    scene-card/
+    color-picker/
+    size-info-card/
+    primary-button/
+    upload-box/
+    record-card/
   utils/
-  assets/
+    constants.js
+    storage.js
+    format.js
+    request.js
+    api.js
   README.md
 ```
 
-## API Base URL
+## 运行方式
 
-Default API URL in `app.js`:
+1. 打开微信开发者工具。
+2. 选择“导入项目”。
+3. 项目目录选择：`/workspace/id-editor-ui/miniprogram`。
+4. AppID 可使用 `touristappid` 进行本地开发。
+5. 编译后即可运行。
 
-```js
-apiBaseUrl: 'http://localhost:3000/api'
-```
+## 数据说明
 
-If you use real mobile device debugging, replace localhost with a reachable LAN IP.
-
-## How to Run in WeChat DevTools
-
-1. Open **WeChat DevTools**.
-2. Choose **Import Project**.
-3. Select folder: `.../id-editor-ui/miniprogram`.
-4. AppID can use `touristappid` for local development.
-5. Ensure your backend service is running and can respond to:
-   - `POST /api/upload`
-   - `POST /api/generate`
-   - `POST /api/orders`
-   - `GET /api/images/my?userId=u_demo_001`
-6. Click compile and preview.
-
-## Notes
-
-- This repository includes only front-end logic.
-- Payment flow is intentionally reserved (no real `wx.requestPayment`).
-- Components and utils are designed for easy commercial extension.
+- 固定场景模板、颜色选项、mock 结果与 mock 历史数据均在 `utils/constants.js`。
+- 页面间数据通过本地缓存（`utils/storage.js`）传递。
+- 网络请求封装在 `utils/request.js` 与 `utils/api.js`，后续可直接接入后端与支付。

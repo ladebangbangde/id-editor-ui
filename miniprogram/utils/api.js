@@ -1,47 +1,46 @@
 const { request } = require('./request');
-const { uploadImageFile } = require('./upload');
 
 function getBaseUrl() {
-  const app = getApp();
-  return app.globalData.apiBaseUrl;
+  return getApp().globalData.apiBaseUrl;
 }
 
 function uploadImage(filePath) {
-  return uploadImageFile(filePath);
+  return new Promise((resolve, reject) => {
+    wx.uploadFile({
+      url: `${getBaseUrl()}/upload`,
+      filePath,
+      name: 'file',
+      success(res) {
+        try {
+          const data = JSON.parse(res.data || '{}');
+          resolve(data);
+        } catch (error) {
+          reject(error);
+        }
+      },
+      fail(err) {
+        reject(err);
+      }
+    });
+  });
 }
 
 function generateIdPhoto(payload) {
   return request(`${getBaseUrl()}/generate`, 'POST', payload, {
     showLoading: true,
-    loadingText: 'Generating...'
+    loadingText: '生成中'
   });
 }
 
 function createOrder(payload) {
   return request(`${getBaseUrl()}/orders`, 'POST', payload, {
     showLoading: true,
-    loadingText: 'Creating order...'
-  });
-}
-
-function getMyImages(userId) {
-  return request(`${getBaseUrl()}/images/my`, 'GET', { userId }, {
-    showLoading: true,
-    loadingText: 'Loading history...'
-  });
-}
-
-function getImageDetail(imageId) {
-  return request(`${getBaseUrl()}/images/detail`, 'GET', { imageId }, {
-    showLoading: true,
-    loadingText: 'Loading detail...'
+    loadingText: '提交订单中'
   });
 }
 
 module.exports = {
   uploadImage,
   generateIdPhoto,
-  createOrder,
-  getMyImages,
-  getImageDetail
+  createOrder
 };

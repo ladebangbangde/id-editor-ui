@@ -1,3 +1,1 @@
-<button class="btn {{disabled ? 'disabled' : ''}}" bindtap="handleTap" loading="{{loading}}" disabled="{{disabled || loading}}">
-  {{loading ? 'Loading...' : text}}
-</button>
+<button class="btn btn-{{type}} {{disabled?'disabled':''}}" bindtap="handleTap" loading="{{loading}}" disabled="{{disabled||loading}}">{{loading?'处理中...':text}}</button>

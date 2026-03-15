@@ -1,5 +1,5 @@
 {
-  "navigationBarTitleText": "生成结果",
+  "navigationBarTitleText": "制作结果",
   "usingComponents": {
     "primary-button": "/components/primary-button/index"
   }

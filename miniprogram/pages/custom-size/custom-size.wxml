@@ -1,0 +1,24 @@
+<view class="container">
+  <view class="card section panel">
+    <view class="title-lg">自定义尺寸</view>
+    <view class="text-muted">适用于特殊尺寸证件照、报名表照片、签证照片等需求</view>
+  </view>
+
+  <view class="card section panel">
+    <view class="field">
+      <text class="label">宽度（毫米）</text>
+      <input class="input" type="digit" placeholder="请输入宽度" value="{{widthMm}}" bindinput="onWidthInput" />
+    </view>
+    <view class="field">
+      <text class="label">高度（毫米）</text>
+      <input class="input" type="digit" placeholder="请输入高度" value="{{heightMm}}" bindinput="onHeightInput" />
+    </view>
+    <view class="field">
+      <text class="label">背景颜色</text>
+      <color-picker value="{{color}}" bind:change="onColorChange"></color-picker>
+    </view>
+    <view class="text-muted tip">请填写实际需要的照片宽度和高度；若不确定尺寸，建议优先使用首页固定场景模板。</view>
+  </view>
+
+  <primary-button text="下一步" bind:tap="nextStep"></primary-button>
+</view>

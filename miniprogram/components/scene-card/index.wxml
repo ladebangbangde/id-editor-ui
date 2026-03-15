@@ -1,0 +1,10 @@
+<view class="scene-card {{item.featured ? 'featured' : ''}}" bindtap="handleTap">
+  <view class="icon">证件</view>
+  <view class="main">
+    <view class="row-between">
+      <text class="name">{{item.sceneName}}</text>
+      <text wx:if="{{item.featured}}" class="tag">重点</text>
+    </view>
+    <text class="desc">{{item.description}}</text>
+  </view>
+</view>

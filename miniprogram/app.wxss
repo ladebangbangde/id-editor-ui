@@ -1,14 +1,16 @@
 page {
-  background: #f5f7fb;
-  color: #1f2a37;
+  background: #f4f6f9;
+  color: #111827;
   font-size: 28rpx;
+  line-height: 1.5;
   box-sizing: border-box;
 }
 
 view,
 text,
 image,
-button {
+button,
+input {
   box-sizing: border-box;
 }
 
@@ -19,27 +21,58 @@ button {
 
 .card {
   background: #ffffff;
-  border-radius: 20rpx;
-  padding: 24rpx;
-  box-shadow: 0 6rpx 18rpx rgba(15, 23, 42, 0.05);
+  border-radius: 24rpx;
+  border: 1rpx solid #e9edf3;
+  box-shadow: 0 8rpx 24rpx rgba(15, 23, 42, 0.04);
 }
 
-.section-title {
-  font-size: 32rpx;
+.section {
+  margin-bottom: 20rpx;
+}
+
+.title-xl {
+  font-size: 42rpx;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.title-lg {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #111827;
+}
+
+.title-md {
+  font-size: 30rpx;
   font-weight: 600;
   color: #111827;
 }
 
-.section-desc {
-  margin-top: 8rpx;
-  color: #6b7280;
+.text-body {
+  font-size: 28rpx;
+  color: #374151;
+}
+
+.text-muted {
   font-size: 24rpx;
-}
-
-.muted {
   color: #6b7280;
 }
 
-.error-text {
-  color: #dc2626;
+.tag {
+  font-size: 20rpx;
+  color: #4b5563;
+  background: #eef2f7;
+  border-radius: 10rpx;
+  padding: 2rpx 10rpx;
+}
+
+.row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.divider {
+  height: 1rpx;
+  background: #edf1f5;
 }

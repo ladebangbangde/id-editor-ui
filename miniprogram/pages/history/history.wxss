@@ -1,0 +1,4 @@
+.panel { padding: 24rpx; }
+.record-list { display: flex; flex-direction: column; gap: 12rpx; }
+.empty { padding: 30rpx; text-align: center; }
+.btn-wrap { margin-top: 16rpx; }
