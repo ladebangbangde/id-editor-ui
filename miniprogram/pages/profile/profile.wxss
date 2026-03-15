@@ -1,0 +1,5 @@
+.user-card { padding: 24rpx; display: flex; align-items: center; gap: 14rpx; }
+.avatar { width: 88rpx; height: 88rpx; border-radius: 50%; background: #111827; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 32rpx; }
+.menu-card { padding: 8rpx 20rpx; }
+.menu-item { padding: 22rpx 0; border-bottom: 1rpx solid #edf1f5; font-size: 28rpx; color: #1f2937; }
+.menu-item:last-child { border-bottom: none; }

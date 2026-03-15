@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "历史详情",
+  "usingComponents": {
+    "primary-button": "/components/primary-button/index"
+  }
+}

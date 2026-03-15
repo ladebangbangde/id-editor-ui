@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "上传照片",
+  "usingComponents": {
+    "upload-box": "/components/upload-box/index",
+    "primary-button": "/components/primary-button/index"
+  }
+}

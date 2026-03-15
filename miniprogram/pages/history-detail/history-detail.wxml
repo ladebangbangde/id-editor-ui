@@ -1,0 +1,22 @@
+<view class="container">
+  <block wx:if="{{record}}">
+    <view class="card section panel">
+      <image class="preview" src="{{record.previewUrl}}" mode="aspectFit"></image>
+    </view>
+
+    <view class="card section panel">
+      <view class="meta-row"><text>场景名称</text><text>{{record.sceneName}}</text></view>
+      <view class="meta-row"><text>尺寸信息</text><text>{{record.sizeText}}</text></view>
+      <view class="meta-row"><text>背景颜色</text><text>{{record.backgroundColor}}</text></view>
+      <view class="meta-row"><text>创建时间</text><text>{{record.createdAt}}</text></view>
+    </view>
+
+    <view class="button-row">
+      <view class="button-item"><primary-button text="再次下载" bind:tap="downloadAgain"></primary-button></view>
+      <view class="button-item"><primary-button text="重新制作" type="secondary" bind:tap="remake"></primary-button></view>
+    </view>
+  </block>
+  <block wx:else>
+    <view class="card panel">未找到对应历史记录</view>
+  </block>
+</view>

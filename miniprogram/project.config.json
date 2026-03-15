@@ -1,0 +1,19 @@
+{
+  "description": "AI证件照制作",
+  "packOptions": {
+    "ignore": []
+  },
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": true,
+    "compileHotReLoad": true
+  },
+  "compileType": "miniprogram",
+  "libVersion": "3.4.5",
+  "appid": "touristappid",
+  "projectname": "ai-id-photo-mini-program",
+  "condition": {}
+}

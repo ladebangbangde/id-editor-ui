@@ -1,0 +1,78 @@
+page {
+  background: #f4f6f9;
+  color: #111827;
+  font-size: 28rpx;
+  line-height: 1.5;
+  box-sizing: border-box;
+}
+
+view,
+text,
+image,
+button,
+input {
+  box-sizing: border-box;
+}
+
+.container {
+  min-height: 100vh;
+  padding: 24rpx;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 24rpx;
+  border: 1rpx solid #e9edf3;
+  box-shadow: 0 8rpx 24rpx rgba(15, 23, 42, 0.04);
+}
+
+.section {
+  margin-bottom: 20rpx;
+}
+
+.title-xl {
+  font-size: 42rpx;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.title-lg {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #111827;
+}
+
+.title-md {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #111827;
+}
+
+.text-body {
+  font-size: 28rpx;
+  color: #374151;
+}
+
+.text-muted {
+  font-size: 24rpx;
+  color: #6b7280;
+}
+
+.tag {
+  font-size: 20rpx;
+  color: #4b5563;
+  background: #eef2f7;
+  border-radius: 10rpx;
+  padding: 2rpx 10rpx;
+}
+
+.row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.divider {
+  height: 1rpx;
+  background: #edf1f5;
+}

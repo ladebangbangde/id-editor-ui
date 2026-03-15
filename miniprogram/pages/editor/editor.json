@@ -1,0 +1,8 @@
+{
+  "navigationBarTitleText": "编辑证件照",
+  "usingComponents": {
+    "color-picker": "/components/color-picker/index",
+    "size-info-card": "/components/size-info-card/index",
+    "primary-button": "/components/primary-button/index"
+  }
+}

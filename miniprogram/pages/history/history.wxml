@@ -1,0 +1,18 @@
+<view class="container">
+  <view class="card section panel">
+    <view class="title-lg">历史记录</view>
+  </view>
+
+  <block wx:if="{{list.length}}">
+    <view class="record-list">
+      <record-card wx:for="{{list}}" wx:key="recordId" record="{{item}}" bind:tap="goDetail"></record-card>
+    </view>
+  </block>
+  <block wx:else>
+    <view class="card section empty">
+      <view class="title-md">暂无历史记录</view>
+      <view class="text-muted">去制作一张，记录会自动保存</view>
+      <view class="btn-wrap"><primary-button text="去制作一张" bind:tap="goCreate"></primary-button></view>
+    </view>
+  </block>
+</view>

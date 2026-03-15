@@ -1,0 +1,5 @@
+.panel { padding: 24rpx; }
+.current { margin-top: 6rpx; }
+.tips { margin-top: 12rpx; color: #475569; font-size: 24rpx; display: flex; flex-direction: column; gap: 6rpx; }
+.button-row { display: flex; gap: 12rpx; }
+.button-item { flex: 1; }

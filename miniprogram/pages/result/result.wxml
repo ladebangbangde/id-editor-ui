@@ -1,0 +1,35 @@
+<view class="container">
+  <view class="card section status">
+    <view class="title-lg">制作完成</view>
+    <view class="text-muted">请确认照片效果与规格信息</view>
+  </view>
+
+  <view class="card section panel">
+    <view class="title-md">结果展示</view>
+    <view class="preview-list">
+      <view class="preview-item">
+        <view class="text-muted">证件照预览图</view>
+        <image class="preview" src="{{result.previewUrl}}" mode="aspectFit"></image>
+      </view>
+      <view class="preview-item">
+        <view class="text-muted">排版图预览</view>
+        <image class="preview" src="{{result.layoutUrl}}" mode="aspectFit"></image>
+      </view>
+    </view>
+  </view>
+
+  <view class="card section panel">
+    <view class="meta-row"><text>场景类型</text><text>{{result.sceneName}}</text></view>
+    <view class="meta-row"><text>尺寸</text><text>{{result.sizeText}}</text></view>
+    <view class="meta-row"><text>背景颜色</text><text>{{result.backgroundColor}}</text></view>
+    <view class="meta-row"><text>文件说明</text><text>{{result.fileDesc}}</text></view>
+  </view>
+
+  <view class="button-row section">
+    <view class="button-item"><primary-button text="保存预览图" type="secondary" bind:tap="savePreview"></primary-button></view>
+    <view class="button-item"><primary-button text="下载排版照片" type="secondary" bind:tap="downloadLayout"></primary-button></view>
+  </view>
+  <primary-button text="下载高清照片" bind:tap="downloadHd"></primary-button>
+  <view style="height: 12rpx"></view>
+  <primary-button text="重新制作" type="secondary" bind:tap="remake"></primary-button>
+</view>

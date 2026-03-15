@@ -1,0 +1,9 @@
+.status { padding: 24rpx; }
+.panel { padding: 24rpx; }
+.preview-list { margin-top: 10rpx; display: flex; gap: 12rpx; }
+.preview-item { flex: 1; }
+.preview { margin-top: 8rpx; width: 100%; height: 260rpx; border-radius: 16rpx; background: #f8fafc; border: 1rpx solid #e6edf5; }
+.meta-row { display: flex; justify-content: space-between; gap: 16rpx; padding: 10rpx 0; font-size: 25rpx; color: #334155; border-bottom: 1rpx solid #edf1f5; }
+.meta-row:last-child { border-bottom: none; }
+.button-row { display: flex; gap: 12rpx; }
+.button-item { flex: 1; }

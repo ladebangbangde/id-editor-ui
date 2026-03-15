@@ -1,0 +1,16 @@
+<view class="container">
+  <view class="card section user-card">
+    <view class="avatar">用</view>
+    <view>
+      <view class="title-md">微信用户</view>
+      <view class="text-muted">欢迎使用 AI证件照制作</view>
+    </view>
+  </view>
+
+  <view class="card menu-card">
+    <view class="menu-item" bindtap="goHistory">我的作品</view>
+    <view class="menu-item" bindtap="goHistory">历史记录</view>
+    <view class="menu-item" bindtap="tapItem">常见问题</view>
+    <view class="menu-item" bindtap="tapItem">关于我们</view>
+  </view>
+</view>
