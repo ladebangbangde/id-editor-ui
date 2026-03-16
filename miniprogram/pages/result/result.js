@@ -1,6 +1,13 @@
-const { createOrder } = require('../../utils/api');
+const {
+  createOrder,
+  mockPayOrder,
+  getDownloadHd,
+  getDownloadPreview,
+  getDownloadPrint,
+  getOrder
+} = require('../../utils/api');
 const storage = require('../../utils/storage');
-const { DEFAULT_PRICE, PAGE_TEXT } = require('../../utils/constants');
+const { PAGE_TEXT } = require('../../utils/constants');
 const { getColorLabel, getSizeLabel } = require('../../utils/format');
 
 Page({
@@ -27,7 +34,10 @@ Page({
     }
 
     this.setData({
-      result: cached,
+      result: {
+        ...cached,
+        resultId: cached.resultId || options.resultId || ''
+      },
       loading: false,
       sizeLabel: getSizeLabel(cached.sizeType),
       colorLabel: getColorLabel(cached.backgroundColor)
@@ -43,13 +53,41 @@ Page({
     wx.navigateBack({ delta: 1 });
   },
 
+  async ensurePaidOrder(orderType) {
+    const result = this.data.result;
+    const orderRes = await createOrder({
+      imageId: result.imageId,
+      resultId: result.resultId,
+      orderType
+    });
+
+    const order = orderRes.data || {};
+    const orderId = order.orderId || order.id;
+    if (!orderId) {
+      throw new Error('Order id missing');
+    }
+
+    await mockPayOrder(orderId);
+    const refreshed = await getOrder(orderId);
+    return refreshed.data || order;
+  },
+
+  async saveByDownloadApi(apiFn, resultId) {
+    const downloadRes = await apiFn(resultId);
+    const data = downloadRes.data || {};
+    const url = data.downloadUrl || data.url;
+    if (!url) {
+      throw new Error('No download url returned');
+    }
+    wx.setClipboardData({ data: url });
+    wx.showToast({ title: 'Download URL copied', icon: 'none' });
+  },
+
   async handleDownloadHd() {
-    const app = getApp();
-    const userId = app.globalData.demoUserId;
     const result = this.data.result;
 
-    if (!result || !result.imageId) {
-      wx.showToast({ title: 'Missing image data', icon: 'none' });
+    if (!result || !result.imageId || !result.resultId) {
+      wx.showToast({ title: 'Missing image/result data', icon: 'none' });
       return;
     }
 
@@ -57,33 +95,48 @@ Page({
     this.setData({ downloading: true });
 
     try {
-      if (!result.paid) {
-        const orderRes = await createOrder({
-          userId,
-          imageId: result.imageId,
-          amount: DEFAULT_PRICE
-        });
-
-        const order = orderRes.data || {};
-        wx.showModal({
-          title: 'Payment Required',
-          content: `Order ${order.orderId || ''} is ${order.status || 'pending'}. Please complete purchase first.`,
-          showCancel: false
-        });
-
-        // Reserved for future wx.requestPayment integration.
-        return;
-      }
-
-      wx.showToast({ title: 'HD download flow reserved', icon: 'none' });
+      await this.ensurePaidOrder('hd');
+      await this.saveByDownloadApi(getDownloadHd, result.resultId);
+      this.setData({ result: { ...result, paid: true, status: 'paid' } });
     } catch (error) {
-      wx.showToast({ title: error.message || 'Create order failed', icon: 'none' });
+      wx.showToast({ title: error.message || 'HD download failed', icon: 'none' });
     } finally {
       this.setData({ downloading: false });
     }
   },
 
-  handlePrintLayout() {
-    wx.showToast({ title: PAGE_TEXT.COMING_SOON, icon: 'none' });
+  async handlePrintLayout() {
+    const result = this.data.result;
+    if (!result || !result.resultId) {
+      wx.showToast({ title: 'Missing result data', icon: 'none' });
+      return;
+    }
+
+    if (this.data.downloading) return;
+    this.setData({ downloading: true });
+
+    try {
+      await this.ensurePaidOrder('print');
+      await this.saveByDownloadApi(getDownloadPrint, result.resultId);
+      this.setData({ result: { ...result, paid: true, status: 'paid' } });
+    } catch (error) {
+      wx.showToast({ title: error.message || 'Print download failed', icon: 'none' });
+    } finally {
+      this.setData({ downloading: false });
+    }
+  },
+
+  async handleCopyPreviewUrl() {
+    const result = this.data.result;
+    if (!result || !result.resultId) {
+      wx.showToast({ title: 'Missing result data', icon: 'none' });
+      return;
+    }
+
+    try {
+      await this.saveByDownloadApi(getDownloadPreview, result.resultId);
+    } catch (error) {
+      wx.showToast({ title: error.message || 'Get preview URL failed', icon: 'none' });
+    }
   }
 });

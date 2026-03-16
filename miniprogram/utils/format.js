@@ -22,12 +22,12 @@ function formatTime(input) {
 
 function getColorLabel(value) {
   const item = COLOR_OPTIONS.find((option) => option.value === value);
-  return item ? item.label : 'Unknown';
+  return item ? item.label : (value || 'Unknown');
 }
 
 function getSizeLabel(value) {
   const item = SIZE_OPTIONS.find((option) => option.value === value);
-  return item ? item.label : 'Unknown';
+  return item ? item.label : (value || 'Unknown');
 }
 
 function getOrderStatusLabel(status) {
