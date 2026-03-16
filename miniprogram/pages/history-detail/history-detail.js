@@ -25,7 +25,7 @@ Page({
 
   async initData(imageId) {
     const cached = storage.get('current_record');
-    if (cached && (!imageId || cached.imageId === imageId)) {
+    if (cached && (!imageId || cached.imageId === imageId) && cached.resultId) {
       this.applyRecord(cached);
       return;
     }
@@ -74,6 +74,7 @@ Page({
       });
       const orderData = orderRes.data || {};
       const orderId = orderData.orderId || orderData.id;
+      if (!orderId) throw new Error('Order id missing');
       await mockPayOrder(orderId);
       const hdRes = await getDownloadHd(record.resultId);
       const url = hdRes.data && (hdRes.data.downloadUrl || hdRes.data.url);

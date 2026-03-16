@@ -1,4 +1,4 @@
-const { COLOR_OPTIONS, PAGE_TEXT } = require('../../utils/constants');
+const { SIZE_OPTIONS, COLOR_OPTIONS, PAGE_TEXT } = require('../../utils/constants');
 const { uploadImage, generateIdPhoto, getScenes, getTask, getSceneDetail } = require('../../utils/api');
 const storage = require('../../utils/storage');
 
@@ -46,9 +46,15 @@ Page({
           sizeOptions: scenes,
           selectedSize: this.data.selectedSize || scenes[0].value
         });
+        return;
       }
+      throw new Error('Empty scenes');
     } catch (error) {
-      wx.showToast({ title: error.message || 'Load scenes failed', icon: 'none' });
+      this.setData({
+        sizeOptions: SIZE_OPTIONS,
+        selectedSize: this.data.selectedSize || SIZE_OPTIONS[0].value
+      });
+      wx.showToast({ title: 'Load scenes failed, fallback to local presets.', icon: 'none' });
     }
   },
 
@@ -171,9 +177,15 @@ Page({
 
       const generateRes = await generateIdPhoto(payload);
       const resultData = generateRes.data || {};
-      const taskData = await this.waitTaskDone(resultData.taskId);
-      if (taskData.status === 'failed') {
-        throw new Error(taskData.message || 'Generate task failed');
+      let taskData = {};
+      if (resultData.taskId) {
+        taskData = await this.waitTaskDone(resultData.taskId);
+        if (taskData.status === 'failed') {
+          throw new Error(taskData.message || 'Generate task failed');
+        }
+        if (taskData.status === 'timeout') {
+          throw new Error('Generate timeout, please check task status in history page.');
+        }
       }
 
       const routePayload = {

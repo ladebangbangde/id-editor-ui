@@ -19,21 +19,22 @@ function joinQuery(params = {}) {
 }
 
 function mapHistoryItem(item = {}) {
-  const result = item.latestResult || item.result || {};
-  const task = item.latestTask || item.task || {};
+  const image = item.image || item;
+  const result = image.latestResult || image.result || item.latestResult || item.result || {};
+  const task = image.latestTask || image.task || item.latestTask || item.task || {};
   return {
-    imageId: item.imageId || item.id || '',
-    resultId: result.resultId || result.id || '',
-    taskId: task.taskId || task.id || '',
-    originalUrl: item.originalUrl || '',
-    previewUrl: result.previewUrl || '',
-    hdUrl: result.hdUrl || '',
-    printLayoutUrl: result.printLayoutUrl || '',
-    sceneKey: result.sceneKey || task.sceneKey || item.sceneKey || '',
-    sizeType: result.sceneKey || task.sceneKey || item.sceneKey || '',
-    backgroundColor: result.backgroundColor || task.backgroundColor || 'white',
-    status: task.status || item.status || 'pending',
-    createdAt: item.createdAt || task.createdAt || result.createdAt || ''
+    imageId: image.imageId || image.id || item.imageId || item.id || '',
+    resultId: result.resultId || result.id || item.resultId || '',
+    taskId: task.taskId || task.id || item.taskId || '',
+    originalUrl: image.originalUrl || item.originalUrl || '',
+    previewUrl: result.previewUrl || image.previewUrl || item.previewUrl || '',
+    hdUrl: result.hdUrl || image.hdUrl || item.hdUrl || '',
+    printLayoutUrl: result.printLayoutUrl || image.printLayoutUrl || item.printLayoutUrl || '',
+    sceneKey: result.sceneKey || task.sceneKey || image.sceneKey || item.sceneKey || '',
+    sizeType: result.sceneKey || task.sceneKey || image.sceneKey || item.sceneKey || '',
+    backgroundColor: result.backgroundColor || task.backgroundColor || image.backgroundColor || 'white',
+    status: task.status || image.status || item.status || 'pending',
+    createdAt: image.createdAt || task.createdAt || result.createdAt || item.createdAt || ''
   };
 }
 

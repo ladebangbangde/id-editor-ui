@@ -21,11 +21,11 @@ Page({
     colorLabel: '--'
   },
 
-  onLoad(options) {
-    this.loadResult(options);
+  async onLoad(options) {
+    await this.loadResult(options);
   },
 
-  loadResult(options) {
+  async loadResult(options) {
     const cached = storage.getLastResult();
     if (!cached || (options.imageId && cached.imageId !== options.imageId)) {
       this.setData({ loading: false });
@@ -33,14 +33,26 @@ Page({
       return;
     }
 
+    const result = {
+      ...cached,
+      resultId: cached.resultId || options.resultId || ''
+    };
+
+    if (!result.previewUrl && result.resultId) {
+      try {
+        const previewRes = await getDownloadPreview(result.resultId);
+        const previewData = previewRes.data || {};
+        result.previewUrl = previewData.downloadUrl || previewData.url || '';
+      } catch (error) {
+        // keep empty preview, user can still use paid download buttons
+      }
+    }
+
     this.setData({
-      result: {
-        ...cached,
-        resultId: cached.resultId || options.resultId || ''
-      },
+      result,
       loading: false,
-      sizeLabel: getSizeLabel(cached.sizeType),
-      colorLabel: getColorLabel(cached.backgroundColor)
+      sizeLabel: getSizeLabel(result.sizeType),
+      colorLabel: getColorLabel(result.backgroundColor)
     });
   },
 
