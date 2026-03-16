@@ -36,7 +36,11 @@
     </view>
 
     <view class="section">
-      <primary-button text="生成排版图" bind:tap="handlePrintLayout"></primary-button>
+      <primary-button text="下载排版图" loading="{{downloading}}" bind:tap="handlePrintLayout"></primary-button>
+    </view>
+
+    <view class="section">
+      <primary-button text="复制预览下载链接" bind:tap="handleCopyPreviewUrl"></primary-button>
     </view>
   </block>
 

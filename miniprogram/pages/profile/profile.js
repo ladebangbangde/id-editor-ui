@@ -1,4 +1,4 @@
-const { getMyImages } = require('../../utils/api');
+const { getImageHistory, mapHistoryItem, adminLogin, getAdminStats } = require('../../utils/api');
 const storage = require('../../utils/storage');
 
 Page({
@@ -26,16 +26,11 @@ Page({
   },
 
   async fetchRecords(fromPullDown = false) {
-    const app = getApp();
-    const userId = app.globalData.demoUserId;
     this.setData({ loading: true, errorText: '' });
 
     try {
-      const res = await getMyImages(userId);
-      const list = (res.data || []).map((item) => ({
-        ...item,
-        status: item.status || 'pending'
-      }));
+      const res = await getImageHistory(1, 20);
+      const list = (res.data && res.data.list ? res.data.list : []).map(mapHistoryItem);
 
       this.setData({
         list,
@@ -67,5 +62,20 @@ Page({
     wx.navigateTo({
       url: `/pages/history-detail/history-detail?imageId=${record.imageId}`
     });
+  },
+
+  async handleAdminStats() {
+    try {
+      const loginRes = await adminLogin();
+      const token = loginRes.data && loginRes.data.token;
+      const statsRes = await getAdminStats(token || 'demo-token');
+      wx.showModal({
+        title: 'Admin Stats',
+        content: JSON.stringify(statsRes.data || {}, null, 2),
+        showCancel: false
+      });
+    } catch (error) {
+      wx.showToast({ title: error.message || 'Load admin stats failed', icon: 'none' });
+    }
   }
 });

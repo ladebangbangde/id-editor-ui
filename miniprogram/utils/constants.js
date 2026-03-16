@@ -12,7 +12,9 @@ const COLOR_OPTIONS = [
 ];
 
 const ORDER_STATUS_MAP = {
-  pending: 'Pending Payment',
+  pending: 'Pending',
+  processing: 'Processing',
+  success: 'Generated',
   paid: 'Paid',
   failed: 'Failed'
 };

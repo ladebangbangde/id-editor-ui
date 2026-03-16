@@ -1,7 +1,12 @@
 const storage = require('../../utils/storage');
-const { getImageDetail, createOrder } = require('../../utils/api');
+const {
+  getImageDetail,
+  mapHistoryItem,
+  createOrder,
+  mockPayOrder,
+  getDownloadHd
+} = require('../../utils/api');
 const { getColorLabel, getSizeLabel, getOrderStatusLabel, formatTime } = require('../../utils/format');
-const { DEFAULT_PRICE } = require('../../utils/constants');
 
 Page({
   data: {
@@ -33,7 +38,7 @@ Page({
 
     try {
       const res = await getImageDetail(imageId);
-      this.applyRecord(res.data || {});
+      this.applyRecord(mapHistoryItem(res.data || {}));
     } catch (error) {
       this.setData({ loading: false });
       wx.showToast({ title: error.message || 'Load detail failed', icon: 'none' });
@@ -53,7 +58,7 @@ Page({
 
   async handleDownloadAgain() {
     const record = this.data.record;
-    if (!record || !record.imageId) {
+    if (!record || !record.imageId || !record.resultId) {
       wx.showToast({ title: 'Invalid record', icon: 'none' });
       return;
     }
@@ -62,22 +67,23 @@ Page({
     this.setData({ actionLoading: true });
 
     try {
-      if (record.status !== 'paid') {
-        const app = getApp();
-        const orderRes = await createOrder({
-          userId: app.globalData.demoUserId,
-          imageId: record.imageId,
-          amount: DEFAULT_PRICE
-        });
-        const orderData = orderRes.data || {};
-        wx.showModal({
-          title: 'Payment Required',
-          content: `Order ${orderData.orderId || ''} is ${orderData.status || 'pending'}. Please complete payment first.`,
-          showCancel: false
-        });
-        return;
-      }
-      wx.showToast({ title: 'Download flow reserved', icon: 'none' });
+      const orderRes = await createOrder({
+        imageId: record.imageId,
+        resultId: record.resultId,
+        orderType: 'hd'
+      });
+      const orderData = orderRes.data || {};
+      const orderId = orderData.orderId || orderData.id;
+      await mockPayOrder(orderId);
+      const hdRes = await getDownloadHd(record.resultId);
+      const url = hdRes.data && (hdRes.data.downloadUrl || hdRes.data.url);
+      if (!url) throw new Error('No HD URL returned');
+      wx.setClipboardData({ data: url });
+      wx.showToast({ title: 'HD URL copied', icon: 'none' });
+      this.setData({
+        record: { ...record, status: 'paid' },
+        statusLabel: getOrderStatusLabel('paid')
+      });
     } catch (error) {
       wx.showToast({ title: error.message || 'Order creation failed', icon: 'none' });
     } finally {

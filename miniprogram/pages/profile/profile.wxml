@@ -32,4 +32,8 @@
       </view>
     </block>
   </view>
+  <view class="section">
+    <primary-button text="查看后台统计" bind:tap="handleAdminStats"></primary-button>
+  </view>
+
 </view>
