@@ -79,50 +79,21 @@ const COLOR_OPTIONS = [
 
 const STATUS_MAP = {
   pending: '待支付',
-  paid: '已支付'
+  paid: '已支付',
+  processing: '处理中',
+  success: '成功',
+  failed: '失败'
 };
 
 const STORAGE_KEYS = {
   CURRENT_SCENE: 'current_scene',
   CURRENT_UPLOAD: 'current_upload',
-  CURRENT_RESULT: 'current_result',
-  HISTORY_LIST: 'history_list'
+  CURRENT_RESULT: 'current_result'
 };
-
-const MOCK_RESULT = {
-  imageId: 'img_mock_001',
-  previewUrl: 'https://dummyimage.com/600x800/f5f7fb/667085&text=%E8%AF%81%E4%BB%B6%E7%85%A7%E9%A2%84%E8%A7%88',
-  hdUrl: 'https://dummyimage.com/1200x1600/f1f5f9/475569&text=%E9%AB%98%E6%B8%85%E5%9B%BE',
-  layoutUrl: 'https://dummyimage.com/1200x800/f8fafc/64748b&text=%E6%8E%92%E7%89%88%E5%9B%BE',
-  fileDesc: 'JPG格式，支持冲印与电子提交'
-};
-
-const MOCK_HISTORY = [
-  {
-    recordId: 'r001',
-    sceneName: '护照照片',
-    sizeText: '33×48mm',
-    backgroundColor: '蓝色',
-    previewUrl: 'https://dummyimage.com/300x380/e2e8f0/475569&text=%E6%8A%A4%E7%85%A7',
-    createdAt: '2026-03-15 10:20',
-    status: 'paid'
-  },
-  {
-    recordId: 'r002',
-    sceneName: '驾驶证照片',
-    sizeText: '22×32mm',
-    backgroundColor: '白色',
-    previewUrl: 'https://dummyimage.com/300x380/e2e8f0/475569&text=%E9%A9%BE%E9%A9%B6%E8%AF%81',
-    createdAt: '2026-03-14 18:40',
-    status: 'pending'
-  }
-];
 
 module.exports = {
   SCENE_TEMPLATES,
   COLOR_OPTIONS,
   STATUS_MAP,
-  STORAGE_KEYS,
-  MOCK_RESULT,
-  MOCK_HISTORY
+  STORAGE_KEYS
 };

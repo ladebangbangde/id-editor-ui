@@ -1,6 +1,6 @@
 App({
   globalData: {
-    apiBaseUrl: 'http://localhost:3000/api',
+    apiBaseUrl: 'http://127.0.0.1:30000/api',
     demoUserId: 'u_demo_001',
     appName: 'AI证件照制作'
   },
