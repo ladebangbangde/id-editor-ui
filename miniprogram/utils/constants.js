@@ -1,8 +1,8 @@
 const SIZE_OPTIONS = [
-  { label: 'One Inch', value: 'one_inch', width: 295, height: 413 },
-  { label: 'Two Inch', value: 'two_inch', width: 413, height: 579 },
-  { label: 'Passport', value: 'passport', width: 413, height: 531 },
-  { label: 'Visa', value: 'visa', width: 413, height: 531 }
+  { label: 'One Inch', value: 'one_inch', width: 295, height: 413, widthMm: 25, heightMm: 35 },
+  { label: 'Two Inch', value: 'two_inch', width: 413, height: 579, widthMm: 35, heightMm: 49 },
+  { label: 'Passport', value: 'passport', width: 413, height: 531, widthMm: 33, heightMm: 48 },
+  { label: 'Visa', value: 'visa', width: 413, height: 531, widthMm: 33, heightMm: 48 }
 ];
 
 const COLOR_OPTIONS = [

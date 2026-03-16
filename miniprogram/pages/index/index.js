@@ -5,6 +5,11 @@ const storage = require('../../utils/storage');
 const MAX_TASK_POLL = 20;
 const TASK_POLL_INTERVAL = 1200;
 
+
+function getLocalScenePreset(sceneKey) {
+  return SIZE_OPTIONS.find((item) => item.value === sceneKey) || null;
+}
+
 function buildSceneOptions(serverScenes = []) {
   const localMap = SIZE_OPTIONS.reduce((acc, item) => {
     acc[item.value] = item;
@@ -42,7 +47,8 @@ Page({
     localImagePath: '',
     uploadedImageId: '',
     uploadedOriginalUrl: '',
-    generating: false
+    generating: false,
+    serverSceneKeys: []
   },
 
   onLoad() {
@@ -63,12 +69,15 @@ Page({
   async loadScenes() {
     try {
       const res = await getScenes();
-      const scenes = buildSceneOptions(res.data || []);
+      const serverScenes = res.data || [];
+      const scenes = buildSceneOptions(serverScenes);
+      const serverSceneKeys = serverScenes.map((item) => item.sceneKey).filter(Boolean);
 
       if (scenes.length) {
         this.setData({
           sizeOptions: scenes,
-          selectedSize: this.data.selectedSize || scenes[0].value
+          selectedSize: this.data.selectedSize || scenes[0].value,
+          serverSceneKeys
         });
         return;
       }
@@ -76,7 +85,8 @@ Page({
     } catch (error) {
       this.setData({
         sizeOptions: buildSceneOptions([]),
-        selectedSize: this.data.selectedSize || SIZE_OPTIONS[0].value
+        selectedSize: this.data.selectedSize || SIZE_OPTIONS[0].value,
+        serverSceneKeys: []
       });
       wx.showToast({ title: 'Load scenes failed, fallback to local presets.', icon: 'none' });
     }
@@ -93,6 +103,7 @@ Page({
 
   async prefetchSceneDetail(sceneKey) {
     if (!sceneKey) return;
+    if (!this.data.serverSceneKeys.includes(sceneKey)) return;
     try {
       await getSceneDetail(sceneKey);
     } catch (error) {
@@ -190,14 +201,26 @@ Page({
 
     try {
       const uploadResult = await this.ensureUploaded();
+      const preset = getLocalScenePreset(this.data.selectedSize);
+      const hasServerScene = this.data.serverSceneKeys.includes(this.data.selectedSize);
       const payload = {
         imageId: uploadResult.imageId,
-        sourceType: 'scene',
-        sceneKey: this.data.selectedSize,
         backgroundColor: this.data.selectedColor,
         beautyEnabled: false,
         printLayoutType: 'none'
       };
+
+      if (hasServerScene) {
+        payload.sourceType = 'scene';
+        payload.sceneKey = this.data.selectedSize;
+      } else if (preset && preset.widthMm && preset.heightMm) {
+        payload.sourceType = 'custom';
+        payload.customWidthMm = preset.widthMm;
+        payload.customHeightMm = preset.heightMm;
+      } else {
+        payload.sourceType = 'scene';
+        payload.sceneKey = this.data.selectedSize;
+      }
 
       const generateRes = await generateIdPhoto(payload);
       const resultData = generateRes.data || {};
