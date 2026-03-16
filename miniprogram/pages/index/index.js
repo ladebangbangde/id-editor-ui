@@ -5,6 +5,33 @@ const storage = require('../../utils/storage');
 const MAX_TASK_POLL = 20;
 const TASK_POLL_INTERVAL = 1200;
 
+function buildSceneOptions(serverScenes = []) {
+  const localMap = SIZE_OPTIONS.reduce((acc, item) => {
+    acc[item.value] = item;
+    return acc;
+  }, {});
+
+  const fromServer = (serverScenes || []).map((scene) => ({
+    label: scene.name || (localMap[scene.sceneKey] && localMap[scene.sceneKey].label) || scene.sceneKey,
+    value: scene.sceneKey
+  }));
+
+  const fromLocal = SIZE_OPTIONS.map((item) => ({
+    label: item.label,
+    value: item.value
+  }));
+
+  const merged = [];
+  const seen = {};
+  [...fromLocal, ...fromServer].forEach((item) => {
+    if (!item.value || seen[item.value]) return;
+    seen[item.value] = true;
+    merged.push(item);
+  });
+
+  return merged;
+}
+
 Page({
   data: {
     pageText: PAGE_TEXT,
@@ -36,10 +63,7 @@ Page({
   async loadScenes() {
     try {
       const res = await getScenes();
-      const scenes = (res.data || []).map((item) => ({
-        label: item.name || item.sceneKey,
-        value: item.sceneKey
-      }));
+      const scenes = buildSceneOptions(res.data || []);
 
       if (scenes.length) {
         this.setData({
@@ -51,7 +75,7 @@ Page({
       throw new Error('Empty scenes');
     } catch (error) {
       this.setData({
-        sizeOptions: SIZE_OPTIONS,
+        sizeOptions: buildSceneOptions([]),
         selectedSize: this.data.selectedSize || SIZE_OPTIONS[0].value
       });
       wx.showToast({ title: 'Load scenes failed, fallback to local presets.', icon: 'none' });
