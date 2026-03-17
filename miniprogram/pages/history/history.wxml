@@ -5,7 +5,7 @@
 
   <block wx:if="{{list.length}}">
     <view class="record-list">
-      <record-card wx:for="{{list}}" wx:key="recordId" record="{{item}}" bind:tap="goDetail"></record-card>
+      <record-card wx:for="{{list}}" wx:key="imageId" record="{{item}}" bind:tap="goDetail"></record-card>
     </view>
   </block>
   <block wx:else>
