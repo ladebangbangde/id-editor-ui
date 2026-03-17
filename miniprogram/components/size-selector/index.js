@@ -11,7 +11,9 @@ Component({
   },
   methods: {
     handleTap(event) {
-      const { value } = event.currentTarget.dataset;
+      const dataset = (event && event.currentTarget && event.currentTarget.dataset) || {};
+      const value = dataset.value;
+      if (!value) return;
       this.triggerEvent('change', { value });
     }
   }

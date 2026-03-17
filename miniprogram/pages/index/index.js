@@ -16,10 +16,12 @@ function buildSceneOptions(serverScenes = []) {
     return acc;
   }, {});
 
-  const fromServer = (serverScenes || []).map((scene) => ({
-    label: scene.name || (localMap[scene.sceneKey] && localMap[scene.sceneKey].label) || scene.sceneKey,
-    value: scene.sceneKey
-  }));
+  const fromServer = (serverScenes || [])
+    .filter((scene) => scene && scene.sceneKey)
+    .map((scene) => ({
+      label: scene.name || (localMap[scene.sceneKey] && localMap[scene.sceneKey].label) || scene.sceneKey,
+      value: scene.sceneKey
+    }));
 
   const fromLocal = SIZE_OPTIONS.map((item) => ({
     label: item.label,
@@ -71,7 +73,9 @@ Page({
       const res = await getScenes();
       const serverScenes = res.data || [];
       const scenes = buildSceneOptions(serverScenes);
-      const serverSceneKeys = serverScenes.map((item) => item.sceneKey).filter(Boolean);
+      const serverSceneKeys = serverScenes
+        .filter((item) => item && item.sceneKey)
+        .map((item) => item.sceneKey);
 
       if (scenes.length) {
         this.setData({
@@ -93,8 +97,10 @@ Page({
   },
 
   onSizeChange(event) {
-    this.setData({ selectedSize: event.detail.value });
-    this.prefetchSceneDetail(event.detail.value);
+    const value = event && event.detail && event.detail.value;
+    if (!value) return;
+    this.setData({ selectedSize: value });
+    this.prefetchSceneDetail(value);
   },
 
   onColorChange(event) {
