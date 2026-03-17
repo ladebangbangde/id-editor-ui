@@ -1,0 +1,29 @@
+<view class="container">
+  <view class="card section panel">
+    <view class="title-lg">{{sceneInfo.sceneName || '自定义尺寸'}}</view>
+    <view class="text-muted">{{sceneInfo.widthMm || '--'}}×{{sceneInfo.heightMm || '--'}}mm / 蓝白红底可选</view>
+  </view>
+
+  <view class="card section panel">
+    <view class="title-md">照片预览</view>
+    <view class="preview-wrap">
+      <image wx:if="{{imagePath}}" class="preview" src="{{imagePath}}" mode="aspectFit"></image>
+      <view wx:else class="waiting">待处理，请先上传照片</view>
+    </view>
+  </view>
+
+  <view class="card section panel">
+    <view class="title-md">背景颜色</view>
+    <color-picker value="{{selectedColor}}" bind:change="onColorChange"></color-picker>
+  </view>
+
+  <view class="card section panel">
+    <view class="title-md">规格信息</view>
+    <size-info-card info="{{sceneInfo}}" colorLabel="{{selectedColor==='white'?'白色':(selectedColor==='blue'?'蓝色':'红色')}}"></size-info-card>
+  </view>
+
+  <view class="button-row section">
+    <view class="button-item"><primary-button text="返回重选" type="secondary" bind:tap="goBack"></primary-button></view>
+    <view class="button-item"><primary-button text="生成证件照" loading="{{generating}}" bind:tap="handleGenerate"></primary-button></view>
+  </view>
+</view>

@@ -1,40 +1,7 @@
-.record-card {
-  display: flex;
-  gap: 20rpx;
-  background: #fff;
-  border-radius: 16rpx;
-  padding: 18rpx;
-  box-shadow: 0 6rpx 16rpx rgba(0, 0, 0, 0.04);
-}
-
-.thumb {
-  width: 160rpx;
-  height: 200rpx;
-  border-radius: 12rpx;
-  background: #f3f4f6;
-}
-
-.right {
-  flex: 1;
-}
-
-.row {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 8rpx;
-}
-
-.label {
-  color: #6b7280;
-  font-size: 24rpx;
-}
-
-.value {
-  color: #111827;
-  font-size: 24rpx;
-}
-
-.status {
-  color: #2d6bff;
-  font-weight: 600;
-}
+.record-card { display:flex; gap:14rpx; border:1rpx solid #e8edf3; border-radius:18rpx; padding:12rpx; background:#fff; }
+.thumb { width:130rpx; height:166rpx; border-radius:12rpx; background:#f1f5f9; }
+.main { flex:1; }
+.row-between { display:flex; justify-content:space-between; }
+.name { font-size:27rpx; color:#111827; font-weight:600; }
+.status { font-size:22rpx; color:#0f766e; }
+.meta { margin-top:6rpx; font-size:22rpx; color:#64748b; }

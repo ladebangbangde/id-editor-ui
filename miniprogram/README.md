@@ -1,48 +1,56 @@
-# AI ID Photo Mini Program
+# AI证件照制作（微信小程序前端）
 
-WeChat Mini Program frontend for `id-editor-server`.
+这是一个可商用扩展的微信小程序前端项目，采用“固定场景模板 + 自定义尺寸”的产品策略，覆盖求职、护照、签证、驾驶证、考试报名等证件照需求。
 
-## API Alignment
+## 技术栈
 
-Default runtime base URLs in `app.js`:
+- 微信小程序原生开发
+- JavaScript + WXML + WXSS
 
-```js
-serverBaseUrl: 'http://127.0.0.1:30000'
-apiBaseUrl: 'http://127.0.0.1:30000/api'
+## 目录结构
+
+```text
+miniprogram/
+  app.js
+  app.json
+  app.wxss
+  sitemap.json
+  project.config.json
+  pages/
+    home/
+    upload/
+    editor/
+    result/
+    custom-size/
+    history/
+    history-detail/
+    profile/
+  components/
+    scene-card/
+    color-picker/
+    size-info-card/
+    primary-button/
+    upload-box/
+    record-card/
+  utils/
+    constants.js
+    storage.js
+    format.js
+    request.js
+    api.js
+  README.md
 ```
 
-This mini-program now aligns with server endpoints:
+## 运行方式
 
-- `GET /health`
-- `GET /api/auth/me`
-- `POST /api/auth/admin/login`
-- `GET /api/scenes`
-- `GET /api/scenes/:sceneKey`
-- `POST /api/upload`
-- `POST /api/images/generate`
-- `GET /api/tasks/:taskId`
-- `GET /api/images/history`
-- `GET /api/images/:imageId/detail`
-- `POST /api/orders`
-- `GET /api/orders/:orderId`
-- `POST /api/orders/:orderId/mock-pay`
-- `GET /api/download/:resultId/{preview|hd|print}`
-- `GET /api/admin/stats`
+1. 打开微信开发者工具。
+2. 选择“导入项目”。
+3. 项目目录选择：`/workspace/id-editor-ui/miniprogram`。
+4. AppID 可使用 `touristappid` 进行本地开发。
+5. 编译后即可运行。
 
-## E2E Flow Used by UI
+## 数据说明
 
-1. Health check at app launch.
-2. Fetch current user (`/api/auth/me`) at app launch.
-3. Upload selfie (`/api/upload`).
-4. Generate ID photo (`/api/images/generate`).
-5. Poll task status (`/api/tasks/:taskId`) until success/fail.
-6. View result and optionally:
-   - copy preview download URL,
-   - create order + mock pay + get HD/print download URL.
-7. View history (`/api/images/history`) and detail (`/api/images/:imageId/detail`).
-
-## Run in WeChat DevTools
-
-1. Import `miniprogram/` into WeChat DevTools.
-2. Ensure `id-editor-server` is running and reachable from DevTools host.
-3. If using real device, change base URL in `app.js` to reachable LAN / tunnel URL.
+- 固定场景模板、颜色选项、mock 结果与 mock 历史数据均在 `utils/constants.js`。
+- 页面间数据通过本地缓存（`utils/storage.js`）传递。
+- 网络请求封装在 `utils/request.js` 与 `utils/api.js`，后续可直接接入后端与支付。

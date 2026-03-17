@@ -1,51 +1,128 @@
-const SIZE_OPTIONS = [
-  { label: 'One Inch', value: 'one_inch', width: 295, height: 413 },
-  { label: 'Two Inch', value: 'two_inch', width: 413, height: 579 },
-  { label: 'Passport', value: 'passport', width: 413, height: 531 },
-  { label: 'Visa', value: 'visa', width: 413, height: 531 }
+const SCENE_TEMPLATES = [
+  {
+    sceneKey: 'passport',
+    sceneName: '护照照片',
+    widthMm: 33,
+    heightMm: 48,
+    pixelWidth: 413,
+    pixelHeight: 531,
+    description: '适用于护照办理与国际证件审核',
+    featured: true
+  },
+  {
+    sceneKey: 'visa',
+    sceneName: '签证照片',
+    widthMm: 33,
+    heightMm: 48,
+    pixelWidth: 413,
+    pixelHeight: 531,
+    description: '适用于常见国家签证申请场景',
+    featured: true
+  },
+  {
+    sceneKey: 'driving_license',
+    sceneName: '驾驶证照片',
+    widthMm: 22,
+    heightMm: 32,
+    pixelWidth: 260,
+    pixelHeight: 378,
+    description: '适用于驾驶证报名与换证需求',
+    featured: true
+  },
+  {
+    sceneKey: 'one_inch',
+    sceneName: '一寸证件照',
+    widthMm: 25,
+    heightMm: 35,
+    pixelWidth: 295,
+    pixelHeight: 413,
+    description: '常用于证件办理与基础报名',
+    featured: false
+  },
+  {
+    sceneKey: 'two_inch',
+    sceneName: '二寸证件照',
+    widthMm: 35,
+    heightMm: 49,
+    pixelWidth: 413,
+    pixelHeight: 579,
+    description: '适用于部分考试和留学申请',
+    featured: false
+  },
+  {
+    sceneKey: 'resume',
+    sceneName: '简历照片',
+    widthMm: 25,
+    heightMm: 35,
+    pixelWidth: 295,
+    pixelHeight: 413,
+    description: '用于简历投递和求职资料提交',
+    featured: false
+  },
+  {
+    sceneKey: 'exam',
+    sceneName: '考试报名照',
+    widthMm: 35,
+    heightMm: 45,
+    pixelWidth: 413,
+    pixelHeight: 531,
+    description: '适用于考试报名系统上传',
+    featured: false
+  }
 ];
 
 const COLOR_OPTIONS = [
-  { label: 'Blue', value: 'blue', hex: '#3A6FF7' },
-  { label: 'White', value: 'white', hex: '#FFFFFF' },
-  { label: 'Red', value: 'red', hex: '#E53935' }
+  { value: 'white', label: '白色', hex: '#FFFFFF' },
+  { value: 'blue', label: '蓝色', hex: '#2F67E8' },
+  { value: 'red', label: '红色', hex: '#D94848' }
 ];
 
-const ORDER_STATUS_MAP = {
-  pending: 'Pending',
-  processing: 'Processing',
-  success: 'Generated',
-  paid: 'Paid',
-  failed: 'Failed'
-};
-
-const DEFAULT_PRICE = 9.9;
-
-const PAGE_TEXT = {
-  INDEX_TITLE: 'AI ID Photo Maker',
-  INDEX_SUBTITLE: 'Upload a selfie and generate professional ID photos instantly.',
-  UPLOAD_HINT: 'Tap to take a photo or choose from album',
-  GENERATE_BUTTON: 'Generate Now',
-  FEATURE_LIST: [
-    'AI background replacement',
-    'Standard ID size crop',
-    'HD image download support'
-  ],
-  PAYMENT_HINT: 'HD download may require payment if your order is not completed.',
-  COMING_SOON: 'Coming soon'
+const STATUS_MAP = {
+  pending: '待支付',
+  paid: '已支付'
 };
 
 const STORAGE_KEYS = {
-  LAST_RESULT: 'last_result',
-  USER_PROFILE: 'user_profile',
-  LAST_RECORDS: 'last_records'
+  CURRENT_SCENE: 'current_scene',
+  CURRENT_UPLOAD: 'current_upload',
+  CURRENT_RESULT: 'current_result',
+  HISTORY_LIST: 'history_list'
 };
 
+const MOCK_RESULT = {
+  imageId: 'img_mock_001',
+  previewUrl: 'https://dummyimage.com/600x800/f5f7fb/667085&text=%E8%AF%81%E4%BB%B6%E7%85%A7%E9%A2%84%E8%A7%88',
+  hdUrl: 'https://dummyimage.com/1200x1600/f1f5f9/475569&text=%E9%AB%98%E6%B8%85%E5%9B%BE',
+  layoutUrl: 'https://dummyimage.com/1200x800/f8fafc/64748b&text=%E6%8E%92%E7%89%88%E5%9B%BE',
+  fileDesc: 'JPG格式，支持冲印与电子提交'
+};
+
+const MOCK_HISTORY = [
+  {
+    recordId: 'r001',
+    sceneName: '护照照片',
+    sizeText: '33×48mm',
+    backgroundColor: '蓝色',
+    previewUrl: 'https://dummyimage.com/300x380/e2e8f0/475569&text=%E6%8A%A4%E7%85%A7',
+    createdAt: '2026-03-15 10:20',
+    status: 'paid'
+  },
+  {
+    recordId: 'r002',
+    sceneName: '驾驶证照片',
+    sizeText: '22×32mm',
+    backgroundColor: '白色',
+    previewUrl: 'https://dummyimage.com/300x380/e2e8f0/475569&text=%E9%A9%BE%E9%A9%B6%E8%AF%81',
+    createdAt: '2026-03-14 18:40',
+    status: 'pending'
+  }
+];
+
 module.exports = {
-  SIZE_OPTIONS,
+  SCENE_TEMPLATES,
   COLOR_OPTIONS,
-  ORDER_STATUS_MAP,
-  DEFAULT_PRICE,
-  PAGE_TEXT,
-  STORAGE_KEYS
+  STATUS_MAP,
+  STORAGE_KEYS,
+  MOCK_RESULT,
+  MOCK_HISTORY
 };

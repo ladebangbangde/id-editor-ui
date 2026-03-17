@@ -1,27 +1,14 @@
-const { getSizeLabel, getColorLabel, getOrderStatusLabel, formatTime } = require('../../utils/format');
-
+const { getStatusLabel } = require('../../utils/format');
 Component({
   properties: {
-    record: {
-      type: Object,
-      value: {}
-    }
+    record: { type: Object, value: {} }
   },
   data: {
-    displaySize: '--',
-    displayColor: '--',
-    displayTime: '--',
-    displayStatus: '--'
+    statusText: ''
   },
   observers: {
-    record(val) {
-      if (!val) return;
-      this.setData({
-        displaySize: getSizeLabel(val.sizeType),
-        displayColor: getColorLabel(val.backgroundColor),
-        displayTime: formatTime(val.createdAt),
-        displayStatus: getOrderStatusLabel(val.status)
-      });
+    record(v) {
+      this.setData({ statusText: getStatusLabel(v.status) });
     }
   },
   methods: {

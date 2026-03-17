@@ -1,0 +1,9 @@
+.color-list { display:flex; gap: 14rpx; }
+.color-item {
+  flex:1; border:1rpx solid #e8edf3; border-radius: 18rpx; padding: 14rpx 8rpx;
+  display:flex; flex-direction:column; align-items:center; gap:8rpx; background:#fff;
+}
+.active { border-color:#111827; }
+.dot { width:42rpx; height:42rpx; border-radius:50%; }
+.dot-white { border: 1rpx solid #cbd5e1; }
+.label { font-size:22rpx; color:#475569; }

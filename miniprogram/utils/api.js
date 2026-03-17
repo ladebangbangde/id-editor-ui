@@ -1,148 +1,46 @@
 const { request } = require('./request');
-const { uploadImageFile } = require('./upload');
 
-function getApiBaseUrl() {
-  const app = getApp();
-  return app.globalData.apiBaseUrl;
-}
-
-function getServerBaseUrl() {
-  const app = getApp();
-  return app.globalData.serverBaseUrl;
-}
-
-function joinQuery(params = {}) {
-  const pairs = Object.keys(params)
-    .filter((key) => params[key] !== undefined && params[key] !== null && params[key] !== '')
-    .map((key) => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`);
-  return pairs.length ? `?${pairs.join('&')}` : '';
-}
-
-function mapHistoryItem(item = {}) {
-  const image = item.image || item;
-  const result = image.latestResult || image.result || item.latestResult || item.result || {};
-  const task = image.latestTask || image.task || item.latestTask || item.task || {};
-  return {
-    imageId: image.imageId || image.id || item.imageId || item.id || '',
-    resultId: result.resultId || result.id || item.resultId || '',
-    taskId: task.taskId || task.id || item.taskId || '',
-    originalUrl: image.originalUrl || item.originalUrl || '',
-    previewUrl: result.previewUrl || image.previewUrl || item.previewUrl || '',
-    hdUrl: result.hdUrl || image.hdUrl || item.hdUrl || '',
-    printLayoutUrl: result.printLayoutUrl || image.printLayoutUrl || item.printLayoutUrl || '',
-    sceneKey: result.sceneKey || task.sceneKey || image.sceneKey || item.sceneKey || '',
-    sizeType: result.sceneKey || task.sceneKey || image.sceneKey || item.sceneKey || '',
-    backgroundColor: result.backgroundColor || task.backgroundColor || image.backgroundColor || 'white',
-    status: task.status || image.status || item.status || 'pending',
-    createdAt: image.createdAt || task.createdAt || result.createdAt || item.createdAt || ''
-  };
-}
-
-function getHealth() {
-  return request(`${getServerBaseUrl()}/health`, 'GET');
-}
-
-function getMe() {
-  return request(`${getApiBaseUrl()}/auth/me`, 'GET');
-}
-
-function adminLogin() {
-  return request(`${getApiBaseUrl()}/auth/admin/login`, 'POST');
-}
-
-function getScenes() {
-  return request(`${getApiBaseUrl()}/scenes`, 'GET');
-}
-
-function getSceneDetail(sceneKey) {
-  return request(`${getApiBaseUrl()}/scenes/${sceneKey}`, 'GET');
+function getBaseUrl() {
+  return getApp().globalData.apiBaseUrl;
 }
 
 function uploadImage(filePath) {
-  return uploadImageFile(filePath);
+  return new Promise((resolve, reject) => {
+    wx.uploadFile({
+      url: `${getBaseUrl()}/upload`,
+      filePath,
+      name: 'file',
+      success(res) {
+        try {
+          const data = JSON.parse(res.data || '{}');
+          resolve(data);
+        } catch (error) {
+          reject(error);
+        }
+      },
+      fail(err) {
+        reject(err);
+      }
+    });
+  });
 }
 
 function generateIdPhoto(payload) {
-  return request(`${getApiBaseUrl()}/images/generate`, 'POST', payload, {
+  return request(`${getBaseUrl()}/generate`, 'POST', payload, {
     showLoading: true,
-    loadingText: 'Generating...'
-  });
-}
-
-function getTask(taskId) {
-  return request(`${getApiBaseUrl()}/tasks/${taskId}`, 'GET');
-}
-
-function getImageHistory(page = 1, pageSize = 10) {
-  const query = joinQuery({ page, pageSize });
-  return request(`${getApiBaseUrl()}/images/history${query}`, 'GET', {}, {
-    showLoading: true,
-    loadingText: 'Loading history...'
-  });
-}
-
-function getImageDetail(imageId) {
-  return request(`${getApiBaseUrl()}/images/${imageId}/detail`, 'GET', {}, {
-    showLoading: true,
-    loadingText: 'Loading detail...'
+    loadingText: '生成中'
   });
 }
 
 function createOrder(payload) {
-  return request(`${getApiBaseUrl()}/orders`, 'POST', payload, {
+  return request(`${getBaseUrl()}/orders`, 'POST', payload, {
     showLoading: true,
-    loadingText: 'Creating order...'
-  });
-}
-
-function getOrder(orderId) {
-  return request(`${getApiBaseUrl()}/orders/${orderId}`, 'GET');
-}
-
-function mockPayOrder(orderId) {
-  return request(`${getApiBaseUrl()}/orders/${orderId}/mock-pay`, 'POST', {}, {
-    showLoading: true,
-    loadingText: 'Paying...'
-  });
-}
-
-function getDownloadPreview(resultId) {
-  return request(`${getApiBaseUrl()}/download/${resultId}/preview`, 'GET');
-}
-
-function getDownloadHd(resultId) {
-  return request(`${getApiBaseUrl()}/download/${resultId}/hd`, 'GET');
-}
-
-function getDownloadPrint(resultId) {
-  return request(`${getApiBaseUrl()}/download/${resultId}/print`, 'GET');
-}
-
-function getAdminStats(adminToken) {
-  return request(`${getApiBaseUrl()}/admin/stats`, 'GET', {}, {
-    header: {
-      'x-admin-token': adminToken
-    }
+    loadingText: '提交订单中'
   });
 }
 
 module.exports = {
-  mapHistoryItem,
-  getHealth,
-  getMe,
-  adminLogin,
-  getScenes,
-  getSceneDetail,
   uploadImage,
   generateIdPhoto,
-  getTask,
-  getImageHistory,
-  getImageDetail,
-  createOrder,
-  getOrder,
-  mockPayOrder,
-  getDownloadPreview,
-  getDownloadHd,
-  getDownloadPrint,
-  getAdminStats
+  createOrder
 };

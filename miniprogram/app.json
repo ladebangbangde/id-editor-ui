@@ -1,30 +1,38 @@
 {
   "pages": [
-    "pages/index/index",
+    "pages/home/home",
+    "pages/upload/upload",
+    "pages/editor/editor",
     "pages/result/result",
-    "pages/profile/profile",
-    "pages/history-detail/history-detail"
+    "pages/custom-size/custom-size",
+    "pages/history/history",
+    "pages/history-detail/history-detail",
+    "pages/profile/profile"
   ],
   "window": {
-    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarBackgroundColor": "#F4F6F9",
     "navigationBarTextStyle": "black",
-    "navigationBarTitleText": "AI ID Photo",
-    "backgroundColor": "#F5F7FB",
+    "navigationBarTitleText": "AI证件照制作",
+    "backgroundColor": "#F4F6F9",
     "backgroundTextStyle": "light"
   },
   "tabBar": {
-    "color": "#666666",
-    "selectedColor": "#2D6BFF",
-    "backgroundColor": "#ffffff",
+    "color": "#7A8599",
+    "selectedColor": "#111827",
+    "backgroundColor": "#FFFFFF",
     "borderStyle": "black",
     "list": [
       {
-        "pagePath": "pages/index/index",
-        "text": "Create"
+        "pagePath": "pages/home/home",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/history/history",
+        "text": "历史"
       },
       {
         "pagePath": "pages/profile/profile",
-        "text": "Me"
+        "text": "我的"
       }
     ]
   },

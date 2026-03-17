@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "历史记录",
+  "usingComponents": {
+    "record-card": "/components/record-card/index",
+    "primary-button": "/components/primary-button/index"
+  }
+}

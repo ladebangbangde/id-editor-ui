@@ -1,0 +1,12 @@
+<view class="upload-box" bindtap="handleTap">
+  <block wx:if="{{image}}">
+    <image class="preview" src="{{image}}" mode="aspectFit"></image>
+  </block>
+  <block wx:else>
+    <view class="empty">
+      <view class="plus">+</view>
+      <view class="title">上传照片</view>
+      <view class="desc">支持拍照或相册选择</view>
+    </view>
+  </block>
+</view>

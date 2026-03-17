@@ -1,21 +1,12 @@
 <view class="record-card" bindtap="handleTap">
-  <image class="thumb" mode="aspectFill" src="{{record.previewUrl || record.originalUrl}}"></image>
-  <view class="right">
-    <view class="row">
-      <text class="label">Size</text>
-      <text class="value">{{displaySize}}</text>
+  <image class="thumb" src="{{record.previewUrl}}" mode="aspectFill"></image>
+  <view class="main">
+    <view class="row-between">
+      <text class="name">{{record.sceneName}}</text>
+      <text class="status">{{statusText}}</text>
     </view>
-    <view class="row">
-      <text class="label">Background</text>
-      <text class="value">{{displayColor}}</text>
-    </view>
-    <view class="row">
-      <text class="label">Created</text>
-      <text class="value">{{displayTime}}</text>
-    </view>
-    <view class="row">
-      <text class="label">Status</text>
-      <text class="value status">{{displayStatus}}</text>
-    </view>
+    <view class="meta">尺寸：{{record.sizeText}}</view>
+    <view class="meta">背景：{{record.backgroundColor}}</view>
+    <view class="meta">时间：{{record.createdAt}}</view>
   </view>
 </view>

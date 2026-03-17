@@ -1,29 +1,19 @@
 {
-  "description": "AI ID Photo Mini Program",
+  "description": "AI证件照制作",
   "packOptions": {
     "ignore": []
   },
   "setting": {
-    "bundle": false,
-    "userConfirmedUseCompilerModule": false,
     "urlCheck": false,
     "es6": true,
     "enhance": true,
     "postcss": true,
     "minified": true,
-    "coverView": true,
-    "showShadowRootInWxmlPanel": true,
-    "uploadWithSourceMap": true,
-    "compileHotReLoad": true,
-    "lazyloadPlaceholderEnable": false,
-    "useMultiFrameRuntime": true,
-    "useApiHook": true,
-    "useApiHostProcess": true
+    "compileHotReLoad": true
   },
   "compileType": "miniprogram",
   "libVersion": "3.4.5",
   "appid": "touristappid",
   "projectname": "ai-id-photo-mini-program",
-  "simulatorType": "wechat",
   "condition": {}
 }

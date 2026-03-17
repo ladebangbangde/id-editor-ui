@@ -1,39 +1,16 @@
 <view class="container">
-  <view class="card profile-card">
-    <view class="avatar-wrap">
-      <block wx:if="{{profile.avatarUrl}}">
-        <image class="avatar" src="{{profile.avatarUrl}}" mode="aspectFill"></image>
-      </block>
-      <block wx:else>
-        <view class="avatar placeholder">U</view>
-      </block>
+  <view class="card section user-card">
+    <view class="avatar">用</view>
+    <view>
+      <view class="title-md">微信用户</view>
+      <view class="text-muted">欢迎使用 AI证件照制作</view>
     </view>
-    <view class="nickname">{{profile.nickname || 'User'}}</view>
   </view>
 
-  <view class="card list-card">
-    <view class="section-title">History</view>
-
-    <block wx:if="{{loading}}">
-      <view class="state-text">Loading records...</view>
-    </block>
-
-    <block wx:elif="{{errorText}}">
-      <view class="state-text error">{{errorText}}</view>
-    </block>
-
-    <block wx:elif="{{empty}}">
-      <view class="state-text">No records yet. Create your first ID photo on the home page.</view>
-    </block>
-
-    <block wx:else>
-      <view class="record-list">
-        <record-card wx:for="{{list}}" wx:key="imageId" record="{{item}}" bind:tap="goDetail"></record-card>
-      </view>
-    </block>
+  <view class="card menu-card">
+    <view class="menu-item" bindtap="goHistory">我的作品</view>
+    <view class="menu-item" bindtap="goHistory">历史记录</view>
+    <view class="menu-item" bindtap="tapItem">常见问题</view>
+    <view class="menu-item" bindtap="tapItem">关于我们</view>
   </view>
-  <view class="section">
-    <primary-button text="查看后台统计" bind:tap="handleAdminStats"></primary-button>
-  </view>
-
 </view>
