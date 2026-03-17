@@ -2,6 +2,23 @@ const { SCENE_TEMPLATES, STORAGE_KEYS } = require('../../utils/constants');
 const { getScenes, getSceneDetail } = require('../../utils/api');
 const storage = require('../../utils/storage');
 
+function resolveTappedScene(event, scenes = []) {
+  const detailItem = event && event.detail && event.detail.item;
+  if (detailItem && detailItem.sceneKey) return detailItem;
+
+  const dataset = event && event.currentTarget && event.currentTarget.dataset;
+  const datasetItem = dataset && dataset.item;
+  if (datasetItem && datasetItem.sceneKey) return datasetItem;
+
+  const datasetIndex = dataset && dataset.index;
+  const index = Number(datasetIndex);
+  if (!Number.isNaN(index) && scenes[index] && scenes[index].sceneKey) {
+    return scenes[index];
+  }
+
+  return null;
+}
+
 Page({
   data: {
     scenes: SCENE_TEMPLATES,
@@ -29,12 +46,9 @@ Page({
   },
 
   async handleSceneTap(event) {
-    const detailItem = event && event.detail && event.detail.item;
-    const datasetItem = event && event.currentTarget && event.currentTarget.dataset && event.currentTarget.dataset.item;
-    const datasetIndex = event && event.currentTarget && event.currentTarget.dataset && event.currentTarget.dataset.index;
-    const tappedScene = detailItem || datasetItem || this.data.scenes[datasetIndex];
+    const tappedScene = resolveTappedScene(event, this.data.scenes);
 
-    if (!tappedScene || !tappedScene.sceneKey) {
+    if (!tappedScene) {
       wx.showToast({ title: '场景数据异常，请重试', icon: 'none' });
       return;
     }
