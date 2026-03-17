@@ -12,6 +12,35 @@ function unwrap(res) {
   return res;
 }
 
+function normalizeScene(scene = {}) {
+  const sceneKey = scene.sceneKey || scene.scene_key || '';
+  const sceneName = scene.sceneName || scene.scene_name || scene.name || '';
+  const widthMm = Number(scene.widthMm || scene.width_mm || 0);
+  const heightMm = Number(scene.heightMm || scene.height_mm || 0);
+  const pixelWidth = Number(scene.pixelWidth || scene.pixel_width || 0);
+  const pixelHeight = Number(scene.pixelHeight || scene.pixel_height || 0);
+
+  return {
+    ...scene,
+    sceneKey,
+    sceneName,
+    name: sceneName,
+    widthMm,
+    heightMm,
+    pixelWidth,
+    pixelHeight,
+    allowBeauty: Object.prototype.hasOwnProperty.call(scene, 'allowBeauty')
+      ? scene.allowBeauty
+      : scene.allow_beauty,
+    allowPrint: Object.prototype.hasOwnProperty.call(scene, 'allowPrint')
+      ? scene.allowPrint
+      : scene.allow_print,
+    isActive: Object.prototype.hasOwnProperty.call(scene, 'isActive')
+      ? scene.isActive
+      : scene.is_active
+  };
+}
+
 function healthCheck() {
   const app = getApp();
   return request(`${app.globalData.apiHost}/health`);
@@ -28,12 +57,18 @@ function adminLogin() {
 function getScenes() {
   return request(`${getBaseUrl()}/scenes`).then((res) => {
     const data = unwrap(res);
-    return Array.isArray(data) ? data : [];
+    if (!Array.isArray(data)) return [];
+
+    return data
+      .map(normalizeScene)
+      .filter((scene) => scene.sceneKey);
   });
 }
 
 function getSceneDetail(sceneKey) {
-  return request(`${getBaseUrl()}/scenes/${sceneKey}`).then(unwrap);
+  return request(`${getBaseUrl()}/scenes/${sceneKey}`)
+    .then(unwrap)
+    .then((scene) => normalizeScene(scene));
 }
 
 function uploadImage(filePath) {
