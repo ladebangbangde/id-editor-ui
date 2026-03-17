@@ -8,7 +8,7 @@
     <view class="title-md">固定场景模板</view>
     <view class="text-muted desc">优先推荐护照、签证、驾驶证等高频场景</view>
     <view class="scene-list">
-      <scene-card wx:for="{{scenes}}" wx:key="sceneKey" item="{{item}}" bind:tap="handleSceneTap"></scene-card>
+      <scene-card wx:for="{{scenes}}" wx:key="sceneKey" item="{{item}}" data-item="{{item}}" data-index="{{index}}" bind:tap="handleSceneTap"></scene-card>
     </view>
   </view>
 

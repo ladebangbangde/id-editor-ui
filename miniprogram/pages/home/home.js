@@ -29,7 +29,16 @@ Page({
   },
 
   async handleSceneTap(event) {
-    const tappedScene = event.detail.item;
+    const detailItem = event && event.detail && event.detail.item;
+    const datasetItem = event && event.currentTarget && event.currentTarget.dataset && event.currentTarget.dataset.item;
+    const datasetIndex = event && event.currentTarget && event.currentTarget.dataset && event.currentTarget.dataset.index;
+    const tappedScene = detailItem || datasetItem || this.data.scenes[datasetIndex];
+
+    if (!tappedScene || !tappedScene.sceneKey) {
+      wx.showToast({ title: '场景数据异常，请重试', icon: 'none' });
+      return;
+    }
+
     let scene = tappedScene;
 
     try {
