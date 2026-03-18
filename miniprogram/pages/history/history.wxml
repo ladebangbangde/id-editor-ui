@@ -1,11 +1,29 @@
-<view class="container">
-  <view class="card section panel">
-    <view class="title-lg">历史记录</view>
+<view class="container history-page {{manageMode ? 'is-manage' : ''}}">
+  <view class="card section panel header-card">
+    <view class="header-row">
+      <view class="title-lg">历史记录</view>
+      <view wx:if="{{list.length}}" class="manage-btn" bindtap="toggleManageMode">{{manageMode ? '取消' : '管理'}}</view>
+    </view>
   </view>
 
   <block wx:if="{{list.length}}">
     <view class="record-list">
-      <record-card wx:for="{{list}}" wx:key="imageId" record="{{item}}" bind:tap="goDetail"></record-card>
+      <record-card
+        wx:for="{{list}}"
+        wx:key="id"
+        record="{{item}}"
+        manage-mode="{{manageMode}}"
+        bind:tap="handleCardTap"
+        bind:toggle="handleToggleSelect"
+        bind:edit="openEdit"
+        bind:delete="confirmDelete"
+      ></record-card>
+    </view>
+  </block>
+  <block wx:elif="{{loading}}">
+    <view class="card section empty">
+      <view class="title-md">历史记录加载中</view>
+      <view class="text-muted">请稍候...</view>
     </view>
   </block>
   <block wx:else>
@@ -15,4 +33,40 @@
       <view class="btn-wrap"><primary-button text="去制作一张" bind:tap="goCreate"></primary-button></view>
     </view>
   </block>
+
+  <view wx:if="{{manageMode && list.length}}" class="manage-bar-safe"></view>
+  <view wx:if="{{manageMode && list.length}}" class="manage-bar">
+    <view class="manage-summary">已选 {{selectedIds.length}} 项</view>
+    <view class="manage-actions">
+      <view class="bar-btn bar-btn-light" bindtap="handleToggleAll">{{checkAll ? '取消全选' : '全选'}}</view>
+      <view class="bar-btn bar-btn-danger {{selectedIds.length ? '' : 'disabled'}}" bindtap="confirmBatchDelete">删除</view>
+    </view>
+  </view>
+
+  <view wx:if="{{editingItem}}" class="edit-mask" catchtap="closeEdit">
+    <view class="edit-drawer" catchtap="noop">
+      <view class="drawer-header">
+        <view class="title-md">编辑历史记录</view>
+        <view class="drawer-close" bindtap="closeEdit">取消</view>
+      </view>
+
+      <view class="form-item">
+        <view class="form-label">标题</view>
+        <input class="form-input" placeholder="请输入标题" value="{{editForm.name}}" data-field="name" bindinput="handleEditInput" maxlength="20" />
+      </view>
+      <view class="form-item">
+        <view class="form-label">尺寸</view>
+        <input class="form-input" placeholder="例如：1寸 / 35x45mm" value="{{editForm.size}}" data-field="size" bindinput="handleEditInput" maxlength="20" />
+      </view>
+      <view class="form-item">
+        <view class="form-label">背景</view>
+        <input class="form-input" placeholder="例如：白底 / 蓝底" value="{{editForm.background}}" data-field="background" bindinput="handleEditInput" maxlength="20" />
+      </view>
+
+      <view class="drawer-actions">
+        <view class="drawer-btn drawer-btn-ghost" bindtap="closeEdit">取消</view>
+        <view class="drawer-btn drawer-btn-primary" bindtap="submitEdit">{{submitting ? '保存中...' : '保存'}}</view>
+      </view>
+    </view>
+  </view>
 </view>

@@ -1,5 +1,12 @@
-<view class="record-card" bindtap="handleTap">
+<view class="record-card {{manageMode ? 'record-card-manage' : ''}}" bindtap="handleTap">
+  <view wx:if="{{manageMode}}" class="selector-wrap" catchtap="handleToggle">
+    <view class="selector {{record.selected ? 'selector-active' : ''}}">
+      <text wx:if="{{record.selected}}" class="selector-icon">✓</text>
+    </view>
+  </view>
+
   <image class="thumb" src="{{record.previewUrl}}" mode="aspectFill"></image>
+
   <view class="main">
     <view class="row-between">
       <text class="name">{{record.sceneName}}</text>
@@ -8,5 +15,10 @@
     <view class="meta">尺寸：{{record.sizeText}}</view>
     <view class="meta">背景：{{record.backgroundColor}}</view>
     <view class="meta">时间：{{record.createdAt}}</view>
+
+    <view wx:if="{{!manageMode}}" class="action-row">
+      <view class="action-btn" catchtap="handleEdit">编辑</view>
+      <view class="action-btn action-btn-danger" catchtap="handleDelete">删除</view>
+    </view>
   </view>
 </view>
