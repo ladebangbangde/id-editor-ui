@@ -78,12 +78,33 @@ function normalizeAssetUrl(url) {
 
 function normalizeAssetPayload(payload = {}) {
   const normalized = { ...payload };
-  const fields = ['previewUrl', 'layoutUrl', 'printLayoutUrl', 'hdUrl', 'originalUrl', 'downloadUrl', 'url'];
+  const fields = [
+    'previewUrl',
+    'preview_url',
+    'layoutUrl',
+    'layout_url',
+    'printLayoutUrl',
+    'print_layout_url',
+    'hdUrl',
+    'hd_url',
+    'originalUrl',
+    'original_url',
+    'downloadUrl',
+    'download_url',
+    'url'
+  ];
   fields.forEach((field) => {
     if (typeof normalized[field] === 'string') {
       normalized[field] = normalizeAssetUrl(normalized[field]);
     }
   });
+
+  normalized.previewUrl = normalized.previewUrl || normalized.preview_url || '';
+  normalized.layoutUrl = normalized.layoutUrl || normalized.layout_url || '';
+  normalized.printLayoutUrl = normalized.printLayoutUrl || normalized.print_layout_url || '';
+  normalized.hdUrl = normalized.hdUrl || normalized.hd_url || '';
+  normalized.originalUrl = normalized.originalUrl || normalized.original_url || '';
+  normalized.downloadUrl = normalized.downloadUrl || normalized.download_url || '';
 
   return normalized;
 }
