@@ -78,7 +78,7 @@ function normalizeAssetUrl(url) {
 
 function normalizeAssetPayload(payload = {}) {
   const normalized = { ...payload };
-  const fields = ['previewUrl', 'layoutUrl', 'printLayoutUrl', 'hdUrl', 'originalUrl'];
+  const fields = ['previewUrl', 'layoutUrl', 'printLayoutUrl', 'hdUrl', 'originalUrl', 'downloadUrl', 'url'];
   fields.forEach((field) => {
     if (typeof normalized[field] === 'string') {
       normalized[field] = normalizeAssetUrl(normalized[field]);
