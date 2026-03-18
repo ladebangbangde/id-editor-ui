@@ -4,12 +4,96 @@ function getBaseUrl() {
   return getApp().globalData.apiBaseUrl;
 }
 
+function getApiOrigin() {
+  const app = getApp();
+  const host = app.globalData.apiHost || app.globalData.apiBaseUrl || '';
+  const match = String(host).match(/^https?:\/\/[^/]+/i);
+  return match ? match[0] : '';
+}
+
 function unwrap(res) {
   if (!res) return {};
   if (Object.prototype.hasOwnProperty.call(res, 'data')) {
     return res.data || {};
   }
   return res;
+}
+
+function normalizeScene(scene = {}) {
+  const sceneKey = scene.sceneKey || scene.scene_key || '';
+  const sceneName = scene.sceneName || scene.scene_name || scene.name || '';
+  const widthMm = Number(scene.widthMm || scene.width_mm || 0);
+  const heightMm = Number(scene.heightMm || scene.height_mm || 0);
+  const pixelWidth = Number(scene.pixelWidth || scene.pixel_width || 0);
+  const pixelHeight = Number(scene.pixelHeight || scene.pixel_height || 0);
+
+  return {
+    ...scene,
+    sceneKey,
+    sceneName,
+    name: sceneName,
+    widthMm,
+    heightMm,
+    pixelWidth,
+    pixelHeight,
+    allowBeauty: Object.prototype.hasOwnProperty.call(scene, 'allowBeauty')
+      ? scene.allowBeauty
+      : scene.allow_beauty,
+    allowPrint: Object.prototype.hasOwnProperty.call(scene, 'allowPrint')
+      ? scene.allowPrint
+      : scene.allow_print,
+    isActive: Object.prototype.hasOwnProperty.call(scene, 'isActive')
+      ? scene.isActive
+      : scene.is_active
+  };
+}
+
+function isLocalAddress(host = '') {
+  const cleanHost = String(host).toLowerCase();
+  return cleanHost === '127.0.0.1' || cleanHost === 'localhost' || cleanHost === '0.0.0.0';
+}
+
+function normalizeAssetUrl(url) {
+  if (!url || typeof url !== 'string') return url;
+  const apiOrigin = getApiOrigin();
+  if (!apiOrigin) return url;
+
+  const absoluteMatch = url.match(/^(https?:\/\/[^/]+)(\/.*)?$/i);
+  if (absoluteMatch) {
+    const origin = absoluteMatch[1];
+    const path = absoluteMatch[2] || '';
+    const host = origin.replace(/^https?:\/\//i, '').split(':')[0];
+    if (isLocalAddress(host)) {
+      return `${apiOrigin}${path}`;
+    }
+    return url;
+  }
+
+  if (url.startsWith('/')) {
+    return `${apiOrigin}${url}`;
+  }
+
+  return `${apiOrigin}/${url}`;
+}
+
+function normalizeAssetPayload(payload = {}) {
+  const normalized = { ...payload };
+  const fields = ['previewUrl', 'layoutUrl', 'printLayoutUrl', 'hdUrl', 'originalUrl'];
+  fields.forEach((field) => {
+    if (typeof normalized[field] === 'string') {
+      normalized[field] = normalizeAssetUrl(normalized[field]);
+    }
+  });
+
+  return normalized;
+}
+
+function normalizeHistoryItem(item = {}) {
+  const normalized = normalizeAssetPayload(item);
+  if (normalized.result && typeof normalized.result === 'object') {
+    normalized.result = normalizeAssetPayload(normalized.result);
+  }
+  return normalized;
 }
 
 function healthCheck() {
@@ -28,34 +112,57 @@ function adminLogin() {
 function getScenes() {
   return request(`${getBaseUrl()}/scenes`).then((res) => {
     const data = unwrap(res);
-    return Array.isArray(data) ? data : [];
+    if (!Array.isArray(data)) return [];
+
+    return data
+      .map(normalizeScene)
+      .filter((scene) => scene.sceneKey);
   });
 }
 
 function getSceneDetail(sceneKey) {
-  return request(`${getBaseUrl()}/scenes/${sceneKey}`).then(unwrap);
+  return request(`${getBaseUrl()}/scenes/${sceneKey}`)
+    .then(unwrap)
+    .then((scene) => normalizeScene(scene));
 }
 
 function uploadImage(filePath) {
   return uploadFile(`${getBaseUrl()}/upload`, filePath, {}, {
     showLoading: true,
     loadingText: '上传中'
-  }).then(unwrap);
+  })
+    .then(unwrap)
+    .then((payload) => normalizeAssetPayload(payload));
 }
 
 function generateImage(payload) {
   return request(`${getBaseUrl()}/images/generate`, 'POST', payload, {
     showLoading: true,
     loadingText: '生成中'
-  }).then(unwrap);
+  })
+    .then(unwrap)
+    .then((result) => normalizeAssetPayload(result));
 }
 
 function getHistory(page = 1, pageSize = 10) {
-  return request(`${getBaseUrl()}/images/history?page=${page}&pageSize=${pageSize}`).then(unwrap);
+  return request(`${getBaseUrl()}/images/history?page=${page}&pageSize=${pageSize}`)
+    .then(unwrap)
+    .then((payload) => {
+      if (Array.isArray(payload)) return payload.map(normalizeHistoryItem);
+      if (payload && Array.isArray(payload.items)) {
+        return {
+          ...payload,
+          items: payload.items.map(normalizeHistoryItem)
+        };
+      }
+      return payload;
+    });
 }
 
 function getImageDetail(imageId) {
-  return request(`${getBaseUrl()}/images/${imageId}/detail`).then(unwrap);
+  return request(`${getBaseUrl()}/images/${imageId}/detail`)
+    .then(unwrap)
+    .then((payload) => normalizeAssetPayload(payload));
 }
 
 function getTask(taskId) {
@@ -81,15 +188,21 @@ function mockPay(orderId) {
 }
 
 function downloadPreview(resultId) {
-  return request(`${getBaseUrl()}/download/${resultId}/preview`).then(unwrap);
+  return request(`${getBaseUrl()}/download/${resultId}/preview`)
+    .then(unwrap)
+    .then((payload) => normalizeAssetPayload(payload));
 }
 
 function downloadHd(resultId) {
-  return request(`${getBaseUrl()}/download/${resultId}/hd`).then(unwrap);
+  return request(`${getBaseUrl()}/download/${resultId}/hd`)
+    .then(unwrap)
+    .then((payload) => normalizeAssetPayload(payload));
 }
 
 function downloadPrint(resultId) {
-  return request(`${getBaseUrl()}/download/${resultId}/print`).then(unwrap);
+  return request(`${getBaseUrl()}/download/${resultId}/print`)
+    .then(unwrap)
+    .then((payload) => normalizeAssetPayload(payload));
 }
 
 function getAdminStats(token) {
