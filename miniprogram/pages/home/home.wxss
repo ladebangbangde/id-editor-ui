@@ -1,9 +1,285 @@
-.brand { padding: 26rpx; }
-.subtitle { margin-top: 10rpx; }
-.block { padding: 24rpx; }
-.desc { margin: 8rpx 0 14rpx; }
-.scene-list { display: flex; flex-direction: column; gap: 12rpx; }
-.custom-card { padding: 24rpx; }
-.arrow { font-size: 44rpx; color: #94a3b8; }
-.tips { padding: 24rpx; }
-.tip-item { margin-top: 10rpx; font-size: 25rpx; color: #475569; }
+.home-page {
+  padding-bottom: 36rpx;
+}
+
+.hero-card {
+  padding: 26rpx;
+}
+
+.hero-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20rpx;
+}
+
+.hero-subtitle {
+  margin-top: 10rpx;
+}
+
+.hero-badge {
+  flex-shrink: 0;
+  padding: 10rpx 18rpx;
+  border-radius: 999rpx;
+  background: #eef2ff;
+  color: #4f46e5;
+  font-size: 22rpx;
+  font-weight: 600;
+}
+
+.hero-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 20rpx;
+}
+
+.hero-tag {
+  padding: 8rpx 16rpx;
+  border-radius: 999rpx;
+}
+
+.main-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16rpx;
+}
+
+.main-card {
+  min-height: 224rpx;
+  padding: 24rpx;
+}
+
+.main-card-camera {
+  background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
+}
+
+.main-card-color {
+  background: linear-gradient(180deg, #ffffff 0%, #faf7ff 100%);
+}
+
+.main-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.main-icon,
+.quick-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 24rpx;
+  font-size: 34rpx;
+  font-weight: 600;
+}
+
+.main-icon {
+  width: 84rpx;
+  height: 84rpx;
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.icon-color {
+  background: #f5f3ff;
+  color: #7c3aed;
+}
+
+.icon-custom {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.icon-suit {
+  background: #f8fafc;
+  color: #475569;
+}
+
+.icon-vip {
+  background: #fff7ed;
+  color: #ea580c;
+}
+
+.icon-receipt {
+  background: #eefbf3;
+  color: #16a34a;
+}
+
+.main-badge {
+  padding: 6rpx 14rpx;
+  border-radius: 999rpx;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 20rpx;
+}
+
+.main-title {
+  margin-top: 28rpx;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.main-desc {
+  margin-top: 10rpx;
+  line-height: 1.6;
+}
+
+.quick-card {
+  padding: 24rpx;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+}
+
+.quick-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16rpx;
+  margin-top: 20rpx;
+}
+
+.quick-item {
+  padding: 18rpx 10rpx 14rpx;
+  border-radius: 22rpx;
+  background: #f8fafc;
+  text-align: center;
+}
+
+.quick-icon {
+  width: 72rpx;
+  height: 72rpx;
+  margin: 0 auto 14rpx;
+  font-size: 30rpx;
+}
+
+.quick-title {
+  font-size: 24rpx;
+  color: #1f2937;
+  line-height: 1.4;
+}
+
+.tab-scroll-wrap {
+  margin-bottom: 16rpx;
+}
+
+.tab-scroll {
+  width: 100%;
+  white-space: nowrap;
+}
+
+.tab-list {
+  display: inline-flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.tab-item {
+  padding: 14rpx 24rpx;
+  border-radius: 999rpx;
+  background: #ffffff;
+  border: 1rpx solid #e5eaf1;
+  color: #475569;
+  font-size: 24rpx;
+  box-shadow: 0 4rpx 16rpx rgba(15, 23, 42, 0.03);
+}
+
+.tab-item-active {
+  background: #111827;
+  border-color: #111827;
+  color: #ffffff;
+}
+
+.state-card {
+  padding: 32rpx 28rpx;
+  text-align: center;
+}
+
+.state-action {
+  margin-top: 20rpx;
+}
+
+.template-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16rpx;
+}
+
+.template-card {
+  padding: 22rpx;
+}
+
+.template-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12rpx;
+}
+
+.template-title-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.template-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.template-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #111827;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hot-badge {
+  flex-shrink: 0;
+  padding: 4rpx 10rpx;
+  border-radius: 999rpx;
+  background: #fff1f2;
+  color: #e11d48;
+  font-size: 18rpx;
+}
+
+.template-size {
+  margin-top: 10rpx;
+}
+
+.template-arrow {
+  flex-shrink: 0;
+  font-size: 34rpx;
+  color: #94a3b8;
+  line-height: 1;
+}
+
+.template-tip {
+  margin-top: 16rpx;
+  font-size: 22rpx;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+  margin-top: 16rpx;
+}
+
+.template-tag {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

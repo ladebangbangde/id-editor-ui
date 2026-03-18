@@ -186,6 +186,17 @@ function generateImage(payload) {
     .then((result) => normalizeAssetPayload(result));
 }
 
+function getHomeTemplateConfig(category = '') {
+  const query = category ? `?category=${encodeURIComponent(category)}` : '';
+  return request(`${getBaseUrl()}/home/templates${query}`)
+    .then(unwrap)
+    .then((payload) => ({
+      ...payload,
+      tabs: Array.isArray(payload.tabs) ? payload.tabs : [],
+      templates: Array.isArray(payload.templates) ? payload.templates : []
+    }));
+}
+
 function getHistory(page = 1, pageSize = 10) {
   return request(`${getBaseUrl()}/images/history?page=${page}&pageSize=${pageSize}`)
     .then(unwrap)
@@ -287,6 +298,7 @@ module.exports = {
   uploadImage,
   generateImage,
   generateIdPhoto,
+  getHomeTemplateConfig,
   getHistory,
   getImageDetail,
   getTask,

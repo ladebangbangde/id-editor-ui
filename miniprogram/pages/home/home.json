@@ -1,7 +1,6 @@
 {
   "navigationBarTitleText": "AI证件照制作",
   "usingComponents": {
-    "scene-card": "/components/scene-card/index",
     "primary-button": "/components/primary-button/index"
   }
 }
