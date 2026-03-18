@@ -79,7 +79,10 @@ const COLOR_OPTIONS = [
 
 const STATUS_MAP = {
   pending: '待支付',
-  paid: '已支付'
+  paid: '已支付',
+  processing: '处理中',
+  success: '已完成',
+  failed: '失败'
 };
 
 const STORAGE_KEYS = {
