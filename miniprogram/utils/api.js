@@ -90,10 +90,31 @@ function normalizeAssetPayload(payload = {}) {
 
 function normalizeHistoryItem(item = {}) {
   const normalized = normalizeAssetPayload(item);
-  if (normalized.result && typeof normalized.result === 'object') {
-    normalized.result = normalizeAssetPayload(normalized.result);
-  }
-  return normalized;
+  const scene = normalizeScene(normalized.scene || {});
+  const result = normalizeAssetPayload(normalized.result || {});
+  const widthMm = Number(normalized.widthMm || normalized.width_mm || scene.widthMm || 0);
+  const heightMm = Number(normalized.heightMm || normalized.height_mm || scene.heightMm || 0);
+  const backgroundColor = normalized.backgroundColor || normalized.background_color
+    || result.backgroundColor || result.background_color || '';
+
+  return {
+    ...normalized,
+    imageId: normalized.imageId || normalized.image_id || normalized.id || '',
+    scene,
+    result,
+    sceneName: normalized.sceneName || normalized.scene_name || scene.sceneName || scene.name || '',
+    widthMm,
+    heightMm,
+    sizeText: normalized.sizeText || normalized.size_text || normalized.size
+      || (widthMm && heightMm ? `${widthMm}×${heightMm}mm` : ''),
+    backgroundColor,
+    backgroundColorLabel: normalized.backgroundColorLabel || normalized.background_color_label || backgroundColor,
+    previewUrl: normalized.previewUrl || normalized.preview_url
+      || result.previewUrl || result.preview_url
+      || normalized.originalUrl || normalized.original_url || '',
+    createdAt: normalized.createdAt || normalized.created_at || '',
+    status: normalized.status || normalized.taskStatus || normalized.task_status || ''
+  };
 }
 
 function healthCheck() {
@@ -148,21 +169,42 @@ function getHistory(page = 1, pageSize = 10) {
   return request(`${getBaseUrl()}/images/history?page=${page}&pageSize=${pageSize}`)
     .then(unwrap)
     .then((payload) => {
-      if (Array.isArray(payload)) return payload.map(normalizeHistoryItem);
+      if (Array.isArray(payload)) {
+        return {
+          list: payload.map(normalizeHistoryItem)
+        };
+      }
+      if (payload && Array.isArray(payload.list)) {
+        return {
+          ...payload,
+          list: payload.list.map(normalizeHistoryItem)
+        };
+      }
       if (payload && Array.isArray(payload.items)) {
         return {
           ...payload,
+          list: payload.items.map(normalizeHistoryItem),
           items: payload.items.map(normalizeHistoryItem)
         };
       }
-      return payload;
+      if (payload && Array.isArray(payload.records)) {
+        return {
+          ...payload,
+          list: payload.records.map(normalizeHistoryItem),
+          records: payload.records.map(normalizeHistoryItem)
+        };
+      }
+      return {
+        ...payload,
+        list: []
+      };
     });
 }
 
 function getImageDetail(imageId) {
   return request(`${getBaseUrl()}/images/${imageId}/detail`)
     .then(unwrap)
-    .then((payload) => normalizeAssetPayload(payload));
+    .then((payload) => normalizeHistoryItem(payload));
 }
 
 function getTask(taskId) {
