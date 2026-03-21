@@ -11,8 +11,18 @@ function remove(key) {
   wx.removeStorageSync(key);
 }
 
+function setLastResult(value) {
+  set('current_result', value);
+}
+
+function getLastResult(defaultValue = null) {
+  return get('current_result', defaultValue);
+}
+
 module.exports = {
   set,
   get,
-  remove
+  remove,
+  setLastResult,
+  getLastResult
 };

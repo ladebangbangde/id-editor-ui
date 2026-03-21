@@ -81,6 +81,8 @@ function normalizeAssetPayload(payload = {}) {
   const fields = [
     'previewUrl',
     'preview_url',
+    'resultUrl',
+    'result_url',
     'layoutUrl',
     'layout_url',
     'printLayoutUrl',
@@ -100,6 +102,7 @@ function normalizeAssetPayload(payload = {}) {
   });
 
   normalized.previewUrl = normalized.previewUrl || normalized.preview_url || '';
+  normalized.resultUrl = normalized.resultUrl || normalized.result_url || '';
   normalized.layoutUrl = normalized.layoutUrl || normalized.layout_url || '';
   normalized.printLayoutUrl = normalized.printLayoutUrl || normalized.print_layout_url || '';
   normalized.hdUrl = normalized.hdUrl || normalized.hd_url || '';
@@ -184,6 +187,41 @@ function generateImage(payload) {
   })
     .then(unwrap)
     .then((result) => normalizeAssetPayload(result));
+}
+
+function getPhotoSpecs() {
+  return request(`${getBaseUrl()}/photo/specs`)
+    .then(unwrap)
+    .then((payload) => ({
+      backgroundColors: Array.isArray(payload.backgroundColors) ? payload.backgroundColors : [],
+      sizeCodes: Array.isArray(payload.sizeCodes) ? payload.sizeCodes : [],
+      papers: Array.isArray(payload.papers) ? payload.papers : [],
+      formats: Array.isArray(payload.formats) ? payload.formats : []
+    }));
+}
+
+function processPhoto(filePath, payload = {}) {
+  const formData = {
+    sizeCode: payload.sizeCode,
+    backgroundColor: payload.backgroundColor
+  };
+
+  if (typeof payload.enhance !== 'undefined') {
+    formData.enhance = String(payload.enhance);
+  }
+
+  return uploadFile(`${getBaseUrl()}/photo/process`, filePath, formData, {
+    showLoading: true,
+    loadingText: '处理中'
+  })
+    .then(unwrap)
+    .then((result) => normalizeAssetPayload(result));
+}
+
+function getPhotoTask(taskId) {
+  return request(`${getBaseUrl()}/photo/tasks/${taskId}`)
+    .then(unwrap)
+    .then((payload) => normalizeAssetPayload(payload));
 }
 
 function getHomeTemplateConfig(category = '') {
@@ -295,6 +333,10 @@ module.exports = {
   adminLogin,
   getScenes,
   getSceneDetail,
+  getPhotoSpecs,
+  processPhoto,
+  getPhotoTask,
+  // legacy APIs, kept for compatibility only.
   uploadImage,
   generateImage,
   generateIdPhoto,

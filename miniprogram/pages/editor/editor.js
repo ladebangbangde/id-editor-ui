@@ -1,31 +1,114 @@
 const { STORAGE_KEYS } = require('../../utils/constants');
 const { getColorLabel, formatTime } = require('../../utils/format');
-const { uploadImage, generateImage, getTask } = require('../../utils/api');
+const { getPhotoSpecs, processPhoto, getPhotoTask } = require('../../utils/api');
 const storage = require('../../utils/storage');
 
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+const SIZE_CODE_MAP = {
+  one_inch: 'one_inch',
+  one_inch_general: 'one_inch',
+  resume: 'one_inch',
+  resume_photo: 'one_inch',
+  small_one_inch: 'small_one_inch',
+  driving_license: 'small_one_inch',
+  two_inch: 'two_inch',
+  two_inch_general: 'two_inch'
+};
+
+const SIZE_BY_MM = {
+  '25x35': 'one_inch',
+  '22x32': 'small_one_inch',
+  '35x49': 'two_inch'
+};
+
+const SIZE_NAME_MAP = {
+  one_inch: '标准一寸',
+  small_one_inch: '小一寸',
+  two_inch: '二寸'
+};
+
+function buildSizeKey(sceneInfo = {}) {
+  const widthMm = Number(sceneInfo.widthMm || 0);
+  const heightMm = Number(sceneInfo.heightMm || 0);
+  if (!widthMm || !heightMm) return '';
+  return `${widthMm}x${heightMm}`;
+}
+
+function mapSceneToSizeCode(sceneInfo = {}) {
+  const sceneKey = sceneInfo.sceneKey || '';
+  return SIZE_CODE_MAP[sceneKey] || SIZE_BY_MM[buildSizeKey(sceneInfo)] || '';
+}
+
+function normalizeWarnings(warnings) {
+  return Array.isArray(warnings) ? warnings.filter(Boolean) : [];
 }
 
 Page({
   data: {
     sceneInfo: {},
     imagePath: '',
-    imageId: '',
     selectedColor: 'white',
-    generating: false
+    generating: false,
+    specs: {
+      backgroundColors: [],
+      sizeCodes: []
+    },
+    sizeCode: '',
+    unsupportedMessage: ''
   },
 
-  onLoad() {
+  async onLoad() {
     const uploadData = storage.get(STORAGE_KEYS.CURRENT_UPLOAD, {});
     const currentScene = storage.get(STORAGE_KEYS.CURRENT_SCENE, {});
     const sceneInfo = uploadData.sceneInfo || currentScene.scene || {};
+    const selectedColor = currentScene.color || 'white';
+    const sizeCode = mapSceneToSizeCode(sceneInfo);
+
     this.setData({
       sceneInfo,
       imagePath: uploadData.imagePath || '',
-      imageId: uploadData.imageId || '',
-      selectedColor: currentScene.color || 'white'
+      selectedColor,
+      sizeCode
     });
+
+    this.updateUnsupportedMessage({
+      sceneInfo,
+      sizeCode,
+      specs: this.data.specs
+    });
+
+    try {
+      const specs = await getPhotoSpecs();
+      this.setData({ specs });
+      this.updateUnsupportedMessage({
+        sceneInfo,
+        sizeCode,
+        specs
+      });
+    } catch (error) {
+      // ignore, editor can still fallback to local mapping
+    }
+  },
+
+  updateUnsupportedMessage({
+    sceneInfo = this.data.sceneInfo,
+    sizeCode = this.data.sizeCode,
+    specs = this.data.specs
+  } = {}) {
+    if (!sizeCode) {
+      this.setData({
+        unsupportedMessage: '当前场景暂未接入新处理链路，请改用标准一寸、小一寸或二寸模板。'
+      });
+      return;
+    }
+
+    if (Array.isArray(specs.sizeCodes) && specs.sizeCodes.length && !specs.sizeCodes.includes(sizeCode)) {
+      this.setData({
+        unsupportedMessage: `服务端暂不支持 ${SIZE_NAME_MAP[sizeCode] || sceneInfo.sceneName || '当前尺寸'}。`
+      });
+      return;
+    }
+
+    this.setData({ unsupportedMessage: '' });
   },
 
   onColorChange(event) {
@@ -36,81 +119,95 @@ Page({
     wx.navigateBack({ delta: 1 });
   },
 
-  async ensureUploadedImage() {
-    if (this.data.imageId) return this.data.imageId;
-    const uploadData = await uploadImage(this.data.imagePath);
-    const imageId = uploadData.imageId;
-    if (!imageId) throw new Error('未获取到 imageId');
-
-    storage.set(STORAGE_KEYS.CURRENT_UPLOAD, {
-      imagePath: this.data.imagePath,
-      sceneInfo: this.data.sceneInfo,
-      imageId
-    });
-    this.setData({ imageId });
-    return imageId;
-  },
-
-  async pollTask(taskId) {
-    if (!taskId) return null;
-    for (let i = 0; i < 8; i += 1) {
-      const task = await getTask(taskId);
-      if (task.status === 'success' || task.status === 'failed') {
-        return task;
-      }
-      await sleep(1000);
+  async refreshTaskResult(taskId, fallbackResult = {}) {
+    if (!taskId) {
+      return fallbackResult;
     }
-    return null;
+
+    try {
+      const latest = await getPhotoTask(taskId);
+      if (latest && (latest.previewUrl || latest.resultUrl)) {
+        return latest;
+      }
+    } catch (error) {
+      // keep synchronous process result as fallback
+    }
+
+    return fallbackResult;
   },
 
   async handleGenerate() {
-    if (!this.data.imagePath) {
+    const {
+      imagePath,
+      selectedColor,
+      sceneInfo,
+      generating,
+      unsupportedMessage,
+      sizeCode,
+      specs
+    } = this.data;
+
+    if (!imagePath) {
       wx.showToast({ title: '请先上传照片', icon: 'none' });
       return;
     }
 
+    if (unsupportedMessage) {
+      wx.showToast({ title: unsupportedMessage, icon: 'none' });
+      return;
+    }
+
+    if (generating) {
+      return;
+    }
+
+    if (Array.isArray(specs.backgroundColors) && specs.backgroundColors.length
+      && !specs.backgroundColors.includes(selectedColor)) {
+      wx.showToast({ title: '当前底色暂不受服务端支持', icon: 'none' });
+      return;
+    }
+
     this.setData({ generating: true });
+
     try {
-      const imageId = await this.ensureUploadedImage();
-      const sourceType = this.data.sceneInfo.sceneKey === 'custom' ? 'custom' : 'scene';
-      const payload = {
-        imageId,
-        sourceType,
-        backgroundColor: this.data.selectedColor
-      };
-
-      if (sourceType === 'scene') {
-        payload.sceneKey = this.data.sceneInfo.sceneKey;
-      } else {
-        payload.customWidthMm = Number(this.data.sceneInfo.widthMm);
-        payload.customHeightMm = Number(this.data.sceneInfo.heightMm);
-      }
-
-      const generated = await generateImage(payload);
-      const task = await this.pollTask(generated.taskId);
-      if (task && task.status === 'failed') {
-        throw new Error(task.errorMessage || '任务处理失败');
-      }
+      const processed = await processPhoto(imagePath, {
+        sizeCode,
+        backgroundColor: selectedColor,
+        enhance: false
+      });
+      const latestResult = await this.refreshTaskResult(processed.taskId, processed);
 
       const result = {
-        imageId,
-        resultId: generated.resultId,
-        taskId: generated.taskId,
-        previewUrl: generated.previewUrl,
-        layoutUrl: generated.printLayoutUrl || generated.layoutUrl || generated.previewUrl,
-        sceneName: this.data.sceneInfo.sceneName || '自定义尺寸',
-        sizeText: `${this.data.sceneInfo.widthMm || '--'}×${this.data.sceneInfo.heightMm || '--'}mm`,
-        backgroundColor: getColorLabel(this.data.selectedColor),
-        sourceImage: this.data.imagePath,
-        createdAt: formatTime(Date.now()),
-        status: generated.status || (task && task.status) || 'processing',
-        fileDesc: '可下载预览图 / 高清图 / 排版图'
+        imagePath,
+        sceneInfo,
+        sceneName: sceneInfo.sceneName || SIZE_NAME_MAP[sizeCode] || '证件照',
+        sizeText: `${sceneInfo.widthMm || '--'}×${sceneInfo.heightMm || '--'}mm`,
+        taskId: latestResult.taskId || processed.taskId || '',
+        status: latestResult.status || processed.status || '',
+        previewUrl: latestResult.previewUrl || processed.previewUrl || '',
+        resultUrl: latestResult.resultUrl || processed.resultUrl || '',
+        backgroundColor: latestResult.backgroundColor || processed.backgroundColor || selectedColor,
+        backgroundColorLabel: getColorLabel(
+          latestResult.backgroundColor || processed.backgroundColor || selectedColor
+        ),
+        sizeCode: latestResult.sizeCode || processed.sizeCode || sizeCode,
+        width: latestResult.width || processed.width || sceneInfo.pixelWidth || 0,
+        height: latestResult.height || processed.height || sceneInfo.pixelHeight || 0,
+        warnings: normalizeWarnings(latestResult.warnings || processed.warnings),
+        qualityStatus: latestResult.qualityStatus || processed.qualityStatus || '',
+        qualityMessage: latestResult.qualityMessage || processed.qualityMessage || '',
+        createdAt: latestResult.createdAt || formatTime(Date.now()),
+        fileDesc: '预览图与高清图由新处理链路直接返回'
       };
 
+      storage.set(STORAGE_KEYS.CURRENT_UPLOAD, {
+        imagePath,
+        sceneInfo
+      });
       storage.set(STORAGE_KEYS.CURRENT_RESULT, result);
       wx.navigateTo({ url: '/pages/result/result' });
     } catch (error) {
-      wx.showToast({ title: error.message || '生成失败，请重试', icon: 'none' });
+      wx.showToast({ title: error.message || error.msg || error.errMsg || '生成失败，请重试', icon: 'none' });
     } finally {
       this.setData({ generating: false });
     }

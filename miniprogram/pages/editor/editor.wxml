@@ -22,6 +22,16 @@
     <size-info-card info="{{sceneInfo}}" colorLabel="{{selectedColor==='white'?'白色':(selectedColor==='blue'?'蓝色':'红色')}}"></size-info-card>
   </view>
 
+  <view wx:if="{{sizeCode}}" class="card section panel">
+    <view class="title-md">服务端处理规格</view>
+    <view class="text-muted">当前将按 {{sizeCode}} 规格调用新链路处理。</view>
+  </view>
+
+  <view wx:if="{{unsupportedMessage}}" class="card section panel warning-panel">
+    <view class="title-md">暂不支持</view>
+    <view class="warning-text">{{unsupportedMessage}}</view>
+  </view>
+
   <view class="button-row section">
     <view class="button-item"><primary-button text="返回重选" type="secondary" bind:tap="goBack"></primary-button></view>
     <view class="button-item"><primary-button text="生成证件照" loading="{{generating}}" bind:tap="handleGenerate"></primary-button></view>

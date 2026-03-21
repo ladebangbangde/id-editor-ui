@@ -93,11 +93,14 @@ const STORAGE_KEYS = {
 };
 
 const MOCK_RESULT = {
-  imageId: 'img_mock_001',
+  taskId: 'task_mock_001',
   previewUrl: 'https://dummyimage.com/600x800/f5f7fb/667085&text=%E8%AF%81%E4%BB%B6%E7%85%A7%E9%A2%84%E8%A7%88',
-  hdUrl: 'https://dummyimage.com/1200x1600/f1f5f9/475569&text=%E9%AB%98%E6%B8%85%E5%9B%BE',
-  layoutUrl: 'https://dummyimage.com/1200x800/f8fafc/64748b&text=%E6%8E%92%E7%89%88%E5%9B%BE',
-  fileDesc: 'JPG格式，支持冲印与电子提交'
+  resultUrl: 'https://dummyimage.com/1200x1600/f1f5f9/475569&text=%E9%AB%98%E6%B8%85%E5%9B%BE',
+  sizeCode: 'one_inch',
+  qualityStatus: 'PASSED',
+  qualityMessage: '质量检测通过',
+  warnings: [],
+  fileDesc: 'JPG/PNG 格式结果链接可直接复制'
 };
 
 const MOCK_HISTORY = [

@@ -10,8 +10,25 @@ function buildHeader(header = {}) {
   };
 }
 
+function buildUploadHeader(header = {}) {
+  const nextHeader = buildHeader(header);
+  delete nextHeader['content-type'];
+  delete nextHeader['Content-Type'];
+  return nextHeader;
+}
+
 function showError(message) {
   wx.showToast({ title: message || '请求失败', icon: 'none' });
+}
+
+function parseUploadResponse(rawData) {
+  if (!rawData) return {};
+  if (typeof rawData === 'object') return rawData;
+  try {
+    return JSON.parse(rawData);
+  } catch (error) {
+    throw new Error('上传响应解析失败');
+  }
 }
 
 function request(url, method = 'GET', data = {}, options = {}) {
@@ -64,10 +81,10 @@ function uploadFile(url, filePath, formData = {}, options = {}) {
       filePath,
       name: 'file',
       formData,
-      header: buildHeader(header),
+      header: buildUploadHeader(header),
       success(res) {
         try {
-          const body = JSON.parse(res.data || '{}');
+          const body = parseUploadResponse(res.data);
           if (res.statusCode >= 200 && res.statusCode < 300) {
             if (body.success === false) {
               showError(body.message || '上传失败');
@@ -80,7 +97,7 @@ function uploadFile(url, filePath, formData = {}, options = {}) {
           showError(body.message || '上传失败');
           reject(body);
         } catch (error) {
-          showError('上传响应解析失败');
+          showError(error.message || '上传响应解析失败');
           reject(error);
         }
       },
@@ -97,5 +114,6 @@ function uploadFile(url, filePath, formData = {}, options = {}) {
 
 module.exports = {
   request,
-  uploadFile
+  uploadFile,
+  parseUploadResponse
 };

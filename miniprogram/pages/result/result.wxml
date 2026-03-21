@@ -1,7 +1,7 @@
 <view class="container">
   <view class="card section status">
     <view class="title-lg">制作完成</view>
-    <view class="text-muted">请确认照片效果与规格信息</view>
+    <view class="text-muted">请确认照片效果、质量提示与规格信息</view>
   </view>
 
   <view class="card section panel">
@@ -12,22 +12,32 @@
         <image class="preview" src="{{result.previewUrl}}" mode="aspectFit"></image>
       </view>
       <view class="preview-item">
-        <view class="text-muted">排版图预览</view>
-        <image class="preview" src="{{result.layoutUrl}}" mode="aspectFit"></image>
+        <view class="text-muted">高清结果图</view>
+        <image class="preview" src="{{result.resultUrl || result.previewUrl}}" mode="aspectFit"></image>
       </view>
     </view>
   </view>
 
   <view class="card section panel">
+    <view class="meta-row"><text>处理状态</text><text>{{result.status || '--'}}</text></view>
+    <view class="meta-row"><text>质量状态</text><text>{{result.qualityStatus || result.qualityText}}</text></view>
+    <view class="meta-row"><text>质量提示</text><text>{{result.qualityMessage || '请查看图片效果'}}</text></view>
+    <view class="meta-row"><text>任务 ID</text><text>{{result.taskId || '--'}}</text></view>
     <view class="meta-row"><text>场景类型</text><text>{{result.sceneName}}</text></view>
-    <view class="meta-row"><text>尺寸</text><text>{{result.sizeText}}</text></view>
-    <view class="meta-row"><text>背景颜色</text><text>{{result.backgroundColor}}</text></view>
+    <view class="meta-row"><text>尺寸</text><text>{{result.sizeText || result.sizeCode || '--'}}</text></view>
+    <view class="meta-row"><text>背景颜色</text><text>{{result.backgroundColorLabel || result.backgroundColor || '--'}}</text></view>
+    <view class="meta-row"><text>像素尺寸</text><text>{{result.width || '--'}} × {{result.height || '--'}} px</text></view>
     <view class="meta-row"><text>文件说明</text><text>{{result.fileDesc}}</text></view>
+  </view>
+
+  <view wx:if="{{result.warnings.length}}" class="card section panel">
+    <view class="title-md">处理提示</view>
+    <view wx:for="{{result.warnings}}" wx:key="*this" class="warning-item">• {{item}}</view>
   </view>
 
   <view class="button-row section">
     <view class="button-item"><primary-button text="保存预览图" type="secondary" bind:tap="savePreview"></primary-button></view>
-    <view class="button-item"><primary-button text="下载排版照片" type="secondary" bind:tap="downloadLayout"></primary-button></view>
+    <view class="button-item"><primary-button text="复制结果链接" type="secondary" bind:tap="downloadLayout"></primary-button></view>
   </view>
   <primary-button text="下载高清照片" bind:tap="downloadHd"></primary-button>
   <view style="height: 12rpx"></view>

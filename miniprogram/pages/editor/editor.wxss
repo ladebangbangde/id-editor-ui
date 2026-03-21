@@ -4,3 +4,5 @@
 .waiting { color: #94a3b8; font-size: 24rpx; }
 .button-row { display: flex; gap: 12rpx; }
 .button-item { flex: 1; }
+.warning-panel { background: #fff7ed; border: 1rpx solid #fed7aa; }
+.warning-text { margin-top: 8rpx; color: #c2410c; font-size: 24rpx; line-height: 1.6; }

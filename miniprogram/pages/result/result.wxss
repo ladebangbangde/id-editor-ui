@@ -7,3 +7,4 @@
 .meta-row:last-child { border-bottom: none; }
 .button-row { display: flex; gap: 12rpx; }
 .button-item { flex: 1; }
+.warning-item { margin-top: 10rpx; color: #b45309; font-size: 24rpx; line-height: 1.6; }
