@@ -1,4 +1,4 @@
-const { request, uploadFile } = require('./request');
+const { request, uploadFile, normalizeErrorPayload } = require('./request');
 
 function getBaseUrl() {
   return getApp().globalData.apiBaseUrl;
@@ -112,6 +112,15 @@ function normalizeAssetPayload(payload = {}) {
   return normalized;
 }
 
+function normalizePhotoProcessFailure(error = {}) {
+  const normalized = normalizeErrorPayload(error, '照片检测未通过');
+  return {
+    ...normalized,
+    data: normalized.data || {},
+    taskId: normalized.taskId || (normalized.data && normalized.data.taskId) || ''
+  };
+}
+
 function normalizeHistoryItem(item = {}) {
   const normalized = normalizeAssetPayload(item);
   const scene = normalizeScene(normalized.scene || {});
@@ -212,10 +221,14 @@ function processPhoto(filePath, payload = {}) {
 
   return uploadFile(`${getBaseUrl()}/photo/process`, filePath, formData, {
     showLoading: true,
-    loadingText: '处理中'
+    loadingText: '处理中',
+    showErrorToast: false
   })
     .then(unwrap)
-    .then((result) => normalizeAssetPayload(result));
+    .then((result) => normalizeAssetPayload(result))
+    .catch((error) => {
+      throw normalizePhotoProcessFailure(error);
+    });
 }
 
 function getPhotoTask(taskId) {
@@ -350,5 +363,10 @@ module.exports = {
   downloadPreview,
   downloadHd,
   downloadPrint,
-  getAdminStats
+  getAdminStats,
+  normalizeScene,
+  normalizeAssetUrl,
+  normalizeAssetPayload,
+  normalizeHistoryItem,
+  normalizePhotoProcessFailure
 };

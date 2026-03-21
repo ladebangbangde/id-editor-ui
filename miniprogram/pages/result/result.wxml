@@ -4,6 +4,15 @@
     <view class="text-muted">请确认照片效果、质量提示与规格信息</view>
   </view>
 
+  <view class="card section panel quality-banner {{result.riskLevel === 'warning' ? 'quality-banner-warning' : 'quality-banner-passed'}}">
+    <view class="quality-banner-header">
+      <view class="title-md">{{result.riskTitle}}</view>
+      <view class="quality-tag {{result.riskLevel === 'warning' ? 'quality-tag-warning' : 'quality-tag-passed'}}">{{result.qualityStatus || result.qualityText}}</view>
+    </view>
+    <view class="quality-message">{{result.riskMessage}}</view>
+    <view class="quality-count">{{result.riskCountText}}</view>
+  </view>
+
   <view class="card section panel">
     <view class="title-md">结果展示</view>
     <view class="preview-list">
@@ -21,7 +30,7 @@
   <view class="card section panel">
     <view class="meta-row"><text>处理状态</text><text>{{result.status || '--'}}</text></view>
     <view class="meta-row"><text>质量状态</text><text>{{result.qualityStatus || result.qualityText}}</text></view>
-    <view class="meta-row"><text>质量提示</text><text>{{result.qualityMessage || '请查看图片效果'}}</text></view>
+    <view class="meta-row"><text>质量提示</text><text class="meta-value-emphasis">{{result.qualityMessage || '请查看图片效果'}}</text></view>
     <view class="meta-row"><text>任务 ID</text><text>{{result.taskId || '--'}}</text></view>
     <view class="meta-row"><text>场景类型</text><text>{{result.sceneName}}</text></view>
     <view class="meta-row"><text>尺寸</text><text>{{result.sizeText || result.sizeCode || '--'}}</text></view>
@@ -30,9 +39,15 @@
     <view class="meta-row"><text>文件说明</text><text>{{result.fileDesc}}</text></view>
   </view>
 
-  <view wx:if="{{result.warnings.length}}" class="card section panel">
-    <view class="title-md">处理提示</view>
-    <view wx:for="{{result.warnings}}" wx:key="*this" class="warning-item">• {{item}}</view>
+  <view wx:if="{{result.warnings.length}}" class="card section panel warning-panel">
+    <view class="warning-panel-header">
+      <view class="title-md">风险提示详情</view>
+      <view class="warning-badge">{{result.warnings.length}} 条</view>
+    </view>
+    <view wx:for="{{result.warnings}}" wx:key="*this" class="warning-item">
+      <view class="warning-dot"></view>
+      <view class="warning-content">{{item}}</view>
+    </view>
   </view>
 
   <view class="button-row section">

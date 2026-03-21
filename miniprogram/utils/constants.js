@@ -89,6 +89,7 @@ const STORAGE_KEYS = {
   CURRENT_SCENE: 'current_scene',
   CURRENT_UPLOAD: 'current_upload',
   CURRENT_RESULT: 'current_result',
+  CURRENT_PROCESS_FAILURE: 'current_process_failure',
   HISTORY_LIST: 'history_list'
 };
 

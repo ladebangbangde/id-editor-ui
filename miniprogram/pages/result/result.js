@@ -11,6 +11,25 @@ function buildQualityText(result = {}) {
   return '处理中';
 }
 
+function buildRiskSummary(result = {}) {
+  const warnings = Array.isArray(result.warnings) ? result.warnings : [];
+  if (result.qualityStatus === 'WARNING' || warnings.length) {
+    return {
+      riskLevel: 'warning',
+      riskTitle: '请重点关注以下风险提示',
+      riskMessage: result.qualityMessage || '照片已生成，但存在需要确认的质量风险。',
+      riskCountText: warnings.length ? `共 ${warnings.length} 条待确认提示` : '请重点核对生成效果'
+    };
+  }
+
+  return {
+    riskLevel: 'passed',
+    riskTitle: '本次检测结果正常',
+    riskMessage: result.qualityMessage || '质量检测通过，可继续保存或下载。',
+    riskCountText: '未发现额外风险提示'
+  };
+}
+
 Page({
   data: {
     result: null
@@ -18,12 +37,17 @@ Page({
 
   onShow() {
     const result = storage.get(STORAGE_KEYS.CURRENT_RESULT, null) || MOCK_RESULT;
+    const warnings = Array.isArray(result && result.warnings) ? result.warnings : [];
     this.setData({
       result: {
-        warnings: [],
+        warnings,
         ...result,
-        warnings: Array.isArray(result && result.warnings) ? result.warnings : [],
-        qualityText: buildQualityText(result || {})
+        warnings,
+        qualityText: buildQualityText(result || {}),
+        ...buildRiskSummary({
+          ...result,
+          warnings
+        })
       }
     });
   },
