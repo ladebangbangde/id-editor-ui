@@ -4,6 +4,7 @@
     "pages/upload/upload",
     "pages/editor/editor",
     "pages/result/result",
+    "pages/process-failure/process-failure",
     "pages/custom-size/custom-size",
     "pages/history/history",
     "pages/history-detail/history-detail",

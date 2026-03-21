@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "检测未通过",
+  "usingComponents": {
+    "primary-button": "/components/primary-button/index"
+  }
+}

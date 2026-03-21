@@ -21,6 +21,32 @@ function showError(message) {
   wx.showToast({ title: message || '请求失败', icon: 'none' });
 }
 
+function normalizeList(list) {
+  return Array.isArray(list) ? list.filter(Boolean) : [];
+}
+
+function normalizeErrorPayload(payload = {}, fallbackMessage = '请求失败') {
+  const data = payload && typeof payload.data === 'object' ? payload.data : {};
+  return {
+    ...payload,
+    message: payload.message || payload.msg || fallbackMessage,
+    code: payload.code || '',
+    data,
+    taskId: payload.taskId || data.taskId || '',
+    reasons: normalizeList(payload.reasons || data.reasons),
+    suggestions: normalizeList(payload.suggestions || data.suggestions),
+    isBusinessError: true
+  };
+}
+
+function rejectWithError(reject, payload, fallbackMessage, shouldToast) {
+  const error = normalizeErrorPayload(payload, fallbackMessage);
+  if (shouldToast) {
+    showError(error.message);
+  }
+  reject(error);
+}
+
 function parseUploadResponse(rawData) {
   if (!rawData) return {};
   if (typeof rawData === 'object') return rawData;
@@ -32,7 +58,12 @@ function parseUploadResponse(rawData) {
 }
 
 function request(url, method = 'GET', data = {}, options = {}) {
-  const { showLoading = false, loadingText = '加载中', header = {} } = options;
+  const {
+    showLoading = false,
+    loadingText = '加载中',
+    header = {},
+    showErrorToast = true
+  } = options;
 
   if (showLoading) {
     wx.showLoading({ title: loadingText, mask: true });
@@ -48,19 +79,28 @@ function request(url, method = 'GET', data = {}, options = {}) {
         const body = res.data || {};
         if (res.statusCode >= 200 && res.statusCode < 300) {
           if (body.success === false) {
-            showError(body.message);
-            reject(body);
+            rejectWithError(reject, body, '请求失败', showErrorToast);
             return;
           }
           resolve(body);
           return;
         }
-        showError(body.message || '网络请求失败');
-        reject(res);
+
+        rejectWithError(reject, {
+          ...body,
+          statusCode: res.statusCode
+        }, body.message || '网络请求失败', showErrorToast);
       },
       fail(err) {
-        showError('网络异常，请稍后重试');
-        reject(err);
+        const error = {
+          ...err,
+          message: '网络异常，请稍后重试',
+          isNetworkError: true
+        };
+        if (showErrorToast) {
+          showError(error.message);
+        }
+        reject(error);
       },
       complete() {
         if (showLoading) wx.hideLoading();
@@ -70,7 +110,13 @@ function request(url, method = 'GET', data = {}, options = {}) {
 }
 
 function uploadFile(url, filePath, formData = {}, options = {}) {
-  const { showLoading = false, loadingText = '上传中', header = {} } = options;
+  const {
+    showLoading = false,
+    loadingText = '上传中',
+    header = {},
+    showErrorToast = true
+  } = options;
+
   if (showLoading) {
     wx.showLoading({ title: loadingText, mask: true });
   }
@@ -87,23 +133,38 @@ function uploadFile(url, filePath, formData = {}, options = {}) {
           const body = parseUploadResponse(res.data);
           if (res.statusCode >= 200 && res.statusCode < 300) {
             if (body.success === false) {
-              showError(body.message || '上传失败');
-              reject(body);
+              rejectWithError(reject, body, '上传失败', showErrorToast);
               return;
             }
             resolve(body);
             return;
           }
-          showError(body.message || '上传失败');
-          reject(body);
+
+          rejectWithError(reject, {
+            ...body,
+            statusCode: res.statusCode
+          }, body.message || '上传失败', showErrorToast);
         } catch (error) {
-          showError(error.message || '上传响应解析失败');
-          reject(error);
+          const nextError = {
+            ...error,
+            message: error.message || '上传响应解析失败'
+          };
+          if (showErrorToast) {
+            showError(nextError.message);
+          }
+          reject(nextError);
         }
       },
       fail(err) {
-        showError('上传失败，请重试');
-        reject(err);
+        const error = {
+          ...err,
+          message: '上传失败，请重试',
+          isNetworkError: true
+        };
+        if (showErrorToast) {
+          showError(error.message);
+        }
+        reject(error);
       },
       complete() {
         if (showLoading) wx.hideLoading();
@@ -115,5 +176,6 @@ function uploadFile(url, filePath, formData = {}, options = {}) {
 module.exports = {
   request,
   uploadFile,
-  parseUploadResponse
+  parseUploadResponse,
+  normalizeErrorPayload
 };

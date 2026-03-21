@@ -1,0 +1,33 @@
+<view class="container">
+  <view class="card section hero-card">
+    <view class="hero-icon">!</view>
+    <view class="title-lg">照片未通过检测</view>
+    <view class="hero-desc">{{failure.message}}</view>
+  </view>
+
+  <view class="card section panel">
+    <view class="meta-row"><text>错误码</text><text>{{failure.code || '--'}}</text></view>
+    <view class="meta-row"><text>任务 ID</text><text>{{failure.taskId || '--'}}</text></view>
+    <view class="meta-row"><text>检测时间</text><text>{{failure.createdAt || '--'}}</text></view>
+  </view>
+
+  <view class="card section panel reason-panel">
+    <view class="title-md">未通过原因</view>
+    <view wx:for="{{failure.reasons}}" wx:key="index" class="detail-item">
+      <view class="detail-index">{{index + 1}}</view>
+      <view class="detail-text">{{item}}</view>
+    </view>
+  </view>
+
+  <view class="card section panel suggestion-panel">
+    <view class="title-md">建议处理方式</view>
+    <view wx:for="{{failure.suggestions}}" wx:key="index" class="detail-item">
+      <view class="detail-index success">{{index + 1}}</view>
+      <view class="detail-text">{{item}}</view>
+    </view>
+  </view>
+
+  <primary-button text="返回修改后重试" bind:tap="retry"></primary-button>
+  <view style="height: 12rpx"></view>
+  <primary-button text="重新上传照片" type="secondary" bind:tap="backToUpload"></primary-button>
+</view>

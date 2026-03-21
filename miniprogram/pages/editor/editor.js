@@ -42,6 +42,16 @@ function normalizeWarnings(warnings) {
   return Array.isArray(warnings) ? warnings.filter(Boolean) : [];
 }
 
+function normalizeFailureDetail(error = {}) {
+  return {
+    message: error.message || error.msg || '照片检测未通过，请按提示调整后重试',
+    code: error.code || '',
+    taskId: error.taskId || (error.data && error.data.taskId) || '',
+    reasons: Array.isArray(error.reasons) ? error.reasons.filter(Boolean) : [],
+    suggestions: Array.isArray(error.suggestions) ? error.suggestions.filter(Boolean) : []
+  };
+}
+
 Page({
   data: {
     sceneInfo: {},
@@ -117,6 +127,19 @@ Page({
 
   goBack() {
     wx.navigateBack({ delta: 1 });
+  },
+
+  openProcessFailurePage(error = {}) {
+    storage.set(STORAGE_KEYS.CURRENT_PROCESS_FAILURE, {
+      ...normalizeFailureDetail(error),
+      imagePath: this.data.imagePath,
+      sceneInfo: this.data.sceneInfo,
+      selectedColor: this.data.selectedColor,
+      sizeCode: this.data.sizeCode,
+      createdAt: formatTime(Date.now())
+    });
+
+    wx.navigateTo({ url: '/pages/process-failure/process-failure' });
   },
 
   async refreshTaskResult(taskId, fallbackResult = {}) {
@@ -205,8 +228,13 @@ Page({
         sceneInfo
       });
       storage.set(STORAGE_KEYS.CURRENT_RESULT, result);
+      storage.remove(STORAGE_KEYS.CURRENT_PROCESS_FAILURE);
       wx.navigateTo({ url: '/pages/result/result' });
     } catch (error) {
+      if (error && (error.reasons || error.suggestions || error.taskId || error.code)) {
+        this.openProcessFailurePage(error);
+        return;
+      }
       wx.showToast({ title: error.message || error.msg || error.errMsg || '生成失败，请重试', icon: 'none' });
     } finally {
       this.setData({ generating: false });
