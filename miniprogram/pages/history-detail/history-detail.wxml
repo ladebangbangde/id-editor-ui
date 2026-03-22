@@ -8,7 +8,17 @@
       <view class="meta-row"><text>场景名称</text><text>{{record.sceneName}}</text></view>
       <view class="meta-row"><text>尺寸信息</text><text>{{record.sizeText}}</text></view>
       <view class="meta-row"><text>背景颜色</text><text>{{record.backgroundColor}}</text></view>
+      <view class="meta-row"><text>质量状态</text><text>{{record.qualityStatus || '--'}}</text></view>
+      <view class="meta-row"><text>质量提示</text><text>{{record.qualityMessage || '--'}}</text></view>
       <view class="meta-row"><text>创建时间</text><text>{{record.createdAt}}</text></view>
+    </view>
+
+    <view wx:if="{{record.warnings.length}}" class="card section panel">
+      <view class="title-md">风险提示</view>
+      <view wx:for="{{record.warnings}}" wx:key="index" class="meta-row">
+        <text>提示{{index + 1}}</text>
+        <text>{{item}}</text>
+      </view>
     </view>
 
     <view class="button-row">

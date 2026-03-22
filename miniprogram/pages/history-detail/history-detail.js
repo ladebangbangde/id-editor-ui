@@ -1,18 +1,26 @@
-const { getImageDetail, downloadPreview } = require('../../utils/api');
+const { getPhotoTask } = require('../../utils/api');
 const { formatTime, getColorLabel } = require('../../utils/format');
 
 function normalizeDetail(detail = {}) {
-  const scene = detail.scene || {};
-  const result = detail.result || {};
+  const warnings = Array.isArray(detail.warnings) ? detail.warnings : [];
   return {
-    imageId: detail.imageId || detail.id,
-    resultId: result.resultId || result.id || detail.resultId,
-    sceneName: scene.sceneName || detail.sceneName || '证件照',
+    taskId: detail.taskId || detail.id,
+    imageId: detail.imageId || '',
+    sceneName: detail.sceneName || '证件照',
     sizeText:
       detail.sizeText ||
-      `${scene.widthMm || detail.widthMm || '--'}×${scene.heightMm || detail.heightMm || '--'}mm`,
-    backgroundColor: getColorLabel(result.backgroundColor || detail.backgroundColor),
-    previewUrl: result.previewUrl || detail.previewUrl || detail.originalUrl || '',
+      detail.sizeCode ||
+      `${detail.widthMm || '--'}×${detail.heightMm || '--'}mm`,
+    sizeCode: detail.sizeCode || '',
+    backgroundColor: detail.backgroundColorLabel
+      || (detail.backgroundColor ? getColorLabel(detail.backgroundColor) : '')
+      || detail.backgroundColor
+      || '--',
+    previewUrl: detail.previewUrl || detail.resultUrl || detail.originalUrl || '',
+    resultUrl: detail.resultUrl || detail.previewUrl || '',
+    qualityStatus: detail.qualityStatus || '',
+    qualityMessage: detail.qualityMessage || '',
+    warnings,
     createdAt: formatTime(detail.createdAt)
   };
 }
@@ -23,13 +31,14 @@ Page({
   },
 
   onLoad(options) {
-    if (!options.imageId) return;
-    this.fetchDetail(options.imageId);
+    const taskId = options.taskId || options.imageId;
+    if (!taskId) return;
+    this.fetchDetail(taskId);
   },
 
-  async fetchDetail(imageId) {
+  async fetchDetail(taskId) {
     try {
-      const detail = await getImageDetail(imageId);
+      const detail = await getPhotoTask(taskId);
       this.setData({ record: normalizeDetail(detail) });
     } catch (error) {
       wx.showToast({ title: '历史详情加载失败', icon: 'none' });
@@ -39,15 +48,15 @@ Page({
 
   async downloadAgain() {
     const { record } = this.data;
-    if (!record || !record.resultId) {
+    const downloadUrl = record && (record.resultUrl || record.previewUrl);
+    if (!downloadUrl) {
       wx.showToast({ title: '无可下载文件', icon: 'none' });
       return;
     }
 
     try {
-      const data = await downloadPreview(record.resultId);
       wx.setClipboardData({
-        data: data.downloadUrl || data.url || '',
+        data: downloadUrl,
         success: () => wx.showToast({ title: '下载链接已复制', icon: 'none' })
       });
     } catch (error) {
