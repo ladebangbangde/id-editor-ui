@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "换装结果",
+  "usingComponents": {
+    "primary-button": "/components/primary-button/index"
+  }
+}

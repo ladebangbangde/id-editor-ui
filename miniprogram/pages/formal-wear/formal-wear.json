@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "一键换装",
+  "usingComponents": {
+    "primary-button": "/components/primary-button/index"
+  }
+}

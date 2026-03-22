@@ -2,6 +2,8 @@
   "pages": [
     "pages/home/home",
     "pages/upload/upload",
+    "pages/formal-wear/formal-wear",
+    "pages/formal-wear-result/formal-wear-result",
     "pages/editor/editor",
     "pages/result/result",
     "pages/process-failure/process-failure",

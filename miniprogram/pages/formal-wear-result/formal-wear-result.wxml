@@ -1,0 +1,67 @@
+<view class="container result-page" wx:if="{{result}}">
+  <view class="card section result-header">
+    <view class="result-header-top">
+      <view>
+        <view class="title-lg">换装完成</view>
+        <view class="text-muted result-desc">新的正式穿搭预览已经准备好啦，满意的话就直接保存到相册。</view>
+      </view>
+      <view class="result-status {{result.isMock ? 'result-status-mock' : ''}}">{{result.isMock ? '占位预览' : '已生成'}}</view>
+    </view>
+    <view class="result-tags">
+      <view class="result-tag">{{result.genderLabel}}</view>
+      <view class="result-tag">{{result.styleLabel}}</view>
+      <view class="result-tag">{{result.colorLabel}}</view>
+    </view>
+  </view>
+
+  <view class="card section preview-card">
+    <view class="preview-card-top">
+      <view class="title-md">结果展示</view>
+      <view wx:if="{{result.originalUrl}}" class="compare-switch">
+        <view
+          class="compare-pill {{compareMode === 'original' ? 'compare-pill-active' : ''}}"
+          data-mode="original"
+          bindtap="switchCompareMode"
+        >原图</view>
+        <view
+          class="compare-pill {{compareMode === 'after' ? 'compare-pill-active' : ''}}"
+          data-mode="after"
+          bindtap="switchCompareMode"
+        >换装后</view>
+      </view>
+    </view>
+
+    <image
+      class="result-image"
+      src="{{compareMode === 'original' ? result.originalUrl : (result.resultUrl || result.previewUrl)}}"
+      mode="aspectFit"
+    ></image>
+
+    <view class="preview-caption">
+      {{compareMode === 'original' ? '当前查看原图，用来和结果对比。' : '当前查看换装后的预览图。'}}
+    </view>
+  </view>
+
+  <view class="card section summary-card">
+    <view class="meta-row"><text>照片来源</text><text>{{result.imageName || '已上传照片'}}</text></view>
+    <view class="meta-row"><text>换装风格</text><text>{{result.styleLabel}}</text></view>
+    <view class="meta-row"><text>服装颜色</text><text>{{result.colorLabel}}</text></view>
+    <view class="meta-row"><text>人物设定</text><text>{{result.genderLabel}}</text></view>
+    <view class="meta-row"><text>任务状态</text><text>{{result.status || 'success'}}</text></view>
+    <view class="meta-row"><text>保存说明</text><text class="meta-value-emphasis">保存后会直接写入系统相册</text></view>
+  </view>
+
+  <view wx:if="{{result.tips.length}}" class="card section tip-card">
+    <view class="title-md">提示</view>
+    <view wx:for="{{result.tips}}" wx:key="*this" class="tip-item">
+      <view class="tip-dot"></view>
+      <view class="tip-text">{{item}}</view>
+    </view>
+  </view>
+
+  <view class="section action-stack">
+    <primary-button text="保存到相册" bind:tap="saveResult"></primary-button>
+    <primary-button text="重新制作" type="secondary" bind:tap="remake"></primary-button>
+    <view class="ghost-home" bindtap="goHome">返回首页</view>
+  </view>
+</view>

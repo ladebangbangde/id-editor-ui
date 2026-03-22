@@ -90,6 +90,8 @@ const STORAGE_KEYS = {
   CURRENT_UPLOAD: 'current_upload',
   CURRENT_RESULT: 'current_result',
   CURRENT_PROCESS_FAILURE: 'current_process_failure',
+  FORMAL_WEAR_DRAFT: 'formal_wear_draft',
+  FORMAL_WEAR_RESULT: 'formal_wear_result',
   HISTORY_LIST: 'history_list'
 };
 

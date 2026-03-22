@@ -402,6 +402,75 @@ function getAdminStats(token) {
   }).then(unwrap);
 }
 
+
+function normalizeFormalWearTask(task = {}) {
+  const normalized = normalizeAssetPayload(task);
+  const options = normalized.options || normalized.config || {};
+  const progress = Number(normalized.progress || normalized.percent || 0);
+  const status = String(normalized.status || normalized.taskStatus || normalized.task_status || '').toLowerCase();
+
+  return {
+    ...normalized,
+    taskId: normalized.taskId || normalized.task_id || normalized.id || '',
+    status: status || 'processing',
+    progress: Number.isFinite(progress) ? progress : 0,
+    previewUrl: normalized.previewUrl || normalized.resultUrl || normalized.downloadUrl || '',
+    resultUrl: normalized.resultUrl || normalized.previewUrl || normalized.downloadUrl || '',
+    originalUrl: normalized.originalUrl || normalized.sourceUrl || normalized.source_url || '',
+    options: {
+      gender: options.gender || normalized.gender || '',
+      style: options.style || normalized.style || '',
+      color: options.color || normalized.color || ''
+    },
+    tips: Array.isArray(normalized.tips) ? normalized.tips : []
+  };
+}
+
+function buildFormalWearMockResult(payload = {}) {
+  const encodedStyle = encodeURIComponent(payload.styleLabel || '标准正装');
+  const encodedColor = encodeURIComponent(payload.colorLabel || '黑色');
+  const originalUrl = payload.originalUrl || payload.localImagePath || '';
+
+  return normalizeFormalWearTask({
+    taskId: `mock_formal_wear_${Date.now()}`,
+    status: 'success',
+    progress: 100,
+    originalUrl,
+    previewUrl: `https://dummyimage.com/900x1200/f3f6ff/3558d8&text=${encodedStyle}%20${encodedColor}`,
+    resultUrl: `https://dummyimage.com/1200x1600/eaf0ff/2643b7&text=%E6%8D%A2%E8%A3%85%E5%AE%8C%E6%88%90`,
+    options: {
+      gender: payload.gender || '',
+      style: payload.style || '',
+      color: payload.color || ''
+    },
+    tips: ['当前为前端占位结果，待 server 接口完成后可无缝替换为真实生成结果。']
+  });
+}
+
+function createFormalWearTask(filePath, payload = {}) {
+  const formData = {
+    gender: payload.gender || '',
+    style: payload.style || '',
+    color: payload.color || ''
+  };
+
+  return uploadFile(`${getBaseUrl()}/formal-wear/tasks`, filePath, formData, {
+    showLoading: true,
+    loadingText: '提交中',
+    showErrorToast: false
+  })
+    .then(unwrap)
+    .then((result) => normalizeFormalWearTask(result));
+}
+
+function getFormalWearTask(taskId) {
+  return request(`${getBaseUrl()}/formal-wear/tasks/${taskId}`, 'GET', {}, {
+    showErrorToast: false
+  })
+    .then(unwrap)
+    .then((result) => normalizeFormalWearTask(result));
+}
+
 const generateIdPhoto = generateImage;
 
 module.exports = {
@@ -428,10 +497,14 @@ module.exports = {
   downloadPreview,
   downloadHd,
   downloadPrint,
+  createFormalWearTask,
+  getFormalWearTask,
+  buildFormalWearMockResult,
   getAdminStats,
   normalizeScene,
   normalizeAssetUrl,
   normalizeAssetPayload,
   normalizeHistoryItem,
-  normalizePhotoProcessFailure
+  normalizePhotoProcessFailure,
+  normalizeFormalWearTask
 };

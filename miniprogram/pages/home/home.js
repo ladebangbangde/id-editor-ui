@@ -42,8 +42,7 @@ const QUICK_ACTIONS = [
     key: 'formal-wear',
     title: '一键换装',
     subtitle: '一键切换正装风格，适配报名与证件场景',
-    routeType: 'feature',
-    toastText: '智能换正装功能开发中'
+    routeType: 'formal-wear'
   }
 ];
 
@@ -501,6 +500,11 @@ Page({
 
     if (action.routeType === 'background') {
       wx.navigateTo({ url: '/pages/upload/upload?mode=background' });
+      return;
+    }
+
+    if (action.routeType === 'formal-wear') {
+      wx.navigateTo({ url: '/pages/formal-wear/formal-wear' });
       return;
     }
 
