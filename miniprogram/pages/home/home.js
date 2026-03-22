@@ -39,35 +39,11 @@ const MAIN_ACTIONS = [
 
 const QUICK_ACTIONS = [
   {
-    key: 'custom-size',
-    title: '自定义像素',
-    iconText: '定',
-    iconClass: 'icon-custom',
-    routeType: 'custom-size'
-  },
-  {
     key: 'formal-wear',
-    title: '智能换正装',
-    iconText: '装',
-    iconClass: 'icon-suit',
+    title: '换装',
+    subtitle: '一键切换正装风格，适配报名与证件场景',
     routeType: 'feature',
     toastText: '智能换正装功能开发中'
-  },
-  {
-    key: 'vip-custom',
-    title: '高端定制',
-    iconText: '定',
-    iconClass: 'icon-vip',
-    routeType: 'feature',
-    toastText: '高端定制功能开发中'
-  },
-  {
-    key: 'receipt',
-    title: '回执办理',
-    iconText: '回',
-    iconClass: 'icon-receipt',
-    routeType: 'feature',
-    toastText: '回执办理功能开发中'
   }
 ];
 
@@ -339,14 +315,16 @@ function buildPixelText(item = {}) {
 
 function normalizeTemplate(item = {}) {
   const sceneKey = item.sceneKey || item.scene_key || '';
+  const sceneName = item.sceneName || item.scene_name || item.name || '';
   return {
     ...item,
     name: getFriendlySceneName({
       sceneKey,
       sizeCode: item.sizeCode || item.size_code || '',
-      sceneName: item.name || item.sceneName || item.scene_name || ''
+      sceneName
     }, '未命名模板'),
     sceneKey,
+    sceneName,
     tags: Array.isArray(item.tags) ? item.tags : [],
     tip: item.tip || item.description || getFriendlySceneHint({ sceneKey }) || '',
     hot: Boolean(item.hot || item.featured),
@@ -356,6 +334,26 @@ function normalizeTemplate(item = {}) {
 
 function getMockTemplatesByTab(tabKey) {
   return (HOME_TEMPLATE_MAP[tabKey] || []).map(normalizeTemplate);
+}
+
+function matchTemplateKeyword(item = {}, keyword = '') {
+  const normalizedKeyword = String(keyword || '').trim().toLowerCase();
+  if (!normalizedKeyword) {
+    return true;
+  }
+
+  const searchText = [
+    item.name,
+    item.sceneName,
+    item.tip,
+    item.pixelText,
+    ...(Array.isArray(item.tags) ? item.tags : [])
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  return searchText.includes(normalizedKeyword);
 }
 
 Page({
@@ -368,12 +366,29 @@ Page({
     activeTabLabel: HOME_TABS[0].label,
     mainActions: MAIN_ACTIONS,
     quickActions: QUICK_ACTIONS,
+    allTemplateList: [],
     templateList: [],
+    searchKeyword: '',
+    searchActive: false,
     isEmpty: false
   },
 
   onLoad() {
     this.loadHomeTemplates();
+  },
+
+  applyTemplateFilter(sourceList = this.data.allTemplateList, keyword = this.data.searchKeyword) {
+    const normalizedKeyword = String(keyword || '').trim();
+    const nextList = normalizedKeyword
+      ? sourceList.filter((item) => matchTemplateKeyword(item, normalizedKeyword))
+      : sourceList;
+
+    this.setData({
+      templateList: nextList,
+      searchKeyword: normalizedKeyword,
+      searchActive: Boolean(normalizedKeyword),
+      isEmpty: nextList.length === 0
+    });
   },
 
   async loadHomeTemplates(tabKey = this.data.activeTab) {
@@ -398,19 +413,19 @@ Page({
 
       this.setData({
         tabs: nextTabs,
-        templateList: normalizedList,
-        isEmpty: normalizedList.length === 0,
+        allTemplateList: normalizedList,
         loading: false
       });
+      this.applyTemplateFilter(normalizedList, this.data.searchKeyword);
     } catch (error) {
       const fallbackList = getMockTemplatesByTab(currentTab.key);
       this.setData({
-        templateList: fallbackList,
-        isEmpty: fallbackList.length === 0,
+        allTemplateList: fallbackList,
         loading: false,
         error: fallbackList.length === 0,
         errorMessage: '网络异常，已尝试切换本地模板，请稍后重试。'
       });
+      this.applyTemplateFilter(fallbackList, this.data.searchKeyword);
 
       if (fallbackList.length) {
         wx.showToast({ title: '已切换为默认模板', icon: 'none' });
@@ -424,6 +439,15 @@ Page({
       return;
     }
     this.loadHomeTemplates(key);
+  },
+
+  handleSearchInput(event) {
+    const keyword = event.detail.value || '';
+    this.applyTemplateFilter(this.data.allTemplateList, keyword);
+  },
+
+  handleSearchClear() {
+    this.applyTemplateFilter(this.data.allTemplateList, '');
   },
 
   handleMainActionTap(event) {

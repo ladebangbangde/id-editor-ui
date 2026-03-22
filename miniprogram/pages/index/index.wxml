@@ -1,6 +1,6 @@
 <view class="container">
   <view class="card hero">
-    <view class="section-title">AI证件照制作</view>
+    <view class="section-title">棒棒证件照生成</view>
     <view class="section-desc">上传自拍，一键生成专业证件照</view>
   </view>
 

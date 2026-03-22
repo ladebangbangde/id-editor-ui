@@ -3,7 +3,7 @@
     <view class="avatar">用</view>
     <view>
       <view class="title-md">微信用户</view>
-      <view class="text-muted">欢迎使用 AI证件照制作</view>
+      <view class="text-muted">欢迎使用 棒棒证件照生成</view>
     </view>
   </view>
 

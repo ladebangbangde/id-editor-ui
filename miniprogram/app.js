@@ -7,7 +7,7 @@ App({
     authToken: '',
     adminToken: '',
     demoUserId: 'u_demo_001',
-    appName: 'AI证件照制作',
+    appName: '棒棒证件照生成',
     me: null
   },
 

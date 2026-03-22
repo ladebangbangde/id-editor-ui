@@ -1,5 +1,5 @@
 {
-  "navigationBarTitleText": "棒棒证件照生成器",
+  "navigationBarTitleText": "棒棒证件照生成",
   "usingComponents": {
     "primary-button": "/components/primary-button/index"
   }

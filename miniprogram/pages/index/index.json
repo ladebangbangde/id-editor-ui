@@ -1,5 +1,5 @@
 {
-  "navigationBarTitleText": "AI证件照制作",
+  "navigationBarTitleText": "棒棒证件照生成",
   "usingComponents": {
     "size-selector": "/components/size-selector/index",
     "color-selector": "/components/color-selector/index",
