@@ -283,3 +283,28 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.knowledge-card {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18rpx;
+  padding: 24rpx;
+  background: linear-gradient(180deg, #fffdf7 0%, #fff8ef 100%);
+}
+
+.knowledge-copy {
+  flex: 1;
+}
+
+.knowledge-desc {
+  margin-top: 10rpx;
+  line-height: 1.7;
+}
+
+.knowledge-cat {
+  flex-shrink: 0;
+  font-size: 54rpx;
+  line-height: 1;
+  opacity: 0.9;
+}

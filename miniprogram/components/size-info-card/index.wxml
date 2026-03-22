@@ -1,7 +1,7 @@
 <view class="size-card">
-  <view class="row"><text>当前场景</text><text>{{info.sceneName}}</text></view>
+  <view class="row"><text>当前场景</text><text>{{displayName}}</text></view>
   <view class="row"><text>冲印尺寸</text><text>{{info.widthMm}}×{{info.heightMm}}mm</text></view>
   <view class="row"><text>像素尺寸</text><text>{{info.pixelWidth}}×{{info.pixelHeight}}</text></view>
   <view class="row"><text>背景颜色</text><text>{{colorLabel}}</text></view>
-  <view class="row"><text>适用说明</text><text>{{info.description}}</text></view>
+  <view class="row"><text>适用说明</text><text>{{displayHint}}</text></view>
 </view>

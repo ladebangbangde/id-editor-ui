@@ -132,9 +132,11 @@ function normalizeHistoryItem(item = {}) {
 
   return {
     ...normalized,
+    taskId: normalized.taskId || normalized.task_id || normalized.id || '',
     imageId: normalized.imageId || normalized.image_id || normalized.id || '',
     scene,
     result,
+    sceneKey: normalized.sceneKey || normalized.scene_key || scene.sceneKey || '',
     sceneName: normalized.sceneName || normalized.scene_name || scene.sceneName || scene.name || '',
     widthMm,
     heightMm,
@@ -145,6 +147,32 @@ function normalizeHistoryItem(item = {}) {
     previewUrl: normalized.previewUrl || normalized.preview_url
       || result.previewUrl || result.preview_url
       || normalized.originalUrl || normalized.original_url || '',
+    resultUrl: normalized.resultUrl || normalized.result_url
+      || result.resultUrl || result.result_url
+      || normalized.downloadUrl || normalized.download_url || '',
+    hdUrl: normalized.hdUrl || normalized.hd_url
+      || result.hdUrl || result.hd_url
+      || normalized.resultUrl || normalized.result_url
+      || result.resultUrl || result.result_url
+      || '',
+    layoutUrl: normalized.layoutUrl || normalized.layout_url
+      || result.layoutUrl || result.layout_url
+      || normalized.printLayoutUrl || normalized.print_layout_url
+      || result.printLayoutUrl || result.print_layout_url
+      || '',
+    printLayoutUrl: normalized.printLayoutUrl || normalized.print_layout_url
+      || result.printLayoutUrl || result.print_layout_url
+      || normalized.layoutUrl || normalized.layout_url
+      || result.layoutUrl || result.layout_url
+      || '',
+    qualityStatus: normalized.qualityStatus || normalized.quality_status
+      || result.qualityStatus || result.quality_status || '',
+    qualityMessage: normalized.qualityMessage || normalized.quality_message
+      || result.qualityMessage || result.quality_message || '',
+    sizeCode: normalized.sizeCode || normalized.size_code || result.sizeCode || result.size_code || '',
+    warnings: Array.isArray(normalized.warnings)
+      ? normalized.warnings
+      : (Array.isArray(result.warnings) ? result.warnings : []),
     createdAt: normalized.createdAt || normalized.created_at || '',
     status: normalized.status || normalized.taskStatus || normalized.task_status || ''
   };
@@ -234,7 +262,43 @@ function processPhoto(filePath, payload = {}) {
 function getPhotoTask(taskId) {
   return request(`${getBaseUrl()}/photo/tasks/${taskId}`)
     .then(unwrap)
-    .then((payload) => normalizeAssetPayload(payload));
+    .then((payload) => normalizeHistoryItem(payload));
+}
+
+function getPhotoHistory(page = 1, pageSize = 10) {
+  return request(`${getBaseUrl()}/photo/history?page=${page}&pageSize=${pageSize}`)
+    .then(unwrap)
+    .then((payload) => {
+      if (Array.isArray(payload)) {
+        return {
+          list: payload.map(normalizeHistoryItem)
+        };
+      }
+      if (payload && Array.isArray(payload.list)) {
+        return {
+          ...payload,
+          list: payload.list.map(normalizeHistoryItem)
+        };
+      }
+      if (payload && Array.isArray(payload.items)) {
+        return {
+          ...payload,
+          list: payload.items.map(normalizeHistoryItem),
+          items: payload.items.map(normalizeHistoryItem)
+        };
+      }
+      if (payload && Array.isArray(payload.records)) {
+        return {
+          ...payload,
+          list: payload.records.map(normalizeHistoryItem),
+          records: payload.records.map(normalizeHistoryItem)
+        };
+      }
+      return {
+        ...payload,
+        list: []
+      };
+    });
 }
 
 function getHomeTemplateConfig(category = '') {
@@ -348,6 +412,7 @@ module.exports = {
   getSceneDetail,
   getPhotoSpecs,
   processPhoto,
+  getPhotoHistory,
   getPhotoTask,
   // legacy APIs, kept for compatibility only.
   uploadImage,

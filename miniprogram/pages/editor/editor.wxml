@@ -1,6 +1,6 @@
 <view class="container">
   <view class="card section panel">
-    <view class="title-lg">{{sceneInfo.sceneName || '自定义尺寸'}}</view>
+    <view class="title-lg">{{displaySceneName || '自定义尺寸'}}</view>
     <view class="text-muted">{{sceneInfo.widthMm || '--'}}×{{sceneInfo.heightMm || '--'}}mm / 蓝白红底可选</view>
   </view>
 
@@ -23,8 +23,8 @@
   </view>
 
   <view wx:if="{{sizeCode}}" class="card section panel">
-    <view class="title-md">服务端处理规格</view>
-    <view class="text-muted">当前将按 {{sizeCode}} 规格调用新链路处理。</view>
+    <view class="title-md">正在为你准备的照片规格</view>
+    <view class="text-muted">会按当前选择生成更适合上传的标准照片，不会出现难懂的规格代码。</view>
   </view>
 
   <view wx:if="{{unsupportedMessage}}" class="card section panel warning-panel">

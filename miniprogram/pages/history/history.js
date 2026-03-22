@@ -1,26 +1,50 @@
-const { getHistory } = require('../../utils/api');
-const { formatTime } = require('../../utils/format');
+const { getPhotoHistory } = require('../../utils/api');
+const { formatTime, getColorLabel } = require('../../utils/format');
+const { getFriendlySceneName, getFriendlySizeText } = require('../../utils/photo-display');
+
+function buildStatus(item = {}) {
+  if (item.status) return item.status;
+  if (item.qualityStatus === 'PASSED' || item.qualityStatus === 'WARNING') {
+    return 'success';
+  }
+  if (item.qualityStatus === 'FAILED') {
+    return 'failed';
+  }
+  return 'processing';
+}
 
 const EDIT_STORAGE_KEY = 'history_edit_map';
 const DELETE_STORAGE_KEY = 'history_deleted_ids';
 
 function normalizeRecord(item = {}) {
-  const result = item.result || {};
   const scene = item.scene || {};
-  const id = item.imageId || item.id;
+  const id = item.taskId || item.imageId || item.id;
+  const warnings = Array.isArray(item.warnings) ? item.warnings : [];
+  const backgroundColor = item.backgroundColorLabel
+    || (item.backgroundColor ? getColorLabel(item.backgroundColor) : '')
+    || item.backgroundColor
+    || '--';
+  const friendlyName = getFriendlySceneName(item, '证件照');
+  const friendlySizeText = getFriendlySizeText(item);
   return {
     id,
-    imageId: id,
-    name: item.sceneName || scene.sceneName || scene.name || '证件照',
-    sceneName: item.sceneName || scene.sceneName || scene.name || '证件照',
-    size: item.sizeText || item.size || `${item.widthMm || '--'}×${item.heightMm || '--'}mm`,
-    sizeText: item.sizeText || item.size || `${item.widthMm || '--'}×${item.heightMm || '--'}mm`,
-    background: item.backgroundColorLabel || item.backgroundColor || '--',
-    backgroundColor: item.backgroundColorLabel || item.backgroundColor || '--',
-    imageUrl: item.previewUrl || result.previewUrl || item.originalUrl || '',
-    previewUrl: item.previewUrl || result.previewUrl || item.originalUrl || '',
+    taskId: id,
+    imageId: item.imageId || '',
+    name: friendlyName,
+    sceneName: friendlyName,
+    size: friendlySizeText,
+    sizeText: friendlySizeText,
+    sizeCode: item.sizeCode || '',
+    background: backgroundColor,
+    backgroundColor,
+    imageUrl: item.previewUrl || item.resultUrl || item.originalUrl || '',
+    previewUrl: item.previewUrl || item.resultUrl || item.originalUrl || '',
+    resultUrl: item.resultUrl || '',
     createdAt: formatTime(item.createdAt),
-    status: item.status || 'pending',
+    status: buildStatus(item),
+    qualityStatus: item.qualityStatus || '',
+    qualityMessage: item.qualityMessage || '',
+    warnings,
     selected: false
   };
 }
@@ -125,7 +149,7 @@ Page({
     }
 
     try {
-      const data = await getHistory(1, 20);
+      const data = await getPhotoHistory(1, 20);
       const list = this.applyLocalMutations((data.list || []).map(normalizeRecord));
       this.syncSelection(list, this.data.selectedIds);
     } catch (error) {
@@ -159,7 +183,7 @@ Page({
       return;
     }
 
-    wx.navigateTo({ url: `/pages/history-detail/history-detail?imageId=${record.imageId}` });
+    wx.navigateTo({ url: `/pages/history-detail/history-detail?taskId=${record.taskId}` });
   },
 
   toggleSelectById(id) {

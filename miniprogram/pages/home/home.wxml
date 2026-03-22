@@ -50,6 +50,14 @@
     </view>
   </view>
 
+  <view class="card section knowledge-card" bindtap="goFaq">
+    <view class="knowledge-copy">
+      <view class="title-md">常见问题 / 小知识</view>
+      <view class="text-muted knowledge-desc">第一次做证件照也没关系，这里有一份轻松好懂的小科普，帮你分清一寸、二寸和底色区别。</view>
+    </view>
+    <view class="knowledge-cat">🐱</view>
+  </view>
+
   <view class="section tab-scroll-wrap">
     <scroll-view class="tab-scroll" scroll-x enable-flex show-scrollbar="false">
       <view class="tab-list">

@@ -1,4 +1,5 @@
 const { getHomeTemplateConfig } = require('../../utils/api');
+const { getFriendlySceneName, getFriendlySceneHint } = require('../../utils/photo-display');
 
 const HOME_TABS = [
   { key: 'popular', label: '热门尺寸' },
@@ -337,12 +338,17 @@ function buildPixelText(item = {}) {
 }
 
 function normalizeTemplate(item = {}) {
+  const sceneKey = item.sceneKey || item.scene_key || '';
   return {
     ...item,
-    name: item.name || item.sceneName || item.scene_name || '未命名模板',
-    sceneKey: item.sceneKey || item.scene_key || '',
+    name: getFriendlySceneName({
+      sceneKey,
+      sizeCode: item.sizeCode || item.size_code || '',
+      sceneName: item.name || item.sceneName || item.scene_name || ''
+    }, '未命名模板'),
+    sceneKey,
     tags: Array.isArray(item.tags) ? item.tags : [],
-    tip: item.tip || item.description || '',
+    tip: item.tip || item.description || getFriendlySceneHint({ sceneKey }) || '',
     hot: Boolean(item.hot || item.featured),
     pixelText: buildPixelText(item)
   };
@@ -448,6 +454,10 @@ Page({
 
   goCustomSize() {
     wx.navigateTo({ url: '/pages/custom-size/custom-size' });
+  },
+
+  goFaq() {
+    wx.navigateTo({ url: '/pages/faq/faq' });
   },
 
   navigateByAction(action = {}) {

@@ -1,13 +1,13 @@
 <view class="container">
   <view class="card section status">
     <view class="title-lg">制作完成</view>
-    <view class="text-muted">请确认照片效果、质量提示与规格信息</view>
+    <view class="text-muted">照片已经准备好啦，确认一下效果后就可以直接保存到相册。</view>
   </view>
 
   <view class="card section panel quality-banner {{result.riskLevel === 'warning' ? 'quality-banner-warning' : 'quality-banner-passed'}}">
     <view class="quality-banner-header">
       <view class="title-md">{{result.riskTitle}}</view>
-      <view class="quality-tag {{result.riskLevel === 'warning' ? 'quality-tag-warning' : 'quality-tag-passed'}}">{{result.qualityStatus || result.qualityText}}</view>
+      <view class="quality-tag {{result.riskLevel === 'warning' ? 'quality-tag-warning' : 'quality-tag-passed'}}">{{result.qualityText}}</view>
     </view>
     <view class="quality-message">{{result.riskMessage}}</view>
     <view class="quality-count">{{result.riskCountText}}</view>
@@ -17,31 +17,30 @@
     <view class="title-md">结果展示</view>
     <view class="preview-list">
       <view class="preview-item">
-        <view class="text-muted">证件照预览图</view>
+        <view class="text-muted">标准预览图</view>
         <image class="preview" src="{{result.previewUrl}}" mode="aspectFit"></image>
       </view>
       <view class="preview-item">
-        <view class="text-muted">高清结果图</view>
-        <image class="preview" src="{{result.resultUrl || result.previewUrl}}" mode="aspectFit"></image>
+        <view class="text-muted">高清成品图</view>
+        <image class="preview" src="{{result.hdUrl || result.resultUrl || result.previewUrl}}" mode="aspectFit"></image>
       </view>
     </view>
   </view>
 
   <view class="card section panel">
-    <view class="meta-row"><text>处理状态</text><text>{{result.status || '--'}}</text></view>
-    <view class="meta-row"><text>质量状态</text><text>{{result.qualityStatus || result.qualityText}}</text></view>
-    <view class="meta-row"><text>质量提示</text><text class="meta-value-emphasis">{{result.qualityMessage || '请查看图片效果'}}</text></view>
-    <view class="meta-row"><text>任务 ID</text><text>{{result.taskId || '--'}}</text></view>
-    <view class="meta-row"><text>场景类型</text><text>{{result.sceneName}}</text></view>
-    <view class="meta-row"><text>尺寸</text><text>{{result.sizeText || result.sizeCode || '--'}}</text></view>
-    <view class="meta-row"><text>背景颜色</text><text>{{result.backgroundColorLabel || result.backgroundColor || '--'}}</text></view>
+    <view class="meta-row"><text>照片类型</text><text>{{result.sceneName}}</text></view>
+    <view class="meta-row"><text>适用说明</text><text>{{result.sceneHint || '适合常见证件照使用场景'}}</text></view>
+    <view class="meta-row"><text>尺寸信息</text><text>{{result.sizeText || '--'}}</text></view>
+    <view class="meta-row"><text>底色</text><text>{{result.backgroundColorLabel || result.backgroundColor || '--'}}</text></view>
+    <view class="meta-row"><text>照片状态</text><text>{{result.status || '--'}}</text></view>
+    <view class="meta-row"><text>质量提示</text><text class="meta-value-emphasis">{{result.qualityMessage || '请看一眼照片细节，满意就可以保存啦'}}</text></view>
     <view class="meta-row"><text>像素尺寸</text><text>{{result.width || '--'}} × {{result.height || '--'}} px</text></view>
-    <view class="meta-row"><text>文件说明</text><text>{{result.fileDesc}}</text></view>
+    <view class="meta-row"><text>保存说明</text><text>{{result.fileDesc}}</text></view>
   </view>
 
   <view wx:if="{{result.warnings.length}}" class="card section panel warning-panel">
     <view class="warning-panel-header">
-      <view class="title-md">风险提示详情</view>
+      <view class="title-md">小提醒</view>
       <view class="warning-badge">{{result.warnings.length}} 条</view>
     </view>
     <view wx:for="{{result.warnings}}" wx:key="*this" class="warning-item">
@@ -52,9 +51,15 @@
 
   <view class="button-row section">
     <view class="button-item"><primary-button text="保存预览图" type="secondary" bind:tap="savePreview"></primary-button></view>
-    <view class="button-item"><primary-button text="复制结果链接" type="secondary" bind:tap="downloadLayout"></primary-button></view>
+    <view class="button-item"><primary-button text="保存高清图" bind:tap="saveHd"></primary-button></view>
   </view>
-  <primary-button text="下载高清照片" bind:tap="downloadHd"></primary-button>
-  <view style="height: 12rpx"></view>
+  <view wx:if="{{result.printLayoutUrl}}" class="section">
+    <primary-button text="保存排版图" type="secondary" bind:tap="saveLayout"></primary-button>
+  </view>
+  <view class="card section faq-card" bindtap="goFaq">
+    <view class="faq-title">常见问题 / 小知识</view>
+    <view class="text-muted faq-desc">不确定该选哪种尺寸，或者想知道白底、蓝底怎么选？点这里看看，很快就懂。</view>
+    <view class="faq-cat">🐱</view>
+  </view>
   <primary-button text="重新制作" type="secondary" bind:tap="remake"></primary-button>
 </view>
