@@ -13,13 +13,13 @@
   "window": {
     "navigationBarBackgroundColor": "#F4F6F9",
     "navigationBarTextStyle": "black",
-    "navigationBarTitleText": "AI证件照制作",
+    "navigationBarTitleText": "棒棒证件照生成器",
     "backgroundColor": "#F4F6F9",
     "backgroundTextStyle": "light"
   },
   "tabBar": {
     "color": "#7A8599",
-    "selectedColor": "#111827",
+    "selectedColor": "#315EFB",
     "backgroundColor": "#FFFFFF",
     "borderStyle": "black",
     "list": [
