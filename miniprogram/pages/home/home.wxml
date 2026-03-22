@@ -1,30 +1,22 @@
 <view class="container home-page">
   <view class="card section hero-card">
-    <view class="hero-content">
+    <view class="hero-banner">
       <view class="hero-copy">
-        <view class="hero-kicker">棒棒证件照</view>
-        <view class="title-xl">棒棒证件照</view>
-        <view class="text-body hero-subtitle">覆盖报名照、证件办理、简历照等常见场景，常用尺寸与制作入口一页直达。</view>
-      </view>
-      <view class="hero-visual">
-        <view class="hero-visual-card hero-visual-card-back"></view>
-        <view class="hero-visual-card hero-visual-card-front">
-          <view class="hero-avatar-frame">
-            <view class="hero-avatar-head"></view>
-            <view class="hero-avatar-body"></view>
-          </view>
-          <view class="hero-visual-lines">
-            <view class="hero-line hero-line-primary"></view>
-            <view class="hero-line"></view>
-            <view class="hero-line hero-line-short"></view>
-          </view>
+        <view class="hero-title">棒棒证件照生成器</view>
+        <view class="hero-subtitle">报名照 / 证件照 / 简历照快速生成</view>
+        <view class="hero-tags">
+          <view class="tag hero-tag">常用尺寸</view>
+          <view class="tag hero-tag">本地搜索</view>
         </view>
       </view>
-    </view>
-    <view class="hero-tags">
-      <view class="tag hero-tag">棒棒证件照小程序</view>
-      <view class="tag hero-tag">白底 / 蓝底 / 红底</view>
-      <view class="tag hero-tag">热门尺寸模板</view>
+      <view class="hero-mini-visual">
+        <view class="hero-mini-card hero-mini-card-back"></view>
+        <view class="hero-mini-card hero-mini-card-front">
+          <view class="hero-mini-avatar"></view>
+          <view class="hero-mini-line hero-mini-line-a"></view>
+          <view class="hero-mini-line hero-mini-line-b"></view>
+        </view>
+      </view>
     </view>
   </view>
 
@@ -150,7 +142,7 @@
         <view class="text-muted">{{isSearching ? '试试更短的关键词，或切换其他尺寸分类后再搜索。' : '可以先试试热门尺寸或自定义像素制作。'}}</view>
         <view class="state-action">
           <block wx:if="{{isSearching}}">
-            <primary-button text="清空搜索" bind:tap="handleClearSearch"></primary-button>
+            <primary-button text="清空搜索" type="secondary" bind:tap="handleClearSearch"></primary-button>
           </block>
           <block wx:else>
             <primary-button text="去自定义尺寸" bind:tap="goCustomSize"></primary-button>
