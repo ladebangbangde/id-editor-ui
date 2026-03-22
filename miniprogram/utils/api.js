@@ -136,6 +136,7 @@ function normalizeHistoryItem(item = {}) {
     imageId: normalized.imageId || normalized.image_id || normalized.id || '',
     scene,
     result,
+    sceneKey: normalized.sceneKey || normalized.scene_key || scene.sceneKey || '',
     sceneName: normalized.sceneName || normalized.scene_name || scene.sceneName || scene.name || '',
     widthMm,
     heightMm,
@@ -149,6 +150,21 @@ function normalizeHistoryItem(item = {}) {
     resultUrl: normalized.resultUrl || normalized.result_url
       || result.resultUrl || result.result_url
       || normalized.downloadUrl || normalized.download_url || '',
+    hdUrl: normalized.hdUrl || normalized.hd_url
+      || result.hdUrl || result.hd_url
+      || normalized.resultUrl || normalized.result_url
+      || result.resultUrl || result.result_url
+      || '',
+    layoutUrl: normalized.layoutUrl || normalized.layout_url
+      || result.layoutUrl || result.layout_url
+      || normalized.printLayoutUrl || normalized.print_layout_url
+      || result.printLayoutUrl || result.print_layout_url
+      || '',
+    printLayoutUrl: normalized.printLayoutUrl || normalized.print_layout_url
+      || result.printLayoutUrl || result.print_layout_url
+      || normalized.layoutUrl || normalized.layout_url
+      || result.layoutUrl || result.layout_url
+      || '',
     qualityStatus: normalized.qualityStatus || normalized.quality_status
       || result.qualityStatus || result.quality_status || '',
     qualityMessage: normalized.qualityMessage || normalized.quality_message

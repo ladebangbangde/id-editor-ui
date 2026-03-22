@@ -1,4 +1,5 @@
 const { getHomeTemplateConfig } = require('../../utils/api');
+const { getFriendlySceneName, getFriendlySceneHint } = require('../../utils/photo-display');
 
 const HOME_TABS = [
   { key: 'popular', label: '热门尺寸' },
@@ -17,17 +18,19 @@ const MAIN_ACTIONS = [
   {
     key: 'photo',
     title: '拍摄证件照',
-    subtitle: '选择尺寸后快速开始制作',
-    iconType: 'camera',
+    subtitle: '制作标准证件照',
+    iconText: '拍',
+    iconClass: 'icon-camera',
     cardClass: 'main-card-camera',
-    badge: '主功能',
+    badge: '常用',
     routeType: 'upload'
   },
   {
     key: 'background',
     title: '一键换底色',
-    subtitle: '抠图完成后直接切换底色',
-    iconType: 'palette',
+    subtitle: '智能抠图换底色',
+    iconText: '色',
+    iconClass: 'icon-color',
     cardClass: 'main-card-color',
     badge: '推荐',
     routeType: 'background'
@@ -36,39 +39,37 @@ const MAIN_ACTIONS = [
 
 const QUICK_ACTIONS = [
   {
+    key: 'custom-size',
+    title: '自定义像素',
+    iconText: '定',
+    iconClass: 'icon-custom',
+    routeType: 'custom-size'
+  },
+  {
     key: 'formal-wear',
     title: '智能换正装',
-    subtitle: '标准形象更正式，适合简历与报名照',
-    iconType: 'suit',
+    iconText: '装',
+    iconClass: 'icon-suit',
     routeType: 'feature',
     toastText: '智能换正装功能开发中'
+  },
+  {
+    key: 'vip-custom',
+    title: '高端定制',
+    iconText: '定',
+    iconClass: 'icon-vip',
+    routeType: 'feature',
+    toastText: '高端定制功能开发中'
+  },
+  {
+    key: 'receipt',
+    title: '回执办理',
+    iconText: '回',
+    iconClass: 'icon-receipt',
+    routeType: 'feature',
+    toastText: '回执办理功能开发中'
   }
 ];
-
-const TEMPLATE_ICON_MAP = {
-  one_inch: 'classic',
-  one_inch_general: 'classic',
-  small_one_inch: 'classic',
-  two_inch: 'featured',
-  two_inch_general: 'featured',
-  teacher_exam: 'exam',
-  computer_exam: 'exam',
-  graduate_exam: 'exam',
-  provincial_exam: 'exam',
-  national_exam: 'exam',
-  nurse_exam: 'medical',
-  health_certificate: 'medical',
-  social_security: 'card',
-  marriage_registration: 'card',
-  passport_photo: 'travel',
-  visa_photo: 'travel',
-  driving_license: 'card',
-  id_card: 'card',
-  university_collect: 'campus',
-  resume_photo: 'career',
-  ielts_signup: 'exam',
-  mandarin_test: 'exam'
-};
 
 const HOME_TEMPLATE_MAP = {
   popular: [
@@ -336,97 +337,25 @@ function buildPixelText(item = {}) {
   return `${pixelWidth} × ${pixelHeight}px`;
 }
 
-function normalizeText(value = '') {
-  return String(value).replace(/\s+/g, '').toLowerCase();
-}
-
-function getKeywords(item = {}) {
-  if (Array.isArray(item.keywords)) {
-    return item.keywords;
-  }
-  if (Array.isArray(item.keywordList)) {
-    return item.keywordList;
-  }
-  if (typeof item.keywords === 'string') {
-    return item.keywords.split(/[、,，\s]+/).filter(Boolean);
-  }
-  if (typeof item.keyword === 'string') {
-    return item.keyword.split(/[、,，\s]+/).filter(Boolean);
-  }
-  return [];
-}
-
-function resolveTemplateIcon(item = {}) {
-  if (TEMPLATE_ICON_MAP[item.sceneKey]) {
-    return TEMPLATE_ICON_MAP[item.sceneKey];
-  }
-
-  const text = `${item.name || ''} ${(item.tags || []).join(' ')} ${item.tip || ''}`;
-  if (/护照|签证|港澳/.test(text)) {
-    return 'travel';
-  }
-  if (/考试|报名|教资|雅思|普通话|省考|国考/.test(text)) {
-    return 'exam';
-  }
-  if (/健康|护士|医药/.test(text)) {
-    return 'medical';
-  }
-  if (/大学|毕业|学籍/.test(text)) {
-    return 'campus';
-  }
-  if (/简历|职业/.test(text)) {
-    return 'career';
-  }
-  if (/驾驶证|身份证|社保|登记/.test(text)) {
-    return 'card';
-  }
-  if (item.hot) {
-    return 'featured';
-  }
-  return 'classic';
-}
-
 function normalizeTemplate(item = {}) {
-  const name = item.name || item.sceneName || item.scene_name || '未命名模板';
-  const tags = Array.isArray(item.tags) ? item.tags : [];
-  const keywords = getKeywords(item);
-  const tip = item.tip || item.description || '';
-
+  const sceneKey = item.sceneKey || item.scene_key || '';
   return {
     ...item,
-    name,
-    sceneKey: item.sceneKey || item.scene_key || '',
-    sceneName: item.sceneName || item.scene_name || name,
-    tags,
-    keywords,
-    tip,
+    name: getFriendlySceneName({
+      sceneKey,
+      sizeCode: item.sizeCode || item.size_code || '',
+      sceneName: item.name || item.sceneName || item.scene_name || ''
+    }, '未命名模板'),
+    sceneKey,
+    tags: Array.isArray(item.tags) ? item.tags : [],
+    tip: item.tip || item.description || getFriendlySceneHint({ sceneKey }) || '',
     hot: Boolean(item.hot || item.featured),
-    pixelText: buildPixelText(item),
-    iconType: resolveTemplateIcon({ ...item, name, tags, tip }),
-    searchText: normalizeText([
-      name,
-      item.sceneName,
-      item.scene_name,
-      tip,
-      buildPixelText(item),
-      ...tags,
-      ...keywords
-    ].filter(Boolean).join(' '))
+    pixelText: buildPixelText(item)
   };
 }
 
 function getMockTemplatesByTab(tabKey) {
   return (HOME_TEMPLATE_MAP[tabKey] || []).map(normalizeTemplate);
-}
-
-function formatTemplateSummary(total = 0, hotCount = 0) {
-  if (!total) {
-    return '当前分类暂无可用尺寸模板';
-  }
-  if (!hotCount) {
-    return `当前分类共 ${total} 个尺寸模板`;
-  }
-  return `当前分类共 ${total} 个尺寸模板，${hotCount} 个热门推荐`;
 }
 
 Page({
@@ -440,48 +369,15 @@ Page({
     mainActions: MAIN_ACTIONS,
     quickActions: QUICK_ACTIONS,
     templateList: [],
-    allTemplates: [],
-    isEmpty: false,
-    searchKeyword: '',
-    isSearching: false,
-    totalTemplateCount: 0,
-    hotTemplateCount: 0,
-    templateSummary: '',
-    searchSummary: ''
+    isEmpty: false
   },
 
   onLoad() {
     this.loadHomeTemplates();
   },
 
-  applyTemplateFilter(list = this.data.allTemplates, keyword = this.data.searchKeyword) {
-    const normalizedKeyword = normalizeText(keyword);
-    const filteredList = normalizedKeyword
-      ? list.filter((item) => item.searchText.includes(normalizedKeyword))
-      : list;
-
-    const totalTemplateCount = list.length;
-    const hotTemplateCount = list.filter((item) => item.hot).length;
-    const isSearching = Boolean(normalizedKeyword);
-    const searchSummary = isSearching
-      ? `搜索“${keyword.trim()}”共找到 ${filteredList.length} 个尺寸模板`
-      : '';
-
-    this.setData({
-      searchKeyword: keyword,
-      isSearching,
-      templateList: filteredList,
-      isEmpty: filteredList.length === 0,
-      totalTemplateCount,
-      hotTemplateCount,
-      templateSummary: formatTemplateSummary(totalTemplateCount, hotTemplateCount),
-      searchSummary
-    });
-  },
-
   async loadHomeTemplates(tabKey = this.data.activeTab) {
-    const currentTabs = this.data.tabs.length ? this.data.tabs : HOME_TABS;
-    const currentTab = currentTabs.find((item) => item.key === tabKey) || currentTabs[0];
+    const currentTab = this.data.tabs.find((item) => item.key === tabKey) || this.data.tabs[0];
 
     this.setData({
       loading: true,
@@ -493,29 +389,28 @@ Page({
 
     try {
       const response = await getHomeTemplateConfig(currentTab.key);
-      const serverTabs = Array.isArray(response.tabs) && response.tabs.length ? response.tabs : currentTabs;
-      const nextActiveTab = serverTabs.find((item) => item.key === currentTab.key) || currentTab;
-      const serverTemplates = Array.isArray(response.templates) && response.templates.length
-        ? response.templates.map(normalizeTemplate)
-        : getMockTemplatesByTab(nextActiveTab.key);
+      const serverTabs = response.tabs;
+      const serverTemplates = response.templates;
+      const nextTabs = Array.isArray(serverTabs) && serverTabs.length ? serverTabs : this.data.tabs;
+      const normalizedList = Array.isArray(serverTemplates) && serverTemplates.length
+        ? serverTemplates.map(normalizeTemplate)
+        : getMockTemplatesByTab(currentTab.key);
 
       this.setData({
-        tabs: serverTabs,
-        allTemplates: serverTemplates,
-        loading: false,
-        activeTab: nextActiveTab.key,
-        activeTabLabel: nextActiveTab.label
+        tabs: nextTabs,
+        templateList: normalizedList,
+        isEmpty: normalizedList.length === 0,
+        loading: false
       });
-      this.applyTemplateFilter(serverTemplates, this.data.searchKeyword);
     } catch (error) {
       const fallbackList = getMockTemplatesByTab(currentTab.key);
       this.setData({
-        allTemplates: fallbackList,
+        templateList: fallbackList,
+        isEmpty: fallbackList.length === 0,
         loading: false,
         error: fallbackList.length === 0,
         errorMessage: '网络异常，已尝试切换本地模板，请稍后重试。'
       });
-      this.applyTemplateFilter(fallbackList, this.data.searchKeyword);
 
       if (fallbackList.length) {
         wx.showToast({ title: '已切换为默认模板', icon: 'none' });
@@ -529,15 +424,6 @@ Page({
       return;
     }
     this.loadHomeTemplates(key);
-  },
-
-  handleSearchInput(event) {
-    const keyword = event.detail.value || '';
-    this.applyTemplateFilter(this.data.allTemplates, keyword);
-  },
-
-  handleClearSearch() {
-    this.applyTemplateFilter(this.data.allTemplates, '');
   },
 
   handleMainActionTap(event) {
@@ -568,6 +454,10 @@ Page({
 
   goCustomSize() {
     wx.navigateTo({ url: '/pages/custom-size/custom-size' });
+  },
+
+  goFaq() {
+    wx.navigateTo({ url: '/pages/faq/faq' });
   },
 
   navigateByAction(action = {}) {

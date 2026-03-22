@@ -5,6 +5,10 @@ Page({
     wx.switchTab({ url: '/pages/history/history' });
   },
 
+  goFaq() {
+    wx.navigateTo({ url: '/pages/faq/faq' });
+  },
+
   async tapItem() {
     const app = getApp();
     try {

@@ -10,7 +10,7 @@
   <view class="card menu-card">
     <view class="menu-item" bindtap="goHistory">我的作品</view>
     <view class="menu-item" bindtap="goHistory">历史记录</view>
-    <view class="menu-item" bindtap="tapItem">常见问题</view>
+    <view class="menu-item" bindtap="goFaq">常见问题</view>
     <view class="menu-item" bindtap="tapItem">关于我们</view>
   </view>
 </view>

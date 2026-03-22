@@ -1,5 +1,6 @@
 const { getPhotoHistory } = require('../../utils/api');
 const { formatTime, getColorLabel } = require('../../utils/format');
+const { getFriendlySceneName, getFriendlySizeText } = require('../../utils/photo-display');
 
 function buildStatus(item = {}) {
   if (item.status) return item.status;
@@ -23,14 +24,16 @@ function normalizeRecord(item = {}) {
     || (item.backgroundColor ? getColorLabel(item.backgroundColor) : '')
     || item.backgroundColor
     || '--';
+  const friendlyName = getFriendlySceneName(item, '证件照');
+  const friendlySizeText = getFriendlySizeText(item);
   return {
     id,
     taskId: id,
     imageId: item.imageId || '',
-    name: item.sceneName || scene.sceneName || scene.name || '证件照',
-    sceneName: item.sceneName || scene.sceneName || scene.name || '证件照',
-    size: item.sizeText || item.sizeCode || item.size || `${item.widthMm || '--'}×${item.heightMm || '--'}mm`,
-    sizeText: item.sizeText || item.sizeCode || item.size || `${item.widthMm || '--'}×${item.heightMm || '--'}mm`,
+    name: friendlyName,
+    sceneName: friendlyName,
+    size: friendlySizeText,
+    sizeText: friendlySizeText,
     sizeCode: item.sizeCode || '',
     background: backgroundColor,
     backgroundColor,

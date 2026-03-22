@@ -1,0 +1,22 @@
+<view class="container faq-page">
+  <view class="card section faq-hero">
+    <view class="faq-hero-copy">
+      <view class="title-lg">常见问题 / 小知识</view>
+      <view class="text-muted faq-hero-desc">如果你是第一次做证件照，也不用紧张。这里把常见问题讲得轻一点、软一点，希望像有人在旁边轻轻提醒你。</view>
+    </view>
+    <view class="faq-hero-cat">🐱</view>
+  </view>
+
+  <view class="faq-list">
+    <view wx:for="{{faqList}}" wx:key="title" class="card section faq-item">
+      <view class="faq-question">{{item.title}}</view>
+      <view class="faq-answer">{{item.body}}</view>
+    </view>
+  </view>
+
+  <view class="card section faq-footer">
+    <view class="faq-footer-title">小猫悄悄提醒</view>
+    <view class="faq-footer-text">看要求、选对尺寸、再保存到相册，上传时就会轻松很多。慢一点没关系，我们一步一步来。</view>
+    <view class="faq-footer-cat">ฅ^•ﻌ•^ฅ</view>
+  </view>
+</view>

@@ -8,6 +8,7 @@
     "pages/custom-size/custom-size",
     "pages/history/history",
     "pages/history-detail/history-detail",
+    "pages/faq/faq",
     "pages/profile/profile"
   ],
   "window": {

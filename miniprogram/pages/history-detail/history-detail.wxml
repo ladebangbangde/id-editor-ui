@@ -5,26 +5,31 @@
     </view>
 
     <view class="card section panel">
-      <view class="meta-row"><text>场景名称</text><text>{{record.sceneName}}</text></view>
+      <view class="meta-row"><text>照片类型</text><text>{{record.sceneName}}</text></view>
+      <view class="meta-row"><text>适用说明</text><text>{{record.sceneHint || '适合常见证件照场景'}}</text></view>
       <view class="meta-row"><text>尺寸信息</text><text>{{record.sizeText}}</text></view>
       <view class="meta-row"><text>背景颜色</text><text>{{record.backgroundColor}}</text></view>
       <view class="meta-row"><text>质量状态</text><text>{{record.qualityStatus || '--'}}</text></view>
-      <view class="meta-row"><text>质量提示</text><text>{{record.qualityMessage || '--'}}</text></view>
+      <view class="meta-row"><text>质量提示</text><text>{{record.qualityMessage || '看看效果满意的话，就可以直接保存啦'}}</text></view>
       <view class="meta-row"><text>创建时间</text><text>{{record.createdAt}}</text></view>
     </view>
 
-    <view wx:if="{{record.warnings.length}}" class="card section panel">
-      <view class="title-md">风险提示</view>
-      <view wx:for="{{record.warnings}}" wx:key="index" class="meta-row">
-        <text>提示{{index + 1}}</text>
-        <text>{{item}}</text>
+    <view wx:if="{{record.warnings.length}}" class="card section panel warning-panel">
+      <view class="title-md">小提醒</view>
+      <view wx:for="{{record.warnings}}" wx:key="index" class="warning-item">
+        <view class="warning-dot"></view>
+        <view class="warning-text">{{item}}</view>
       </view>
     </view>
 
-    <view class="button-row">
-      <view class="button-item"><primary-button text="再次下载" bind:tap="downloadAgain"></primary-button></view>
-      <view class="button-item"><primary-button text="重新制作" type="secondary" bind:tap="remake"></primary-button></view>
+    <view class="button-row section button-row-top">
+      <view class="button-item"><primary-button text="保存预览图" type="secondary" bind:tap="savePreview"></primary-button></view>
+      <view class="button-item"><primary-button text="保存高清图" bind:tap="saveHd"></primary-button></view>
     </view>
+    <view wx:if="{{record.printLayoutUrl}}" class="section">
+      <primary-button text="保存排版图" type="secondary" bind:tap="saveLayout"></primary-button>
+    </view>
+    <primary-button text="重新制作" type="secondary" bind:tap="remake"></primary-button>
   </block>
   <block wx:else>
     <view class="card panel">未找到对应历史记录</view>

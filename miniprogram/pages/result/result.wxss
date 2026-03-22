@@ -23,3 +23,8 @@
 .warning-item { display: flex; gap: 14rpx; margin-top: 16rpx; padding: 16rpx; border-radius: 16rpx; background: rgba(255, 255, 255, 0.7); }
 .warning-dot { width: 14rpx; height: 14rpx; margin-top: 10rpx; border-radius: 50%; background: #f59e0b; flex-shrink: 0; }
 .warning-content { color: #92400e; font-size: 25rpx; line-height: 1.7; }
+
+.faq-card { position: relative; overflow: hidden; }
+.faq-title { font-size: 30rpx; font-weight: 600; color: #111827; }
+.faq-desc { margin-top: 10rpx; padding-right: 70rpx; line-height: 1.7; }
+.faq-cat { position: absolute; right: 24rpx; bottom: 20rpx; font-size: 44rpx; opacity: 0.85; }

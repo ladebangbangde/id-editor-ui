@@ -1,5 +1,6 @@
 const { STORAGE_KEYS } = require('../../utils/constants');
 const { getColorLabel, formatTime } = require('../../utils/format');
+const { getFriendlySceneName, getFriendlySizeText } = require('../../utils/photo-display');
 const { getPhotoSpecs, processPhoto, getPhotoTask } = require('../../utils/api');
 const storage = require('../../utils/storage');
 
@@ -18,12 +19,6 @@ const SIZE_BY_MM = {
   '25x35': 'one_inch',
   '22x32': 'small_one_inch',
   '35x49': 'two_inch'
-};
-
-const SIZE_NAME_MAP = {
-  one_inch: '标准一寸',
-  small_one_inch: '小一寸',
-  two_inch: '二寸'
 };
 
 function buildSizeKey(sceneInfo = {}) {
@@ -63,7 +58,8 @@ Page({
       sizeCodes: []
     },
     sizeCode: '',
-    unsupportedMessage: ''
+    unsupportedMessage: '',
+    displaySceneName: '证件照'
   },
 
   async onLoad() {
@@ -77,7 +73,8 @@ Page({
       sceneInfo,
       imagePath: uploadData.imagePath || '',
       selectedColor,
-      sizeCode
+      sizeCode,
+      displaySceneName: getFriendlySceneName({ sceneKey: sceneInfo.sceneKey, sizeCode, sceneName: sceneInfo.sceneName }, '证件照')
     });
 
     this.updateUnsupportedMessage({
@@ -113,7 +110,7 @@ Page({
 
     if (Array.isArray(specs.sizeCodes) && specs.sizeCodes.length && !specs.sizeCodes.includes(sizeCode)) {
       this.setData({
-        unsupportedMessage: `服务端暂不支持 ${SIZE_NAME_MAP[sizeCode] || sceneInfo.sceneName || '当前尺寸'}。`
+        unsupportedMessage: `暂时还不能直接生成${getFriendlySceneName({ sizeCode, sceneName: sceneInfo.sceneName }, '当前照片')}，可以先试试一寸、小一寸或二寸。`
       });
       return;
     }
@@ -203,8 +200,8 @@ Page({
       const result = {
         imagePath,
         sceneInfo,
-        sceneName: sceneInfo.sceneName || SIZE_NAME_MAP[sizeCode] || '证件照',
-        sizeText: `${sceneInfo.widthMm || '--'}×${sceneInfo.heightMm || '--'}mm`,
+        sceneName: getFriendlySceneName({ sceneKey: sceneInfo.sceneKey, sizeCode, sceneName: sceneInfo.sceneName }, '证件照'),
+        sizeText: getFriendlySizeText({ ...sceneInfo, sizeCode }),
         taskId: latestResult.taskId || processed.taskId || '',
         status: latestResult.status || processed.status || '',
         previewUrl: latestResult.previewUrl || processed.previewUrl || '',
@@ -220,7 +217,10 @@ Page({
         qualityStatus: latestResult.qualityStatus || processed.qualityStatus || '',
         qualityMessage: latestResult.qualityMessage || processed.qualityMessage || '',
         createdAt: latestResult.createdAt || formatTime(Date.now()),
-        fileDesc: '预览图与高清图由新处理链路直接返回'
+        hdUrl: latestResult.hdUrl || processed.hdUrl || latestResult.resultUrl || processed.resultUrl || '',
+        layoutUrl: latestResult.layoutUrl || processed.layoutUrl || latestResult.printLayoutUrl || processed.printLayoutUrl || '',
+        printLayoutUrl: latestResult.printLayoutUrl || processed.printLayoutUrl || latestResult.layoutUrl || processed.layoutUrl || '',
+        fileDesc: '预览图、高清图会直接返回；如果有排版图，也会一起带上'
       };
 
       storage.set(STORAGE_KEYS.CURRENT_UPLOAD, {
