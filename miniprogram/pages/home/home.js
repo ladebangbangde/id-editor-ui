@@ -19,8 +19,8 @@ const MAIN_ACTIONS = [
     key: 'photo',
     title: '拍摄证件照',
     subtitle: '制作标准证件照',
-    iconText: '拍',
     iconClass: 'icon-camera',
+    iconType: 'camera',
     cardClass: 'main-card-camera',
     badge: '常用',
     routeType: 'upload'
@@ -29,8 +29,8 @@ const MAIN_ACTIONS = [
     key: 'background',
     title: '一键换底色',
     subtitle: '智能抠图换底色',
-    iconText: '色',
     iconClass: 'icon-color',
+    iconType: 'palette',
     cardClass: 'main-card-color',
     badge: '推荐',
     routeType: 'background'
@@ -40,7 +40,7 @@ const MAIN_ACTIONS = [
 const QUICK_ACTIONS = [
   {
     key: 'formal-wear',
-    title: '换装',
+    title: '一键换装',
     subtitle: '一键切换正装风格，适配报名与证件场景',
     routeType: 'feature',
     toastText: '智能换正装功能开发中'
