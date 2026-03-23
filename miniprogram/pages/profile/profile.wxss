@@ -67,8 +67,23 @@
   color: #1d4ed8;
 }
 
+.login-badge-default {
+  background: #f8fafc;
+  color: #64748b;
+}
+
 .auth-card {
   padding: 20rpx 24rpx;
+}
+
+.auth-loading-box {
+  padding: 20rpx 0;
+  text-align: center;
+}
+
+.auth-loading-text {
+  font-size: 26rpx;
+  color: #64748b;
 }
 
 .auth-actions {
