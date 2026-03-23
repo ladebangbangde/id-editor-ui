@@ -1,8 +1,18 @@
+function getAppSafe() {
+  try {
+    return getApp();
+  } catch (error) {
+    return null;
+  }
+}
+
 function buildHeader(header = {}) {
-  const app = getApp();
-  const authHeader = app.globalData.authToken
-    ? { Authorization: `Bearer ${app.globalData.authToken}` }
+  const app = getAppSafe();
+  const authToken = app && app.globalData ? app.globalData.authToken : '';
+  const authHeader = authToken
+    ? { Authorization: `Bearer ${authToken}` }
     : {};
+
   return {
     'content-type': 'application/json',
     ...authHeader,
@@ -27,15 +37,19 @@ function normalizeList(list) {
 
 function normalizeErrorPayload(payload = {}, fallbackMessage = '请求失败') {
   const data = payload && typeof payload.data === 'object' ? payload.data : {};
+  const statusCode = Number(payload.statusCode || payload.code || data.code || 0);
+
   return {
     ...payload,
     message: payload.message || payload.msg || fallbackMessage,
-    code: payload.code || '',
+    code: payload.code || statusCode || '',
+    statusCode,
     data,
     taskId: payload.taskId || data.taskId || '',
     reasons: normalizeList(payload.reasons || data.reasons),
     suggestions: normalizeList(payload.suggestions || data.suggestions),
-    isBusinessError: true
+    isBusinessError: true,
+    isAuthError: statusCode === 401
   };
 }
 
@@ -57,13 +71,45 @@ function parseUploadResponse(rawData) {
   }
 }
 
-function request(url, method = 'GET', data = {}, options = {}) {
+async function ensureAuthReady(options = {}) {
+  const { skipAuth = false } = options;
+  if (skipAuth) {
+    return;
+  }
+
+  const app = getAppSafe();
+  if (!app || !app.globalData || app.globalData.authToken || typeof app.ensureLogin !== 'function') {
+    return;
+  }
+
+  try {
+    await app.ensureLogin({ silent: true });
+  } catch (error) {
+    console.warn('ensureLogin before request failed', error);
+  }
+}
+
+function handleUnauthorized(payload = {}, options = {}) {
+  const app = getAppSafe();
+
+  if (options.showErrorToast !== false) {
+    showError(payload.message || '登录状态已失效，正在重新登录');
+  }
+
+  if (app && typeof app.handleUnauthorized === 'function') {
+    app.handleUnauthorized(payload);
+  }
+}
+
+async function request(url, method = 'GET', data = {}, options = {}) {
   const {
     showLoading = false,
     loadingText = '加载中',
     header = {},
     showErrorToast = true
   } = options;
+
+  await ensureAuthReady(options);
 
   if (showLoading) {
     wx.showLoading({ title: loadingText, mask: true });
@@ -77,12 +123,31 @@ function request(url, method = 'GET', data = {}, options = {}) {
       header: buildHeader(header),
       success(res) {
         const body = res.data || {};
+
         if (res.statusCode >= 200 && res.statusCode < 300) {
           if (body.success === false) {
+            if (Number(body.code || (body.data && body.data.code) || 0) === 401) {
+              handleUnauthorized(body, { showErrorToast });
+              rejectWithError(reject, body, '登录状态已失效', false);
+              return;
+            }
+
             rejectWithError(reject, body, '请求失败', showErrorToast);
             return;
           }
           resolve(body);
+          return;
+        }
+
+        if (res.statusCode === 401) {
+          handleUnauthorized({
+            ...body,
+            statusCode: res.statusCode
+          }, { showErrorToast });
+          rejectWithError(reject, {
+            ...body,
+            statusCode: res.statusCode
+          }, body.message || '登录状态已失效', false);
           return;
         }
 
@@ -109,13 +174,15 @@ function request(url, method = 'GET', data = {}, options = {}) {
   });
 }
 
-function uploadFile(url, filePath, formData = {}, options = {}) {
+async function uploadFile(url, filePath, formData = {}, options = {}) {
   const {
     showLoading = false,
     loadingText = '上传中',
     header = {},
     showErrorToast = true
   } = options;
+
+  await ensureAuthReady(options);
 
   if (showLoading) {
     wx.showLoading({ title: loadingText, mask: true });
@@ -133,10 +200,28 @@ function uploadFile(url, filePath, formData = {}, options = {}) {
           const body = parseUploadResponse(res.data);
           if (res.statusCode >= 200 && res.statusCode < 300) {
             if (body.success === false) {
+              if (Number(body.code || (body.data && body.data.code) || 0) === 401) {
+                handleUnauthorized(body, { showErrorToast });
+                rejectWithError(reject, body, '登录状态已失效', false);
+                return;
+              }
+
               rejectWithError(reject, body, '上传失败', showErrorToast);
               return;
             }
             resolve(body);
+            return;
+          }
+
+          if (res.statusCode === 401) {
+            handleUnauthorized({
+              ...body,
+              statusCode: res.statusCode
+            }, { showErrorToast });
+            rejectWithError(reject, {
+              ...body,
+              statusCode: res.statusCode
+            }, body.message || '登录状态已失效', false);
             return;
           }
 

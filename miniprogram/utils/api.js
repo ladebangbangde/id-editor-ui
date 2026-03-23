@@ -180,15 +180,37 @@ function normalizeHistoryItem(item = {}) {
 
 function healthCheck() {
   const app = getApp();
-  return request(`${app.globalData.apiHost}/health`);
+  return request(`${app.globalData.apiHost}/health`, 'GET', {}, {
+    skipAuth: true
+  });
+}
+
+function wxLogin(payload = {}) {
+  return request(`${getBaseUrl()}/auth/wx-login`, 'POST', payload, {
+    skipAuth: true,
+    showErrorToast: false
+  }).then(unwrap);
 }
 
 function getMe() {
-  return request(`${getBaseUrl()}/auth/me`).then(unwrap);
+  return request(`${getBaseUrl()}/auth/me`, 'GET', {}, {
+    skipAuth: true,
+    showErrorToast: false
+  }).then(unwrap);
+}
+
+function logout() {
+  const app = getApp();
+  if (app && typeof app.logout === 'function') {
+    return app.logout();
+  }
+  return Promise.resolve();
 }
 
 function adminLogin() {
-  return request(`${getBaseUrl()}/auth/admin/login`, 'POST').then(unwrap);
+  return request(`${getBaseUrl()}/auth/admin/login`, 'POST', {}, {
+    skipAuth: true
+  }).then(unwrap);
 }
 
 function getScenes() {
@@ -475,7 +497,9 @@ const generateIdPhoto = generateImage;
 
 module.exports = {
   healthCheck,
+  wxLogin,
   getMe,
+  logout,
   adminLogin,
   getScenes,
   getSceneDetail,

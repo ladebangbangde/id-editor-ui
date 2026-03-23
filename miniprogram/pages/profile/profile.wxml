@@ -1,9 +1,41 @@
 <view class="container">
   <view class="card section user-card">
-    <view class="avatar">用</view>
-    <view>
-      <view class="title-md">微信用户</view>
-      <view class="text-muted">欢迎使用 棒棒证件照生成</view>
+    <image wx:if="{{avatarUrl}}" class="avatar-image" src="{{avatarUrl}}" mode="aspectFill"></image>
+    <view wx:else class="avatar">{{avatarText}}</view>
+
+    <view class="user-copy">
+      <view class="user-head">
+        <view class="title-md">{{nickname}}</view>
+        <view class="login-badge {{isLoggedIn ? 'login-badge-success' : 'login-badge-pending'}}">
+          {{authLoading ? '登录中' : (isLoggedIn ? '已登录' : '未登录')}}
+        </view>
+      </view>
+      <view class="text-muted welcome-text">{{welcomeText}}</view>
+      <view wx:if="{{loginError}}" class="auth-error">{{loginError}}</view>
+    </view>
+  </view>
+
+  <view class="card section auth-card">
+    <button
+      wx:if="{{!isLoggedIn}}"
+      class="auth-btn auth-btn-primary"
+      bindtap="handleLoginTap"
+      loading="{{authLoading}}"
+      disabled="{{authLoading}}"
+    >
+      微信一键登录
+    </button>
+
+    <view wx:else class="auth-actions">
+      <button
+        class="auth-btn auth-btn-secondary"
+        bindtap="handleRefreshLogin"
+        loading="{{authLoading}}"
+        disabled="{{authLoading}}"
+      >
+        刷新登录态
+      </button>
+      <button class="auth-btn auth-btn-ghost" bindtap="handleLogoutTap">退出登录</button>
     </view>
   </view>
 
