@@ -6,8 +6,14 @@ const AUTH_ME_STORAGE_KEY = 'auth_me';
 function wxMiniLogin() {
   return new Promise((resolve, reject) => {
     wx.login({
-      success: resolve,
-      fail: reject
+      success(res) {
+        console.info('[auth] wx.login success response:', res);
+        resolve(res);
+      },
+      fail(error) {
+        console.error('[auth] wx.login failed:', error);
+        reject(error);
+      }
     });
   });
 }
@@ -229,16 +235,22 @@ App({
 
       const loginRes = await wxMiniLogin();
       const code = loginRes && loginRes.code;
+      console.info('[auth] wx.login raw response before wxLogin:', loginRes);
+      console.info('[auth] wx.login code before wxLogin:', code);
       if (!code) {
+        console.error('[auth] wx.login missing code, raw response:', loginRes);
         throw new Error('微信登录失败，请重试');
       }
 
-      const authPayload = await wxLogin({
+      const wxLoginPayload = {
         code,
         nickname: profile.nickname || profile.nickName || '',
         avatarUrl: profile.avatarUrl || '',
         gender: typeof profile.gender === 'undefined' ? 0 : Number(profile.gender || 0)
-      });
+      };
+      console.info('[auth] /api/auth/wx-login request payload:', wxLoginPayload);
+
+      const authPayload = await wxLogin(wxLoginPayload);
 
       const token = authPayload.token || authPayload.authToken || authPayload.accessToken || '';
       const me = normalizeUser(authPayload.user || authPayload.me || authPayload.profile || authPayload);

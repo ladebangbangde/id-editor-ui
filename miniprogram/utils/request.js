@@ -112,6 +112,34 @@ function handleUnauthorized(payload = {}, options = {}) {
   }
 }
 
+function isWxLoginRequest(url = '') {
+  return String(url).indexOf('/api/auth/wx-login') !== -1;
+}
+
+function logWxLoginRequest(url, method, data) {
+  if (!isWxLoginRequest(url)) {
+    return;
+  }
+
+  console.info('[auth] wx-login request detail:', {
+    url,
+    method,
+    payload: data
+  });
+}
+
+function logWxLoginResponseError(url, statusCode, body) {
+  if (!isWxLoginRequest(url)) {
+    return;
+  }
+
+  console.error('[auth] wx-login response error:', {
+    statusCode,
+    responseBody: body
+  });
+}
+
+
 async function request(url, method = 'GET', data = {}, options = {}) {
   const {
     showLoading = false,
@@ -127,6 +155,8 @@ async function request(url, method = 'GET', data = {}, options = {}) {
     wx.showLoading({ title: loadingText, mask: true });
   }
 
+  logWxLoginRequest(url, method, data);
+
   return new Promise((resolve, reject) => {
     wx.request({
       url,
@@ -139,6 +169,7 @@ async function request(url, method = 'GET', data = {}, options = {}) {
         if (res.statusCode >= 200 && res.statusCode < 300) {
           if (body.success === false) {
             const errorCode = Number(body.code || (body.data && body.data.code) || 0);
+            logWxLoginResponseError(url, 200, body);
             if (errorCode === 401 && shouldHandleUnauthorized) {
               handleUnauthorized(normalizeErrorPayload(body, '登录状态已失效'), { showErrorToast });
               rejectWithError(reject, body, '登录状态已失效', false);
@@ -153,6 +184,7 @@ async function request(url, method = 'GET', data = {}, options = {}) {
         }
 
         if (res.statusCode === 401) {
+          logWxLoginResponseError(url, res.statusCode, body);
           const payload = {
             ...body,
             statusCode: res.statusCode
@@ -166,12 +198,14 @@ async function request(url, method = 'GET', data = {}, options = {}) {
           return;
         }
 
+        logWxLoginResponseError(url, res.statusCode, body);
         rejectWithError(reject, {
           ...body,
           statusCode: res.statusCode
         }, pickMessage(body, '网络请求失败'), showErrorToast);
       },
       fail(err) {
+        logWxLoginResponseError(url, 0, err);
         const error = {
           ...err,
           message: '网络异常，请稍后重试',
@@ -217,6 +251,7 @@ async function uploadFile(url, filePath, formData = {}, options = {}) {
           if (res.statusCode >= 200 && res.statusCode < 300) {
             if (body.success === false) {
               const errorCode = Number(body.code || (body.data && body.data.code) || 0);
+              logWxLoginResponseError(url, 200, body);
               if (errorCode === 401 && shouldHandleUnauthorized) {
                 handleUnauthorized(normalizeErrorPayload(body, '登录状态已失效'), { showErrorToast });
                 rejectWithError(reject, body, '登录状态已失效', false);
@@ -231,6 +266,7 @@ async function uploadFile(url, filePath, formData = {}, options = {}) {
           }
 
           if (res.statusCode === 401) {
+            logWxLoginResponseError(url, res.statusCode, body);
             const payload = {
               ...body,
               statusCode: res.statusCode
@@ -260,6 +296,7 @@ async function uploadFile(url, filePath, formData = {}, options = {}) {
         }
       },
       fail(err) {
+        logWxLoginResponseError(url, 0, err);
         const error = {
           ...err,
           message: '上传失败，请重试',
