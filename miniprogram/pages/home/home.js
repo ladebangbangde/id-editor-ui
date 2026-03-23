@@ -18,7 +18,7 @@ const MAIN_ACTIONS = [
   {
     key: 'photo',
     title: '拍摄证件照',
-    subtitle: '制作标准证件照',
+    subtitle: '标准拍照',
     iconClass: 'icon-camera',
     iconType: 'camera',
     cardClass: 'main-card-camera',
@@ -28,7 +28,7 @@ const MAIN_ACTIONS = [
   {
     key: 'background',
     title: '一键换底色',
-    subtitle: '智能抠图换底色',
+    subtitle: '智能换底',
     iconClass: 'icon-color',
     iconType: 'palette',
     cardClass: 'main-card-color',
@@ -53,14 +53,14 @@ const HOME_FEATURE_FLAGS = {
 function getHomeBrandContent() {
   if (HOME_FEATURE_FLAGS.showFormalWearEntry) {
     return {
-      subtitle: '标准寸照、换底色与换装入口，一页轻松搞定',
-      tags: ['常用尺寸', '正式换装']
+      subtitle: '标准寸照、换底色、换装',
+      tags: ['常用尺寸']
     };
   }
 
   return {
-    subtitle: '标准寸照、换底色与尺寸模板一页直达，制作动线更清晰',
-    tags: ['常用尺寸', '模板直达']
+    subtitle: '标准寸照与换底色',
+    tags: ['常用尺寸']
   };
 }
 
@@ -340,6 +340,7 @@ function buildPixelText(item = {}) {
 function normalizeTemplate(item = {}) {
   const sceneKey = item.sceneKey || item.scene_key || '';
   const sceneName = item.sceneName || item.scene_name || item.name || '';
+  const tags = Array.isArray(item.tags) ? item.tags : [];
   return {
     ...item,
     name: getFriendlySceneName({
@@ -349,7 +350,8 @@ function normalizeTemplate(item = {}) {
     }, '未命名模板'),
     sceneKey,
     sceneName,
-    tags: Array.isArray(item.tags) ? item.tags : [],
+    tags,
+    displayTags: tags.slice(0, 2),
     tip: item.tip || item.description || getFriendlySceneHint({ sceneKey }) || '',
     hot: Boolean(item.hot || item.featured),
     pixelText: buildPixelText(item)

@@ -13,7 +13,7 @@
       </view>
       <view class="brand-status">
         <view class="status-dot"></view>
-        <text>轻松制作</text>
+        <text>已就绪</text>
       </view>
     </view>
     <view class="brand-tags">
@@ -74,10 +74,7 @@
           <view class="tools-icon-camera"></view>
           <view class="tools-icon-spark"></view>
         </view>
-        <view>
-          <view class="title-md">常用功能</view>
-          <view class="text-muted">首屏聚焦拍照、换底色与尺寸模板，操作路径更清晰</view>
-        </view>
+        <view class="title-md">常用功能</view>
       </view>
     </view>
     <view class="main-grid">
@@ -118,12 +115,8 @@
           <view class="size-icon-card"></view>
           <view class="size-icon-ruler"></view>
         </view>
-        <view>
-          <view class="title-md">尺寸选择</view>
-          <view class="text-muted size-section-desc">先选尺寸模板再进入制作；搜索仅匹配当前分类中的尺寸模板。</view>
-        </view>
+        <view class="title-md">尺寸模板</view>
       </view>
-      <view class="size-highlight-badge">热门模板</view>
     </view>
 
     <view class="size-search-wrap">
@@ -136,15 +129,11 @@
           class="search-input"
           type="text"
           confirm-type="search"
-          placeholder="搜索尺寸、场景、标签或说明"
+          placeholder="搜索尺寸 / 场景"
           value="{{searchKeyword}}"
           bindinput="handleSearchInput"
         />
         <view wx:if="{{searchKeyword}}" class="search-clear" bindtap="handleSearchClear">清空</view>
-      </view>
-      <view class="size-search-tip">
-        <view class="size-search-tip-dot"></view>
-        <text>搜索范围仅限当前尺寸分类</text>
       </view>
     </view>
 
@@ -167,8 +156,8 @@
 
     <block wx:if="{{loading}}">
       <view class="card section state-card size-state-card">
-        <view class="title-md">模板加载中</view>
-        <view class="text-muted">正在获取 {{activeTabLabel}} 相关尺寸，请稍候...</view>
+        <view class="title-md">加载中</view>
+        <view class="text-muted">{{activeTabLabel}} 尺寸加载中</view>
       </view>
     </block>
 
@@ -184,8 +173,8 @@
 
     <block wx:elif="{{isEmpty}}">
       <view class="card section state-card size-state-card empty-state-card">
-        <view class="title-md">{{searchActive ? '没有找到匹配尺寸' : '当前分类暂无模板'}}</view>
-        <view class="text-muted">{{searchActive ? '换个关键词试试，可搜索尺寸名称、场景、标签或说明。' : '可以先试试热门尺寸或切换其他分类。'}}</view>
+        <view class="title-md">{{searchActive ? '暂无结果' : '暂无模板'}}</view>
+        <view class="text-muted">{{searchActive ? '换个关键词试试' : '试试其他分类'}}</view>
         <view class="state-action" wx:if="{{searchActive}}">
           <primary-button text="清空搜索" bind:tap="handleSearchClear"></primary-button>
         </view>
@@ -214,9 +203,8 @@
             </view>
             <view class="template-arrow">›</view>
           </view>
-          <view wx:if="{{item.tip}}" class="template-tip">{{item.tip}}</view>
           <view class="tag-row">
-            <view wx:for="{{item.tags}}" wx:key="*this" class="tag template-tag">{{item}}</view>
+            <view wx:for="{{item.displayTags}}" wx:key="*this" class="tag template-tag">{{item}}</view>
           </view>
         </view>
       </view>
@@ -230,9 +218,9 @@
           <view class="knowledge-icon-book"></view>
           <view class="knowledge-icon-star"></view>
         </view>
-        <view class="title-md">常见问题 / 小知识</view>
+        <view class="title-md">常见问题</view>
       </view>
-      <view class="text-muted knowledge-desc">第一次做证件照也没关系，这里有一份轻松好懂的小科普，帮你分清一寸、二寸和底色区别。</view>
+      <view class="text-muted knowledge-desc">尺寸、底色说明</view>
     </view>
     <view class="knowledge-cat">🐱</view>
   </view>
