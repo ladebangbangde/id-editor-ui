@@ -8,7 +8,7 @@
         </view>
         <view>
           <view class="brand-title">棒棒证件照生成</view>
-          <view class="brand-subtitle">标准寸照、换底色与换装入口，一页轻松搞定</view>
+          <view class="brand-subtitle">{{brandContent.subtitle}}</view>
         </view>
       </view>
       <view class="brand-status">
@@ -17,54 +17,55 @@
       </view>
     </view>
     <view class="brand-tags">
-      <view class="tag brand-tag">常用尺寸</view>
-      <view class="tag brand-tag">正式换装</view>
+      <view wx:for="{{brandContent.tags}}" wx:key="*this" class="tag brand-tag">{{item}}</view>
     </view>
   </view>
 
-  <view class="card section wear-feature-card" wx:for="{{quickActions}}" wx:key="key" data-item="{{item}}" bindtap="handleQuickActionTap">
-    <view class="wear-glow wear-glow-left"></view>
-    <view class="wear-glow wear-glow-right"></view>
-    <view class="wear-feature-top">
-      <view class="wear-badge">重点功能</view>
-      <view class="wear-chip">首页核心入口</view>
-    </view>
-    <view class="wear-feature-body">
-      <view class="wear-icon-shell">
-        <view class="wear-icon">
-          <view class="wear-icon-head"></view>
-          <view class="wear-icon-jacket"></view>
-          <view class="wear-icon-shirt"></view>
-          <view class="wear-icon-tie"></view>
-        </view>
+  <block wx:if="{{showFormalWearEntry}}">
+    <view class="card section wear-feature-card" wx:for="{{quickActions}}" wx:key="key" data-item="{{item}}" bindtap="handleQuickActionTap">
+      <view class="wear-glow wear-glow-left"></view>
+      <view class="wear-glow wear-glow-right"></view>
+      <view class="wear-feature-top">
+        <view class="wear-badge">重点功能</view>
+        <view class="wear-chip">首页核心入口</view>
       </view>
-      <view class="wear-copy">
-        <view class="wear-title">{{item.title}}</view>
-        <view class="wear-subtitle">轻松换上正式穿搭，报名照和证件照都更省心</view>
-        <view class="wear-points">
-          <view class="wear-point">
-            <view class="wear-point-dot"></view>
-            <text>更显眼</text>
-          </view>
-          <view class="wear-point">
-            <view class="wear-point-dot"></view>
-            <text>更自然</text>
-          </view>
-          <view class="wear-point">
-            <view class="wear-point-dot"></view>
-            <text>更正式</text>
+      <view class="wear-feature-body">
+        <view class="wear-icon-shell">
+          <view class="wear-icon">
+            <view class="wear-icon-head"></view>
+            <view class="wear-icon-jacket"></view>
+            <view class="wear-icon-shirt"></view>
+            <view class="wear-icon-tie"></view>
           </view>
         </view>
+        <view class="wear-copy">
+          <view class="wear-title">{{item.title}}</view>
+          <view class="wear-subtitle">轻松换上正式穿搭，报名照和证件照都更省心</view>
+          <view class="wear-points">
+            <view class="wear-point">
+              <view class="wear-point-dot"></view>
+              <text>更显眼</text>
+            </view>
+            <view class="wear-point">
+              <view class="wear-point-dot"></view>
+              <text>更自然</text>
+            </view>
+            <view class="wear-point">
+              <view class="wear-point-dot"></view>
+              <text>更正式</text>
+            </view>
+          </view>
+        </view>
+      </view>
+      <view class="wear-feature-action">
+        <view class="wear-action-copy">
+          <view class="wear-action-title">一键换装</view>
+          <view class="text-muted wear-action-desc">{{item.subtitle}}</view>
+        </view>
+        <view class="wear-action-arrow">立即体验</view>
       </view>
     </view>
-    <view class="wear-feature-action">
-      <view class="wear-action-copy">
-        <view class="wear-action-title">一键换装</view>
-        <view class="text-muted wear-action-desc">{{item.subtitle}}</view>
-      </view>
-      <view class="wear-action-arrow">立即体验</view>
-    </view>
-  </view>
+  </block>
 
   <view class="section feature-section">
     <view class="section-head feature-section-head">
@@ -75,7 +76,7 @@
         </view>
         <view>
           <view class="title-md">常用功能</view>
-          <view class="text-muted">拍照与换底色保留在首屏，动线更清晰</view>
+          <view class="text-muted">首屏聚焦拍照、换底色与尺寸模板，操作路径更清晰</view>
         </view>
       </view>
     </view>

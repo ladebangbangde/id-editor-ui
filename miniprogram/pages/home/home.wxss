@@ -90,6 +90,7 @@
 
 .brand-tags {
   display: flex;
+  flex-wrap: wrap;
   gap: 12rpx;
   margin-top: 16rpx;
 }

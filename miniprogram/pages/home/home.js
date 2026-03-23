@@ -46,6 +46,31 @@ const QUICK_ACTIONS = [
   }
 ];
 
+const HOME_FEATURE_FLAGS = {
+  showFormalWearEntry: false
+};
+
+function getHomeBrandContent() {
+  if (HOME_FEATURE_FLAGS.showFormalWearEntry) {
+    return {
+      subtitle: '标准寸照、换底色与换装入口，一页轻松搞定',
+      tags: ['常用尺寸', '正式换装']
+    };
+  }
+
+  return {
+    subtitle: '标准寸照、换底色与尺寸模板一页直达，制作动线更清晰',
+    tags: ['常用尺寸', '模板直达']
+  };
+}
+
+function getVisibleQuickActions() {
+  if (!HOME_FEATURE_FLAGS.showFormalWearEntry) {
+    return [];
+  }
+  return QUICK_ACTIONS;
+}
+
 const HOME_TEMPLATE_MAP = {
   popular: [
     {
@@ -357,6 +382,8 @@ function matchTemplateKeyword(item = {}, keyword = '') {
 
 Page({
   data: {
+    showFormalWearEntry: HOME_FEATURE_FLAGS.showFormalWearEntry,
+    brandContent: getHomeBrandContent(),
     loading: true,
     error: false,
     errorMessage: '',
@@ -364,7 +391,7 @@ Page({
     activeTab: HOME_TABS[0].key,
     activeTabLabel: HOME_TABS[0].label,
     mainActions: MAIN_ACTIONS,
-    quickActions: QUICK_ACTIONS,
+    quickActions: getVisibleQuickActions(),
     allTemplateList: [],
     templateList: [],
     searchKeyword: '',
