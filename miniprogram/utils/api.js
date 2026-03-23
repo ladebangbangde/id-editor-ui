@@ -178,6 +178,13 @@ function normalizeHistoryItem(item = {}) {
   };
 }
 
+function clearAuthState() {
+  const app = getApp();
+  if (app && typeof app.clearAuthState === 'function') {
+    app.clearAuthState();
+  }
+}
+
 function healthCheck() {
   const app = getApp();
   return request(`${app.globalData.apiHost}/health`, 'GET', {}, {
@@ -188,18 +195,21 @@ function healthCheck() {
 function wxLogin(payload = {}) {
   return request(`${getBaseUrl()}/auth/wx-login`, 'POST', payload, {
     skipAuth: true,
-    showErrorToast: false
+    showErrorToast: false,
+    handleUnauthorized: false
   }).then(unwrap);
 }
 
 function getMe() {
   return request(`${getBaseUrl()}/auth/me`, 'GET', {}, {
     skipAuth: true,
-    showErrorToast: false
+    showErrorToast: false,
+    handleUnauthorized: false
   }).then(unwrap);
 }
 
 function logout() {
+  clearAuthState();
   const app = getApp();
   if (app && typeof app.logout === 'function') {
     return app.logout();
@@ -424,7 +434,6 @@ function getAdminStats(token) {
   }).then(unwrap);
 }
 
-
 function normalizeFormalWearTask(task = {}) {
   const normalized = normalizeAssetPayload(task);
   const options = normalized.options || normalized.config || {};
@@ -499,6 +508,7 @@ module.exports = {
   healthCheck,
   wxLogin,
   getMe,
+  clearAuthState,
   logout,
   adminLogin,
   getScenes,
@@ -521,14 +531,12 @@ module.exports = {
   downloadPreview,
   downloadHd,
   downloadPrint,
+  getAdminStats,
+  buildFormalWearMockResult,
   createFormalWearTask,
   getFormalWearTask,
-  buildFormalWearMockResult,
-  getAdminStats,
-  normalizeScene,
   normalizeAssetUrl,
   normalizeAssetPayload,
   normalizeHistoryItem,
-  normalizePhotoProcessFailure,
   normalizeFormalWearTask
 };

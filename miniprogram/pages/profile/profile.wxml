@@ -6,8 +6,8 @@
     <view class="user-copy">
       <view class="user-head">
         <view class="title-md">{{nickname}}</view>
-        <view class="login-badge {{isLoggedIn ? 'login-badge-success' : 'login-badge-pending'}}">
-          {{authLoading ? '登录中' : (isLoggedIn ? '已登录' : '未登录')}}
+        <view class="login-badge {{isLoggedIn ? 'login-badge-success' : (authLoading ? 'login-badge-pending' : 'login-badge-default')}}">
+          {{statusText}}
         </view>
       </view>
       <view class="text-muted welcome-text">{{welcomeText}}</view>
@@ -16,14 +16,18 @@
   </view>
 
   <view class="card section auth-card">
+    <view wx:if="{{authLoading}}" class="auth-loading-box">
+      <view class="auth-loading-text">正在完成微信登录与用户状态校验</view>
+    </view>
+
     <button
-      wx:if="{{!isLoggedIn}}"
+      wx:elif="{{!isLoggedIn}}"
       class="auth-btn auth-btn-primary"
       bindtap="handleLoginTap"
       loading="{{authLoading}}"
       disabled="{{authLoading}}"
     >
-      微信一键登录
+      {{loginActionText}}
     </button>
 
     <view wx:else class="auth-actions">
@@ -33,7 +37,7 @@
         loading="{{authLoading}}"
         disabled="{{authLoading}}"
       >
-        刷新登录态
+        重新登录
       </button>
       <button class="auth-btn auth-btn-ghost" bindtap="handleLogoutTap">退出登录</button>
     </view>

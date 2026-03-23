@@ -35,13 +35,22 @@ function normalizeList(list) {
   return Array.isArray(list) ? list.filter(Boolean) : [];
 }
 
+function pickMessage(payload = {}, fallbackMessage = '请求失败') {
+  const data = payload && typeof payload.data === 'object' ? payload.data : {};
+  return payload.message
+    || payload.msg
+    || data.message
+    || data.msg
+    || fallbackMessage;
+}
+
 function normalizeErrorPayload(payload = {}, fallbackMessage = '请求失败') {
   const data = payload && typeof payload.data === 'object' ? payload.data : {};
   const statusCode = Number(payload.statusCode || payload.code || data.code || 0);
 
   return {
     ...payload,
-    message: payload.message || payload.msg || fallbackMessage,
+    message: pickMessage(payload, fallbackMessage),
     code: payload.code || statusCode || '',
     statusCode,
     data,
@@ -98,6 +107,8 @@ function handleUnauthorized(payload = {}, options = {}) {
 
   if (app && typeof app.handleUnauthorized === 'function') {
     app.handleUnauthorized(payload);
+  } else if (app && typeof app.clearAuthState === 'function') {
+    app.clearAuthState({ keepError: true });
   }
 }
 
@@ -106,7 +117,8 @@ async function request(url, method = 'GET', data = {}, options = {}) {
     showLoading = false,
     loadingText = '加载中',
     header = {},
-    showErrorToast = true
+    showErrorToast = true,
+    handleUnauthorized: shouldHandleUnauthorized = true
   } = options;
 
   await ensureAuthReady(options);
@@ -126,13 +138,14 @@ async function request(url, method = 'GET', data = {}, options = {}) {
 
         if (res.statusCode >= 200 && res.statusCode < 300) {
           if (body.success === false) {
-            if (Number(body.code || (body.data && body.data.code) || 0) === 401) {
-              handleUnauthorized(body, { showErrorToast });
+            const errorCode = Number(body.code || (body.data && body.data.code) || 0);
+            if (errorCode === 401 && shouldHandleUnauthorized) {
+              handleUnauthorized(normalizeErrorPayload(body, '登录状态已失效'), { showErrorToast });
               rejectWithError(reject, body, '登录状态已失效', false);
               return;
             }
 
-            rejectWithError(reject, body, '请求失败', showErrorToast);
+            rejectWithError(reject, body, pickMessage(body, '请求失败'), showErrorToast);
             return;
           }
           resolve(body);
@@ -140,21 +153,23 @@ async function request(url, method = 'GET', data = {}, options = {}) {
         }
 
         if (res.statusCode === 401) {
-          handleUnauthorized({
+          const payload = {
             ...body,
             statusCode: res.statusCode
-          }, { showErrorToast });
-          rejectWithError(reject, {
-            ...body,
-            statusCode: res.statusCode
-          }, body.message || '登录状态已失效', false);
+          };
+
+          if (shouldHandleUnauthorized) {
+            handleUnauthorized(normalizeErrorPayload(payload, '登录状态已失效'), { showErrorToast });
+          }
+
+          rejectWithError(reject, payload, pickMessage(payload, '登录状态已失效'), false);
           return;
         }
 
         rejectWithError(reject, {
           ...body,
           statusCode: res.statusCode
-        }, body.message || '网络请求失败', showErrorToast);
+        }, pickMessage(body, '网络请求失败'), showErrorToast);
       },
       fail(err) {
         const error = {
@@ -179,7 +194,8 @@ async function uploadFile(url, filePath, formData = {}, options = {}) {
     showLoading = false,
     loadingText = '上传中',
     header = {},
-    showErrorToast = true
+    showErrorToast = true,
+    handleUnauthorized: shouldHandleUnauthorized = true
   } = options;
 
   await ensureAuthReady(options);
@@ -200,13 +216,14 @@ async function uploadFile(url, filePath, formData = {}, options = {}) {
           const body = parseUploadResponse(res.data);
           if (res.statusCode >= 200 && res.statusCode < 300) {
             if (body.success === false) {
-              if (Number(body.code || (body.data && body.data.code) || 0) === 401) {
-                handleUnauthorized(body, { showErrorToast });
+              const errorCode = Number(body.code || (body.data && body.data.code) || 0);
+              if (errorCode === 401 && shouldHandleUnauthorized) {
+                handleUnauthorized(normalizeErrorPayload(body, '登录状态已失效'), { showErrorToast });
                 rejectWithError(reject, body, '登录状态已失效', false);
                 return;
               }
 
-              rejectWithError(reject, body, '上传失败', showErrorToast);
+              rejectWithError(reject, body, pickMessage(body, '上传失败'), showErrorToast);
               return;
             }
             resolve(body);
@@ -214,21 +231,23 @@ async function uploadFile(url, filePath, formData = {}, options = {}) {
           }
 
           if (res.statusCode === 401) {
-            handleUnauthorized({
+            const payload = {
               ...body,
               statusCode: res.statusCode
-            }, { showErrorToast });
-            rejectWithError(reject, {
-              ...body,
-              statusCode: res.statusCode
-            }, body.message || '登录状态已失效', false);
+            };
+
+            if (shouldHandleUnauthorized) {
+              handleUnauthorized(normalizeErrorPayload(payload, '登录状态已失效'), { showErrorToast });
+            }
+
+            rejectWithError(reject, payload, pickMessage(payload, '登录状态已失效'), false);
             return;
           }
 
           rejectWithError(reject, {
             ...body,
             statusCode: res.statusCode
-          }, body.message || '上传失败', showErrorToast);
+          }, pickMessage(body, '上传失败'), showErrorToast);
         } catch (error) {
           const nextError = {
             ...error,

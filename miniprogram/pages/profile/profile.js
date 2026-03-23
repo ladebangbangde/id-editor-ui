@@ -1,24 +1,34 @@
 const { adminLogin, getAdminStats } = require('../../utils/api');
 
 function buildProfileState(app) {
-  const me = (app && app.globalData && app.globalData.me) || {};
-  const authToken = (app && app.globalData && app.globalData.authToken) || '';
-  const authLoading = Boolean(app && app.globalData && app.globalData.authLoading);
-  const loginError = (app && app.globalData && app.globalData.authError) || '';
+  const globalData = (app && app.globalData) || {};
+  const me = globalData.me || {};
+  const authToken = globalData.authToken || '';
+  const authLoading = Boolean(globalData.authLoading);
+  const authReady = Boolean(globalData.authReady);
+  const authStatus = globalData.authStatus || (authLoading ? 'loading' : (authToken ? 'authenticated' : 'anonymous'));
+  const loginError = globalData.authError || '';
   const nickname = me.nickname || me.nickName || me.name || '微信用户';
   const avatarUrl = me.avatarUrl || me.avatar || '';
   const avatarText = nickname ? nickname.slice(0, 1) : '用';
+  const isLoggedIn = Boolean(authToken);
+  const isLoginPending = authLoading || !authReady || authStatus === 'loading' || authStatus === 'restoring';
 
   return {
-    isLoggedIn: Boolean(authToken),
-    authLoading,
+    authStatus: isLoginPending ? 'loading' : (isLoggedIn ? 'authenticated' : 'anonymous'),
+    isLoggedIn,
+    authLoading: isLoginPending,
     loginError,
     nickname,
     avatarUrl,
     avatarText,
-    welcomeText: authToken
-      ? '欢迎回来'
-      : '登录后可同步你的作品与记录'
+    welcomeText: isLoginPending
+      ? '正在同步登录状态，请稍候'
+      : (isLoggedIn ? '欢迎回来，继续制作你的证件照' : '登录后可同步你的作品与记录'),
+    statusText: isLoginPending ? '登录中' : (isLoggedIn ? '已登录' : '未登录'),
+    loginActionText: loginError ? '重新登录' : '微信登录',
+    showRetry: !isLoggedIn && !isLoginPending,
+    showLogout: isLoggedIn && !isLoginPending
   };
 }
 
@@ -42,17 +52,38 @@ function getWechatProfile() {
 
 Page({
   data: {
+    authStatus: 'loading',
     isLoggedIn: false,
     authLoading: true,
     loginError: '',
     nickname: '微信用户',
     avatarUrl: '',
     avatarText: '用',
-    welcomeText: '登录中...'
+    welcomeText: '登录中...',
+    statusText: '登录中',
+    loginActionText: '微信登录',
+    showRetry: false,
+    showLogout: false
+  },
+
+  onLoad() {
+    const app = getApp();
+    if (app && typeof app.subscribeAuthState === 'function') {
+      this.unsubscribeAuthState = app.subscribeAuthState(() => {
+        this.syncProfileState();
+      });
+    }
   },
 
   onShow() {
     this.syncProfileState();
+  },
+
+  onUnload() {
+    if (typeof this.unsubscribeAuthState === 'function') {
+      this.unsubscribeAuthState();
+      this.unsubscribeAuthState = null;
+    }
   },
 
   syncProfileState() {
@@ -69,7 +100,7 @@ Page({
 
   async handleLoginTap() {
     const app = getApp();
-    this.setData({ authLoading: true, loginError: '' });
+    this.setData({ authLoading: true, loginError: '', authStatus: 'loading' });
 
     const profile = await getWechatProfile();
 
@@ -85,7 +116,7 @@ Page({
 
   async handleRefreshLogin() {
     const app = getApp();
-    this.setData({ authLoading: true, loginError: '' });
+    this.setData({ authLoading: true, loginError: '', authStatus: 'loading' });
 
     try {
       await app.ensureLogin({ force: true });
