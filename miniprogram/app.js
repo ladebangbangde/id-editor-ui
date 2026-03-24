@@ -111,6 +111,13 @@ App({
 
   persistAuthState({ token = '', me = null } = {}) {
     const normalizedMe = normalizeUser(me);
+    console.info('[auth] persistAuthState(before)', {
+      authToken: token || '',
+      authLoading: this.globalData.authLoading,
+      authReady: this.globalData.authReady,
+      authStatus: this.globalData.authStatus,
+      me: normalizedMe
+    });
 
     this.setAuthState({
       authToken: token || '',
@@ -118,6 +125,14 @@ App({
       authReady: true,
       authError: '',
       authStatus: token ? 'authenticated' : 'anonymous'
+    });
+
+    console.info('[auth] persistAuthState(after)', {
+      authToken: this.globalData.authToken,
+      authLoading: this.globalData.authLoading,
+      authReady: this.globalData.authReady,
+      authStatus: this.globalData.authStatus,
+      me: this.globalData.me
     });
 
     if (token) {
@@ -273,6 +288,13 @@ App({
         authLoading: false,
         authReady: true,
         authStatus: this.globalData.authToken ? 'authenticated' : 'anonymous'
+      });
+      console.info('[auth] loginFlow(finally)', {
+        authToken: this.globalData.authToken,
+        authLoading: this.globalData.authLoading,
+        authReady: this.globalData.authReady,
+        authStatus: this.globalData.authStatus,
+        me: this.globalData.me
       });
     }
   },

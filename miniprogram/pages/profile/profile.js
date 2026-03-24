@@ -11,8 +11,11 @@ function buildProfileState(app) {
   const nickname = me.nickname || me.nickName || me.name || '微信用户';
   const avatarUrl = me.avatarUrl || me.avatar || '';
   const avatarText = nickname ? nickname.slice(0, 1) : '用';
-  const isLoggedIn = Boolean(authToken);
-  const isLoginPending = authLoading || !authReady || authStatus === 'loading' || authStatus === 'restoring';
+  const hasMe = Boolean(me && typeof me === 'object' && Object.keys(me).length);
+  const isLoggedIn = Boolean(authToken || hasMe);
+  const isAuthenticatedState = authStatus === 'authenticated';
+  const hasStableLogin = isLoggedIn && (isAuthenticatedState || authReady);
+  const isLoginPending = !hasStableLogin && (authLoading || !authReady || authStatus === 'loading' || authStatus === 'restoring');
 
   return {
     authStatus: isLoginPending ? 'loading' : (isLoggedIn ? 'authenticated' : 'anonymous'),
@@ -87,7 +90,15 @@ Page({
   },
 
   syncProfileState() {
-    this.setData(buildProfileState(getApp()));
+    const profileState = buildProfileState(getApp());
+    console.info('[profile] syncProfileState', {
+      authToken: (getApp() && getApp().globalData && getApp().globalData.authToken) || '',
+      authLoading: profileState.authLoading,
+      authReady: Boolean(getApp() && getApp().globalData && getApp().globalData.authReady),
+      authStatus: profileState.authStatus,
+      me: (getApp() && getApp().globalData && getApp().globalData.me) || null
+    });
+    this.setData(profileState);
   },
 
   goHistory() {
@@ -110,6 +121,13 @@ Page({
     } catch (error) {
       wx.showToast({ title: error.message || '登录失败', icon: 'none' });
     } finally {
+      console.info('[profile] handleLoginTap(finally)', {
+        authToken: app.globalData.authToken || '',
+        authLoading: Boolean(app.globalData.authLoading),
+        authReady: Boolean(app.globalData.authReady),
+        authStatus: app.globalData.authStatus,
+        me: app.globalData.me || null
+      });
       this.syncProfileState();
     }
   },
