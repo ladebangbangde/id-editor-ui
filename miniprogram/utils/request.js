@@ -98,7 +98,25 @@ async function ensureAuthReady(options = {}) {
   }
 
   const app = getAppSafe();
-  if (!app || !app.globalData || app.globalData.authToken || typeof app.ensureLogin !== 'function') {
+  if (!app || !app.globalData || typeof app.ensureLogin !== 'function') {
+    return;
+  }
+
+  const { authToken, authReady, authStatus, authLoading, me } = app.globalData;
+  const hasToken = Boolean(authToken);
+  const status = authStatus || 'idle';
+  const shouldBypassLogin = hasToken && authReady && status !== 'loading' && status !== 'restoring';
+
+  console.info('[auth] ensureAuthReady(before)', {
+    authToken: hasToken ? '[exists]' : '',
+    authLoading: Boolean(authLoading),
+    authReady: Boolean(authReady),
+    authStatus: status,
+    me: me || null,
+    shouldBypassLogin
+  });
+
+  if (shouldBypassLogin) {
     return;
   }
 

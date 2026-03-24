@@ -12,10 +12,9 @@ function buildProfileState(app) {
   const avatarUrl = me.avatarUrl || me.avatar || '';
   const avatarText = nickname ? nickname.slice(0, 1) : '用';
   const hasMe = Boolean(me && typeof me === 'object' && Object.keys(me).length);
-  const isLoggedIn = Boolean(authToken || hasMe);
-  const isAuthenticatedState = authStatus === 'authenticated';
-  const hasStableLogin = isLoggedIn && (isAuthenticatedState || authReady);
-  const isLoginPending = !hasStableLogin && (authLoading || !authReady || authStatus === 'loading' || authStatus === 'restoring');
+  const hasToken = Boolean(authToken);
+  const isLoggedIn = Boolean(hasToken || hasMe);
+  const isLoginPending = authLoading || authStatus === 'loading' || authStatus === 'restoring';
 
   return {
     authStatus: isLoginPending ? 'loading' : (isLoggedIn ? 'authenticated' : 'anonymous'),
@@ -71,6 +70,8 @@ Page({
 
   onLoad() {
     const app = getApp();
+    this.pendingStatusSince = 0;
+    this.pendingHealTriggered = false;
     if (app && typeof app.subscribeAuthState === 'function') {
       this.unsubscribeAuthState = app.subscribeAuthState(() => {
         this.syncProfileState();
@@ -90,13 +91,48 @@ Page({
   },
 
   syncProfileState() {
-    const profileState = buildProfileState(getApp());
+    const app = getApp();
+    const globalData = (app && app.globalData) || {};
+    const hasToken = Boolean(globalData.authToken);
+    const hasMe = Boolean(globalData.me && typeof globalData.me === 'object' && Object.keys(globalData.me).length);
+    const authStatus = globalData.authStatus || 'idle';
+    const isPending = Boolean(globalData.authLoading) || authStatus === 'loading' || authStatus === 'restoring';
+
+    if (hasMe && !hasToken && app && typeof app.clearAuthState === 'function') {
+      console.warn('[profile] self-heal clear inconsistent auth state (me without token)');
+      app.clearAuthState();
+    }
+
+    if (isPending) {
+      if (!this.pendingStatusSince) {
+        this.pendingStatusSince = Date.now();
+      }
+      const pendingDuration = Date.now() - this.pendingStatusSince;
+      if (pendingDuration > 3000 && !this.pendingHealTriggered && app && typeof app.ensureLogin === 'function') {
+        this.pendingHealTriggered = true;
+        console.warn('[profile] self-heal trigger ensureLogin(force) after pending timeout', {
+          pendingDuration
+        });
+        app.ensureLogin({ force: true, silent: true })
+          .catch((error) => {
+            console.warn('[profile] self-heal ensureLogin(force) failed, fallback to anonymous', error);
+            if (typeof app.clearAuthState === 'function') {
+              app.clearAuthState({ keepError: true });
+            }
+          });
+      }
+    } else {
+      this.pendingStatusSince = 0;
+      this.pendingHealTriggered = false;
+    }
+
+    const profileState = buildProfileState(app);
     console.info('[profile] syncProfileState', {
-      authToken: (getApp() && getApp().globalData && getApp().globalData.authToken) || '',
+      authToken: (app && app.globalData && app.globalData.authToken) ? '[exists]' : '',
       authLoading: profileState.authLoading,
-      authReady: Boolean(getApp() && getApp().globalData && getApp().globalData.authReady),
+      authReady: Boolean(app && app.globalData && app.globalData.authReady),
       authStatus: profileState.authStatus,
-      me: (getApp() && getApp().globalData && getApp().globalData.me) || null
+      me: (app && app.globalData && app.globalData.me) || null
     });
     this.setData(profileState);
   },
