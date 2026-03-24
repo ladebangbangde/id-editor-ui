@@ -1,6 +1,7 @@
 .panel { padding: 24rpx; }
+.meta-row { display: flex; justify-content: space-between; align-items: center; margin: 12rpx 0; color: #334155; }
 .preview-wrap { margin-top: 14rpx; height: 420rpx; border-radius: 20rpx; background: #f8fafc; border: 1rpx solid #e6ecf3; display: flex; align-items: center; justify-content: center; }
-.preview { width: 100%; height: 100%; }
+.preview { width: 100%; height: 420rpx; border-radius: 16rpx; background: #f8fafc; }
 .waiting { color: #94a3b8; font-size: 24rpx; }
 .button-row { display: flex; gap: 12rpx; }
 .button-item { flex: 1; }

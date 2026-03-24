@@ -6,7 +6,7 @@
     <view class="user-copy">
       <view class="user-head">
         <view class="title-md">{{nickname}}</view>
-        <view class="login-badge {{isLoggedIn ? 'login-badge-success' : (authLoading ? 'login-badge-pending' : 'login-badge-default')}}">
+        <view class="login-badge {{statusBadgeClass}}">
           {{statusText}}
         </view>
       </view>

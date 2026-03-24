@@ -1,11 +1,13 @@
 const { getPhotoTask } = require('../../utils/api');
 const { formatTime, getColorLabel } = require('../../utils/format');
 const { saveImageFromUrl } = require('../../utils/save-image');
+const { setFlowDraft } = require('../../utils/flow-draft');
 const {
   getFriendlySceneName,
   getFriendlySceneHint,
   getFriendlySizeText,
-  getQualityStatusLabel
+  getQualityStatusLabel,
+  pickBestImageUrl
 } = require('../../utils/photo-display');
 
 function normalizeDetail(detail = {}) {
@@ -25,6 +27,16 @@ function normalizeDetail(detail = {}) {
     resultUrl: detail.resultUrl || detail.previewUrl || '',
     hdUrl: detail.hdUrl || detail.resultUrl || detail.previewUrl || '',
     printLayoutUrl: detail.printLayoutUrl || detail.layoutUrl || '',
+    displayUrl: pickBestImageUrl(detail),
+    sourceImageUrl: detail.originalUrl || detail.sourceImageUrl || '',
+    sourceImagePath: detail.sourceImagePath || '',
+    sceneInfo: detail.scene || {
+      sceneKey: detail.sceneKey || detail.sizeCode || '',
+      sceneName: detail.sceneName || '',
+      widthMm: detail.widthMm || 0,
+      heightMm: detail.heightMm || 0
+    },
+    formalWearOption: detail.formalWearOption || 'none',
     qualityStatus: getQualityStatusLabel(detail.qualityStatus),
     qualityMessage: detail.qualityMessage || '',
     warnings,
@@ -79,6 +91,25 @@ Page({
   },
 
   remake() {
-    wx.redirectTo({ url: '/pages/upload/upload' });
+    const { record } = this.data;
+    if (!record) return;
+    setFlowDraft({
+      sourceImagePath: record.sourceImagePath || '',
+      sourceImageUrl: record.sourceImageUrl || record.displayUrl || '',
+      flowType: record.formalWearOption && record.formalWearOption !== 'none' ? 'formalWear' : 'idPhoto',
+      flowMode: 'template',
+      needSelectSize: false,
+      selectedScene: record.sceneInfo || null,
+      selectedSizeCode: record.sizeCode || (record.sceneInfo && record.sceneInfo.sceneKey) || '',
+      backgroundColor: record.backgroundColor || 'white',
+      formalWearOption: record.formalWearOption || 'none',
+      fromHistoryTaskId: record.taskId || ''
+    });
+    wx.navigateTo({ url: '/pages/editor/editor' });
+  },
+
+  handleDelete() {
+    // TODO(server): 历史删除接口接入后，替换为真实 delete task 调用。
+    wx.showToast({ title: '删除能力建设中', icon: 'none' });
   }
 });
