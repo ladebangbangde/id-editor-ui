@@ -3,3 +3,6 @@
 .label { display: block; margin-bottom: 8rpx; font-size: 24rpx; color: #475569; }
 .input { height: 84rpx; border: 1rpx solid #dce3ec; border-radius: 16rpx; padding: 0 20rpx; background: #fff; }
 .tip { margin-top: 8rpx; }
+.size-list { display: flex; flex-direction: column; gap: 12rpx; margin-top: 12rpx; }
+.size-item { border: 1rpx solid #dce3ec; border-radius: 16rpx; padding: 16rpx 20rpx; background: #fff; }
+.size-item.active { border-color: #315efb; background: #eef3ff; }

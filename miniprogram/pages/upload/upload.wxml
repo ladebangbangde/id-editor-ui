@@ -1,7 +1,7 @@
 <view class="container">
   <view class="card section panel">
     <view class="title-lg">上传照片</view>
-    <view class="text-muted current">当前选择：{{sceneInfo.sceneName || '自定义尺寸'}}</view>
+    <view class="text-muted current">模板默认：{{sceneInfo.sceneName || '未指定（拍完可选尺寸）'}}</view>
     <view class="tips">
       <view>请正对镜头</view>
       <view>光线充足</view>
@@ -19,5 +19,5 @@
     <view class="button-item"><primary-button text="从相册选择" type="secondary" bind:tap="chooseFromAlbum"></primary-button></view>
   </view>
 
-  <primary-button text="下一步" bind:tap="nextStep"></primary-button>
+  <primary-button text="下一步：选择尺寸" bind:tap="nextStep"></primary-button>
 </view>

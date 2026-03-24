@@ -1,5 +1,6 @@
 const { getHomeTemplateConfig } = require('../../utils/api');
 const { getFriendlySceneName, getFriendlySceneHint } = require('../../utils/photo-display');
+const { resetFlowDraft } = require('../../utils/flow-draft');
 
 const HOME_TABS = [
   { key: 'popular', label: '热门尺寸' },
@@ -495,9 +496,12 @@ Page({
       return;
     }
 
-    wx.navigateTo({
-      url: `/pages/upload/upload?sceneKey=${item.sceneKey}&sceneName=${encodeURIComponent(item.name)}`
+    resetFlowDraft({
+      flowType: 'idPhoto',
+      selectedScene: item,
+      selectedSizeCode: item.sceneKey
     });
+    wx.navigateTo({ url: '/pages/upload/upload?autostartCamera=1&from=home-template' });
   },
 
   handleRetry() {
@@ -523,12 +527,17 @@ Page({
     }
 
     if (action.routeType === 'upload') {
-      wx.navigateTo({ url: '/pages/upload/upload' });
+      resetFlowDraft({ flowType: 'idPhoto' });
+      wx.navigateTo({ url: '/pages/upload/upload?autostartCamera=1&from=home-photo' });
       return;
     }
 
     if (action.routeType === 'background') {
-      wx.navigateTo({ url: '/pages/upload/upload?mode=background' });
+      resetFlowDraft({
+        flowType: 'idPhoto',
+        backgroundColor: 'blue'
+      });
+      wx.navigateTo({ url: '/pages/upload/upload?from=home-background' });
       return;
     }
 

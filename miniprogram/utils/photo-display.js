@@ -185,6 +185,15 @@ function getQualityStatusLabel(status = '') {
   return QUALITY_STATUS_MAP[status] || status || '处理中';
 }
 
+function pickBestImageUrl(input = {}) {
+  return input.displayUrl
+    || input.previewUrl
+    || input.resultUrl
+    || input.hdUrl
+    || input.originalUrl
+    || '';
+}
+
 module.exports = {
   SPEC_META,
   normalizeSpecKey,
@@ -194,5 +203,6 @@ module.exports = {
   getFriendlySceneHint,
   getFriendlySizeText,
   getFriendlyProcessingText,
-  getQualityStatusLabel
+  getQualityStatusLabel,
+  pickBestImageUrl
 };

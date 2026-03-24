@@ -1,11 +1,13 @@
 const { STORAGE_KEYS, MOCK_RESULT } = require('../../utils/constants');
 const storage = require('../../utils/storage');
 const { saveImageFromUrl } = require('../../utils/save-image');
+const { getFlowDraft } = require('../../utils/flow-draft');
 const {
   getFriendlySceneName,
   getFriendlySceneHint,
   getFriendlySizeText,
-  getQualityStatusLabel
+  getQualityStatusLabel,
+  pickBestImageUrl
 } = require('../../utils/photo-display');
 
 function buildRiskSummary(result = {}) {
@@ -63,8 +65,13 @@ Page({
 
   onShow() {
     const result = storage.get(STORAGE_KEYS.CURRENT_RESULT, null) || MOCK_RESULT;
+    const draft = getFlowDraft();
     this.setData({
-      result: normalizeResult(result)
+      result: normalizeResult({
+        ...result,
+        sourceImageUrl: result.sourceImageUrl || draft.sourceImageUrl || draft.sourceImagePath || '',
+        displayUrl: pickBestImageUrl(result)
+      })
     });
   },
 
@@ -75,8 +82,8 @@ Page({
   savePreview() {
     const { result } = this.data;
     this.saveAsset(result && result.previewUrl, {
-      loadingText: '正在保存预览图',
-      successText: '预览图已保存到相册'
+      loadingText: '正在保存普通图',
+      successText: '普通图已保存到相册'
     });
   },
 
@@ -102,6 +109,14 @@ Page({
   },
 
   remake() {
-    wx.redirectTo({ url: '/pages/upload/upload' });
+    wx.navigateTo({ url: '/pages/editor/editor' });
+  },
+
+  reselectSize() {
+    wx.navigateTo({ url: '/pages/custom-size/custom-size' });
+  },
+
+  retake() {
+    wx.redirectTo({ url: '/pages/upload/upload?autostartCamera=1&from=result-retake' });
   }
 });

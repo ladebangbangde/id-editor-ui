@@ -23,13 +23,16 @@
     </view>
 
     <view class="button-row section button-row-top">
-      <view class="button-item"><primary-button text="保存预览图" type="secondary" bind:tap="savePreview"></primary-button></view>
+      <view class="button-item"><primary-button text="保存普通图" type="secondary" bind:tap="savePreview"></primary-button></view>
       <view class="button-item"><primary-button text="保存高清图" bind:tap="saveHd"></primary-button></view>
     </view>
     <view wx:if="{{record.printLayoutUrl}}" class="section">
       <primary-button text="保存排版图" type="secondary" bind:tap="saveLayout"></primary-button>
     </view>
-    <primary-button text="重新制作" type="secondary" bind:tap="remake"></primary-button>
+    <view class="button-row section">
+      <view class="button-item"><primary-button text="按此参数重新编辑" type="secondary" bind:tap="remake"></primary-button></view>
+      <view class="button-item"><primary-button text="删除" type="secondary" bind:tap="handleDelete"></primary-button></view>
+    </view>
   </block>
   <block wx:else>
     <view class="card panel">未找到对应历史记录</view>

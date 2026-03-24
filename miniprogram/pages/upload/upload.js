@@ -1,56 +1,102 @@
-const { STORAGE_KEYS, SCENE_TEMPLATES } = require('../../utils/constants');
-const storage = require('../../utils/storage');
+const { SCENE_TEMPLATES } = require('../../utils/constants');
+const { getFlowDraft, setFlowDraft } = require('../../utils/flow-draft');
 
 const MAX_IMAGE_SIZE = 15 * 1024 * 1024;
 
-function resolveSceneInfo(options = {}, currentScene = null) {
-  if (currentScene && currentScene.scene) {
-    return currentScene.scene;
+function resolveSceneInfo(options = {}, draft = {}) {
+  if (draft.selectedScene) {
+    return draft.selectedScene;
   }
-
   if (!options.sceneKey) {
     return null;
   }
-
   const matched = SCENE_TEMPLATES.find((item) => item.sceneKey === options.sceneKey);
-  if (matched) {
-    return matched;
-  }
-
+  if (matched) return matched;
   return {
     sceneKey: options.sceneKey,
-    sceneName: options.sceneName ? decodeURIComponent(options.sceneName) : '证件照',
-    widthMm: Number(options.widthMm || 0),
-    heightMm: Number(options.heightMm || 0),
-    pixelWidth: Number(options.pixelWidth || 0),
-    pixelHeight: Number(options.pixelHeight || 0),
-    description: options.description ? decodeURIComponent(options.description) : ''
+    sceneName: options.sceneName ? decodeURIComponent(options.sceneName) : '证件照'
   };
 }
 
 Page({
   data: {
     sceneInfo: null,
-    imagePath: ''
+    imagePath: '',
+    autoStartCamera: false
   },
 
   onLoad(options) {
-    const current = storage.get(STORAGE_KEYS.CURRENT_SCENE, null);
-    const sceneInfo = resolveSceneInfo(options, current);
-    this.setData({ sceneInfo });
+    const draft = getFlowDraft();
+    const sceneInfo = resolveSceneInfo(options, draft);
+    const autoStartCamera = options.autostartCamera === '1';
 
-    const uploadData = storage.get(STORAGE_KEYS.CURRENT_UPLOAD, {});
-    if (uploadData.imagePath) {
-      this.setData({ imagePath: uploadData.imagePath });
+    this.setData({
+      sceneInfo,
+      imagePath: draft.sourceImagePath || '',
+      autoStartCamera
+    });
+
+    if (sceneInfo) {
+      setFlowDraft({ selectedScene: sceneInfo });
+    }
+  },
+
+  onShow() {
+    if (this.data.autoStartCamera) {
+      this.setData({ autoStartCamera: false });
+      this.tryOpenCameraWithPermission();
     }
   },
 
   chooseFromCamera() {
-    this.pickImage(['camera']);
+    this.tryOpenCameraWithPermission();
   },
 
   chooseFromAlbum() {
     this.pickImage(['album']);
+  },
+
+  tryOpenCameraWithPermission() {
+    wx.showModal({
+      title: '拍照权限说明',
+      content: '用于拍摄证件照原图，我们只会在你确认后使用该照片进行处理。',
+      confirmText: '继续',
+      success: (modalRes) => {
+        if (!modalRes.confirm) return;
+        wx.getSetting({
+          success: (settingRes) => {
+            const cameraAuth = settingRes.authSetting && settingRes.authSetting['scope.camera'];
+            if (cameraAuth === false) {
+              this.promptOpenSetting();
+              return;
+            }
+            if (cameraAuth === true) {
+              this.pickImage(['camera']);
+              return;
+            }
+            wx.authorize({
+              scope: 'scope.camera',
+              success: () => this.pickImage(['camera']),
+              fail: () => this.promptOpenSetting()
+            });
+          },
+          fail: () => this.pickImage(['camera'])
+        });
+      }
+    });
+  },
+
+  promptOpenSetting() {
+    wx.showModal({
+      title: '需要相机权限',
+      content: '未获得相机权限，无法直接拍摄。你可以前往设置开启权限或改用相册上传。',
+      confirmText: '去设置',
+      success: (res) => {
+        if (res.confirm) {
+          wx.openSetting({});
+        }
+      }
+    });
   },
 
   pickImage(sourceType) {
@@ -70,6 +116,12 @@ Page({
         }
 
         this.setData({ imagePath: file.tempFilePath });
+        setFlowDraft({
+          sourceImagePath: file.tempFilePath,
+          sourceImageUrl: file.tempFilePath,
+          flowType: 'idPhoto',
+          selectedScene: this.data.sceneInfo || null
+        });
       }
     });
   },
@@ -79,12 +131,11 @@ Page({
       wx.showToast({ title: '请先上传照片', icon: 'none' });
       return;
     }
-
-    storage.set(STORAGE_KEYS.CURRENT_UPLOAD, {
-      imagePath: this.data.imagePath,
-      sceneInfo: this.data.sceneInfo
+    setFlowDraft({
+      sourceImagePath: this.data.imagePath,
+      sourceImageUrl: this.data.imagePath,
+      selectedScene: this.data.sceneInfo || null
     });
-    storage.remove(STORAGE_KEYS.CURRENT_RESULT);
-    wx.navigateTo({ url: '/pages/editor/editor' });
+    wx.navigateTo({ url: '/pages/custom-size/custom-size' });
   }
 });

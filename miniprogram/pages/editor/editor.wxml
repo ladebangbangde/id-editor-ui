@@ -1,39 +1,34 @@
 <view class="container">
   <view class="card section panel">
-    <view class="title-lg">{{displaySceneName || '自定义尺寸'}}</view>
-    <view class="text-muted">{{sceneInfo.widthMm || '--'}}×{{sceneInfo.heightMm || '--'}}mm / 蓝白红底可选</view>
+    <view class="title-lg">参数配置</view>
+    <view class="text-muted">支持重新选尺寸、切换底色和一键换装选项。</view>
   </view>
 
   <view class="card section panel">
-    <view class="title-md">照片预览</view>
-    <view class="preview-wrap">
-      <image wx:if="{{imagePath}}" class="preview" src="{{imagePath}}" mode="aspectFit"></image>
-      <view wx:else class="waiting">待处理，请先上传照片</view>
-    </view>
+    <view class="title-md">原图</view>
+    <image wx:if="{{draft.sourceImagePath}}" class="preview" src="{{draft.sourceImagePath}}" mode="aspectFit"></image>
+    <view wx:else class="text-muted">还没有原图，请先上传</view>
   </view>
 
   <view class="card section panel">
-    <view class="title-md">背景颜色</view>
+    <view class="title-md">当前尺寸</view>
+    <view class="meta-row"><text>{{draft.selectedScene.sceneName || '未选择尺寸'}}</text><text>{{draft.selectedScene.widthMm || '--'}}×{{draft.selectedScene.heightMm || '--'}}mm</text></view>
+    <primary-button text="返回重新选尺寸" type="secondary" bind:tap="goSelectSize"></primary-button>
+  </view>
+
+  <view class="card section panel">
+    <view class="title-md">背景色</view>
     <color-picker value="{{selectedColor}}" bind:change="onColorChange"></color-picker>
   </view>
 
   <view class="card section panel">
-    <view class="title-md">规格信息</view>
-    <size-info-card info="{{sceneInfo}}" colorLabel="{{selectedColor==='white'?'白色':(selectedColor==='blue'?'蓝色':'红色')}}"></size-info-card>
+    <view class="title-md">一键换装</view>
+    <view class="text-muted">可与证件照主流程一起配置</view>
+    <view class="button-row">
+      <view class="button-item"><primary-button text="不换装" type="{{formalWearOption==='none'?'primary':'secondary'}}" data-value="none" bind:tap="onFormalWearChange"></primary-button></view>
+      <view class="button-item"><primary-button text="标准正装" type="{{formalWearOption==='standard'?'primary':'secondary'}}" data-value="standard" bind:tap="onFormalWearChange"></primary-button></view>
+    </view>
   </view>
 
-  <view wx:if="{{sizeCode}}" class="card section panel">
-    <view class="title-md">正在为你准备的照片规格</view>
-    <view class="text-muted">会按当前选择生成更适合上传的标准照片，不会出现难懂的规格代码。</view>
-  </view>
-
-  <view wx:if="{{unsupportedMessage}}" class="card section panel warning-panel">
-    <view class="title-md">暂不支持</view>
-    <view class="warning-text">{{unsupportedMessage}}</view>
-  </view>
-
-  <view class="button-row section">
-    <view class="button-item"><primary-button text="返回重选" type="secondary" bind:tap="goBack"></primary-button></view>
-    <view class="button-item"><primary-button text="生成证件照" loading="{{generating}}" bind:tap="handleGenerate"></primary-button></view>
-  </view>
+  <primary-button text="生成结果" loading="{{generating}}" bind:tap="handleGenerate"></primary-button>
 </view>

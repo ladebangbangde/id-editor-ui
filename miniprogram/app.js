@@ -91,37 +91,19 @@ App({
       ...this.globalData,
       ...patch
     };
-    console.info('[auth] setAuthState', {
-      authToken: this.globalData.authToken ? '[exists]' : '',
-      authLoading: this.globalData.authLoading,
-      authReady: this.globalData.authReady,
-      authStatus: this.globalData.authStatus,
-      me: this.globalData.me || null
-    });
     this.emitAuthStateChange();
   },
 
   restoreAuthState() {
     const token = wx.getStorageSync(AUTH_TOKEN_STORAGE_KEY) || '';
-    const rawMe = normalizeUser(wx.getStorageSync(AUTH_ME_STORAGE_KEY));
-    const me = token ? rawMe : null;
-    const nextStatus = token ? 'restoring' : 'anonymous';
-    const nextReady = !token;
+    const me = normalizeUser(wx.getStorageSync(AUTH_ME_STORAGE_KEY));
 
     this.setAuthState({
       authToken: token,
       me,
-      authReady: nextReady,
+      authReady: false,
       authError: '',
-      authStatus: nextStatus
-    });
-
-    console.info('[auth] restoreAuthState', {
-      authToken: token ? '[exists]' : '',
-      authLoading: this.globalData.authLoading,
-      authReady: this.globalData.authReady,
-      authStatus: this.globalData.authStatus,
-      me: this.globalData.me || null
+      authStatus: token ? 'restoring' : 'anonymous'
     });
 
     return { token, me };
@@ -308,7 +290,7 @@ App({
         authStatus: this.globalData.authToken ? 'authenticated' : 'anonymous'
       });
       console.info('[auth] loginFlow(finally)', {
-        authToken: this.globalData.authToken ? '[exists]' : '',
+        authToken: this.globalData.authToken,
         authLoading: this.globalData.authLoading,
         authReady: this.globalData.authReady,
         authStatus: this.globalData.authStatus,
