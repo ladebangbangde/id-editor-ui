@@ -5,7 +5,7 @@
     </view>
   </view>
 
-  <image class="thumb" src="{{record.previewUrl}}" mode="aspectFill"></image>
+  <image class="thumb" src="{{record.displayUrl || record.previewUrl}}" mode="aspectFill"></image>
 
   <view class="main">
     <view class="row-between">

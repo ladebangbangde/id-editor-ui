@@ -1,6 +1,7 @@
 const { getPhotoHistory } = require('../../utils/api');
 const { formatTime, getColorLabel } = require('../../utils/format');
 const { getFriendlySceneName, getFriendlySizeText } = require('../../utils/photo-display');
+const { pickBestImageUrl } = require('../../utils/image-url');
 
 function buildStatus(item = {}) {
   if (item.status) return item.status;
@@ -37,8 +38,9 @@ function normalizeRecord(item = {}) {
     sizeCode: item.sizeCode || '',
     background: backgroundColor,
     backgroundColor,
-    imageUrl: item.previewUrl || item.resultUrl || item.originalUrl || '',
-    previewUrl: item.previewUrl || item.resultUrl || item.originalUrl || '',
+    imageUrl: pickBestImageUrl([item.resultUrl, item.hdUrl, item.previewUrl, item.originalUrl]),
+    previewUrl: item.previewUrl || '',
+    displayUrl: pickBestImageUrl([item.resultUrl, item.hdUrl, item.previewUrl, item.originalUrl]),
     resultUrl: item.resultUrl || '',
     createdAt: formatTime(item.createdAt),
     status: buildStatus(item),

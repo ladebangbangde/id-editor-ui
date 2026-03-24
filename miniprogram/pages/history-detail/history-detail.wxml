@@ -1,7 +1,7 @@
 <view class="container">
   <block wx:if="{{record}}">
     <view class="card section panel">
-      <image class="preview" src="{{record.previewUrl}}" mode="aspectFit"></image>
+      <image class="preview" src="{{record.displayUrl || record.previewUrl}}" mode="aspectFit"></image>
     </view>
 
     <view class="card section panel">
