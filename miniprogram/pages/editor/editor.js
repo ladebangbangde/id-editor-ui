@@ -4,6 +4,7 @@ const { processPhoto, getPhotoTask } = require('../../utils/api');
 const storage = require('../../utils/storage');
 const { STORAGE_KEYS } = require('../../utils/constants');
 const { getFlowDraft, setFlowDraft } = require('../../utils/flow-draft');
+const { toCanonicalSizeCode } = require('../../utils/size-codes');
 
 function normalizeWarnings(warnings) {
   return Array.isArray(warnings) ? warnings.filter(Boolean) : [];
@@ -72,9 +73,19 @@ Page({
     });
 
     try {
+      const canonicalSizeCode = toCanonicalSizeCode(draft.selectedSizeCode || draft.selectedScene.sceneKey)
+        || (draft.selectedSizeCode === 'custom' ? 'one_inch' : '');
+      if (!canonicalSizeCode) {
+        wx.showToast({ title: '当前尺寸暂不支持，请更换尺寸', icon: 'none' });
+        return;
+      }
+      if (draft.selectedSizeCode === 'custom') {
+        // TODO(server): 服务端支持完全自定义尺寸后，改为透传 customSize 生成而非一寸兜底。
+        wx.showToast({ title: '当前先按一寸规格生成', icon: 'none' });
+      }
       // TODO(server): 待后端支持统一的“证件照+换装”处理接口后，这里按 formalWearOption 调用对应生成能力。
       const processed = await processPhoto(draft.sourceImagePath, {
-        sizeCode: draft.selectedSizeCode || draft.selectedScene.sceneKey,
+        sizeCode: canonicalSizeCode,
         backgroundColor: selectedColor,
         enhance: false
       });
@@ -93,7 +104,7 @@ Page({
         resultUrl: latestResult.resultUrl || processed.resultUrl || '',
         backgroundColor: latestResult.backgroundColor || processed.backgroundColor || selectedColor,
         backgroundColorLabel: getColorLabel(latestResult.backgroundColor || processed.backgroundColor || selectedColor),
-        sizeCode: latestResult.sizeCode || processed.sizeCode || draft.selectedSizeCode || '',
+        sizeCode: latestResult.sizeCode || processed.sizeCode || canonicalSizeCode,
         width: latestResult.width || processed.width || sceneInfo.pixelWidth || 0,
         height: latestResult.height || processed.height || sceneInfo.pixelHeight || 0,
         warnings: normalizeWarnings(latestResult.warnings || processed.warnings),

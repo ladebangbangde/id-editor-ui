@@ -9,7 +9,6 @@ const {
   getQualityStatusLabel,
   pickBestImageUrl
 } = require('../../utils/photo-display');
-const { isLikelyLocalPath, pickBestImageUrl } = require('../../utils/image-url');
 
 function normalizeDetail(detail = {}) {
   const warnings = Array.isArray(detail.warnings) ? detail.warnings : [];
@@ -24,13 +23,9 @@ function normalizeDetail(detail = {}) {
       || (detail.backgroundColor ? getColorLabel(detail.backgroundColor) : '')
       || detail.backgroundColor
       || '--',
-    previewUrl: detail.previewUrl || '',
+    previewUrl: detail.previewUrl || detail.resultUrl || detail.originalUrl || '',
     resultUrl: detail.resultUrl || detail.previewUrl || '',
     hdUrl: detail.hdUrl || detail.resultUrl || detail.previewUrl || '',
-    displayUrl: pickBestImageUrl([detail.resultUrl, detail.hdUrl, detail.previewUrl, detail.originalUrl]),
-    previewSaveUrl: isLikelyLocalPath(detail.previewUrl || '')
-      ? pickBestImageUrl([detail.resultUrl, detail.hdUrl, detail.previewUrl, detail.originalUrl])
-      : pickBestImageUrl([detail.previewUrl, detail.resultUrl, detail.hdUrl, detail.originalUrl]),
     printLayoutUrl: detail.printLayoutUrl || detail.layoutUrl || '',
     displayUrl: pickBestImageUrl(detail),
     sourceImageUrl: detail.originalUrl || detail.sourceImageUrl || '',
@@ -72,7 +67,7 @@ Page({
 
   async savePreview() {
     const { record } = this.data;
-    await saveImageFromUrl(record && (record.previewSaveUrl || record.displayUrl || record.previewUrl), {
+    await saveImageFromUrl(record && record.previewUrl, {
       loadingText: '正在保存预览图',
       successText: '预览图已保存到相册'
     });
@@ -102,6 +97,8 @@ Page({
       sourceImagePath: record.sourceImagePath || '',
       sourceImageUrl: record.sourceImageUrl || record.displayUrl || '',
       flowType: record.formalWearOption && record.formalWearOption !== 'none' ? 'formalWear' : 'idPhoto',
+      flowMode: 'template',
+      needSelectSize: false,
       selectedScene: record.sceneInfo || null,
       selectedSizeCode: record.sizeCode || (record.sceneInfo && record.sceneInfo.sceneKey) || '',
       backgroundColor: record.backgroundColor || 'white',

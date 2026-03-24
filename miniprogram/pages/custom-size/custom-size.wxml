@@ -20,7 +20,8 @@
     <view class="size-list">
       <view wx:for="{{hotSizes}}" wx:key="code" class="size-item {{selectedSizeCode===item.code?'active':''}}" data-code="{{item.code}}" bindtap="handleSelectSize">
         <view>{{item.name}}</view>
-        <view class="text-muted">{{item.sizeText}}</view>
+        <view class="text-muted">{{item.usage}}</view>
+        <view class="text-muted">{{item.sizeText}} / {{item.pixelText}}</view>
       </view>
     </view>
   </view>
@@ -30,7 +31,8 @@
     <view class="size-list">
       <view wx:for="{{filteredSizes}}" wx:key="code" class="size-item {{selectedSizeCode===item.code?'active':''}}" data-code="{{item.code}}" bindtap="handleSelectSize">
         <view>{{item.name}}</view>
-        <view class="text-muted">{{item.sizeText}}</view>
+        <view class="text-muted">{{item.usage}}</view>
+        <view class="text-muted">{{item.sizeText}} / {{item.pixelText}}</view>
       </view>
     </view>
   </view>
@@ -38,6 +40,7 @@
   <view class="card section panel">
     <view class="title-md">自定义尺寸</view>
     <view class="text-muted">适用于特殊尺寸场景</view>
+    <view class="text-muted">若服务端暂不支持，将按一寸兜底生成（后续支持将自动切换）。</view>
     <primary-button text="{{customMode ? '取消自定义' : '使用自定义尺寸'}}" type="secondary" bind:tap="toggleCustomMode"></primary-button>
     <block wx:if="{{customMode}}">
       <view class="field">

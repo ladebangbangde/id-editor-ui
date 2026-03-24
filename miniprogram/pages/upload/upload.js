@@ -1,5 +1,6 @@
 const { SCENE_TEMPLATES } = require('../../utils/constants');
 const { getFlowDraft, setFlowDraft } = require('../../utils/flow-draft');
+const { toCanonicalSizeCode, buildSceneBySizeCode } = require('../../utils/size-codes');
 
 const MAX_IMAGE_SIZE = 15 * 1024 * 1024;
 
@@ -22,23 +23,38 @@ Page({
   data: {
     sceneInfo: null,
     imagePath: '',
-    autoStartCamera: false
+    autoStartCamera: false,
+    flowMode: 'free',
+    needSelectSize: true,
+    selectedSizeCode: ''
   },
 
   onLoad(options) {
     const draft = getFlowDraft();
     const sceneInfo = resolveSceneInfo(options, draft);
     const autoStartCamera = options.autostartCamera === '1';
+    const flowMode = options.flowMode || draft.flowMode || 'free';
+    const needSelectSize = options.needSelectSize
+      ? options.needSelectSize !== '0'
+      : (typeof draft.needSelectSize === 'boolean' ? draft.needSelectSize : true);
+    const selectedSizeCode = toCanonicalSizeCode(options.selectedSizeCode || draft.selectedSizeCode || (sceneInfo && sceneInfo.sceneKey)) || '';
+    const canonicalScene = buildSceneBySizeCode(selectedSizeCode);
 
     this.setData({
-      sceneInfo,
+      sceneInfo: canonicalScene || sceneInfo,
       imagePath: draft.sourceImagePath || '',
-      autoStartCamera
+      autoStartCamera,
+      flowMode,
+      needSelectSize,
+      selectedSizeCode
     });
 
-    if (sceneInfo) {
-      setFlowDraft({ selectedScene: sceneInfo });
-    }
+    setFlowDraft({
+      flowMode,
+      needSelectSize,
+      selectedSizeCode,
+      selectedScene: canonicalScene || sceneInfo || null
+    });
   },
 
   onShow() {
@@ -120,6 +136,9 @@ Page({
           sourceImagePath: file.tempFilePath,
           sourceImageUrl: file.tempFilePath,
           flowType: 'idPhoto',
+          flowMode: this.data.flowMode,
+          needSelectSize: this.data.needSelectSize,
+          selectedSizeCode: this.data.selectedSizeCode || '',
           selectedScene: this.data.sceneInfo || null
         });
       }
@@ -134,8 +153,15 @@ Page({
     setFlowDraft({
       sourceImagePath: this.data.imagePath,
       sourceImageUrl: this.data.imagePath,
+      flowMode: this.data.flowMode,
+      needSelectSize: this.data.needSelectSize,
+      selectedSizeCode: this.data.selectedSizeCode || '',
       selectedScene: this.data.sceneInfo || null
     });
-    wx.navigateTo({ url: '/pages/custom-size/custom-size' });
+    if (this.data.needSelectSize) {
+      wx.navigateTo({ url: '/pages/custom-size/custom-size' });
+      return;
+    }
+    wx.navigateTo({ url: '/pages/editor/editor' });
   }
 });

@@ -6,6 +6,8 @@ function createDefaultDraft() {
     sourceImagePath: '',
     sourceImageUrl: '',
     flowType: 'idPhoto',
+    flowMode: 'free',
+    needSelectSize: true,
     selectedScene: null,
     selectedSizeCode: '',
     customSize: null,

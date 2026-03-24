@@ -19,5 +19,5 @@
     <view class="button-item"><primary-button text="从相册选择" type="secondary" bind:tap="chooseFromAlbum"></primary-button></view>
   </view>
 
-  <primary-button text="下一步：选择尺寸" bind:tap="nextStep"></primary-button>
+  <primary-button text="{{needSelectSize ? '下一步：选择尺寸' : '下一步：参数配置'}}" bind:tap="nextStep"></primary-button>
 </view>

@@ -1,6 +1,7 @@
 const { getHomeTemplateConfig } = require('../../utils/api');
 const { getFriendlySceneName, getFriendlySceneHint } = require('../../utils/photo-display');
 const { resetFlowDraft } = require('../../utils/flow-draft');
+const { toCanonicalSizeCode, buildSceneBySizeCode } = require('../../utils/size-codes');
 
 const HOME_TABS = [
   { key: 'popular', label: '热门尺寸' },
@@ -340,6 +341,8 @@ function buildPixelText(item = {}) {
 
 function normalizeTemplate(item = {}) {
   const sceneKey = item.sceneKey || item.scene_key || '';
+  const canonicalSizeCode = toCanonicalSizeCode(sceneKey);
+  const canonicalScene = buildSceneBySizeCode(canonicalSizeCode);
   const sceneName = item.sceneName || item.scene_name || item.name || '';
   const tags = Array.isArray(item.tags) ? item.tags : [];
   return {
@@ -355,7 +358,9 @@ function normalizeTemplate(item = {}) {
     displayTags: tags.slice(0, 2),
     tip: item.tip || item.description || getFriendlySceneHint({ sceneKey }) || '',
     hot: Boolean(item.hot || item.featured),
-    pixelText: buildPixelText(item)
+    pixelText: buildPixelText(item),
+    canonicalSizeCode,
+    canonicalScene
   };
 }
 
@@ -498,10 +503,12 @@ Page({
 
     resetFlowDraft({
       flowType: 'idPhoto',
-      selectedScene: item,
-      selectedSizeCode: item.sceneKey
+      flowMode: 'template',
+      needSelectSize: false,
+      selectedScene: item.canonicalScene || buildSceneBySizeCode('one_inch'),
+      selectedSizeCode: item.canonicalSizeCode || 'one_inch'
     });
-    wx.navigateTo({ url: '/pages/upload/upload?autostartCamera=1&from=home-template' });
+    wx.navigateTo({ url: `/pages/upload/upload?autostartCamera=1&flowMode=template&needSelectSize=0&selectedSizeCode=${item.canonicalSizeCode || 'one_inch'}&from=home-template` });
   },
 
   handleRetry() {
@@ -527,17 +534,19 @@ Page({
     }
 
     if (action.routeType === 'upload') {
-      resetFlowDraft({ flowType: 'idPhoto' });
-      wx.navigateTo({ url: '/pages/upload/upload?autostartCamera=1&from=home-photo' });
+      resetFlowDraft({ flowType: 'idPhoto', flowMode: 'free', needSelectSize: true });
+      wx.navigateTo({ url: '/pages/upload/upload?autostartCamera=1&flowMode=free&needSelectSize=1&from=home-photo' });
       return;
     }
 
     if (action.routeType === 'background') {
       resetFlowDraft({
         flowType: 'idPhoto',
+        flowMode: 'free',
+        needSelectSize: true,
         backgroundColor: 'blue'
       });
-      wx.navigateTo({ url: '/pages/upload/upload?from=home-background' });
+      wx.navigateTo({ url: '/pages/upload/upload?flowMode=free&needSelectSize=1&from=home-background' });
       return;
     }
 

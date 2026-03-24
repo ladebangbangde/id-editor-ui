@@ -30,6 +30,7 @@ function buildProfileState(app) {
       : (isLoggedIn ? '欢迎回来，继续制作你的证件照' : '登录后可同步你的作品与记录'),
     statusText: isLoginPending ? '登录中' : (isLoggedIn ? '已登录' : '未登录'),
     loginActionText: loginError ? '重新登录' : '微信登录',
+    statusBadgeClass: isLoggedIn ? 'login-badge-success' : (isLoginPending ? 'login-badge-pending' : 'login-badge-default'),
     showRetry: !isLoggedIn && !isLoginPending,
     showLogout: isLoggedIn && !isLoginPending
   };
@@ -65,6 +66,7 @@ Page({
     welcomeText: '登录中...',
     statusText: '登录中',
     loginActionText: '微信登录',
+    statusBadgeClass: 'login-badge-pending',
     showRetry: false,
     showLogout: false
   },
@@ -79,7 +81,26 @@ Page({
   },
 
   onShow() {
-    this.syncProfileState();
+    try {
+      this.syncProfileState();
+    } catch (error) {
+      console.error('[profile] onShow fallback', error);
+      this.setData({
+        authStatus: 'anonymous',
+        isLoggedIn: false,
+        authLoading: false,
+        loginError: '',
+        nickname: '微信用户',
+        avatarUrl: '',
+        avatarText: '用',
+        welcomeText: '欢迎使用，登录后可同步作品与记录',
+        statusText: '未登录',
+        loginActionText: '微信登录',
+        statusBadgeClass: 'login-badge-default',
+        showRetry: true,
+        showLogout: false
+      });
+    }
   },
 
   onUnload() {

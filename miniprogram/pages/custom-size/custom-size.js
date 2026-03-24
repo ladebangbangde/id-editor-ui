@@ -1,15 +1,16 @@
-const { SCENE_TEMPLATES } = require('../../utils/constants');
 const { getFlowDraft, setFlowDraft } = require('../../utils/flow-draft');
 const storage = require('../../utils/storage');
+const { CANONICAL_SIZE_OPTIONS, buildSceneBySizeCode } = require('../../utils/size-codes');
 
 const RECENT_SIZE_KEY = 'recent_size_codes';
 
 function normalizeTemplate(item = {}) {
   return {
     ...item,
-    code: item.sceneKey,
-    name: item.sceneName || item.name || item.sceneKey,
-    sizeText: `${item.widthMm || '--'}×${item.heightMm || '--'}mm`
+    code: item.sizeCode,
+    name: item.label,
+    sizeText: `${item.widthMm || '--'}×${item.heightMm || '--'}mm`,
+    pixelText: `${item.pixelWidth || '--'}×${item.pixelHeight || '--'}px`
   };
 }
 
@@ -27,7 +28,7 @@ Page({
   },
 
   onLoad() {
-    const allSizes = SCENE_TEMPLATES.map(normalizeTemplate);
+    const allSizes = CANONICAL_SIZE_OPTIONS.map(normalizeTemplate);
     const draft = getFlowDraft();
     const selectedSizeCode = draft.selectedSizeCode || (draft.selectedScene && draft.selectedScene.sceneKey) || '';
     const recentCodes = storage.get(RECENT_SIZE_KEY, []);
@@ -91,6 +92,8 @@ Page({
         pixelHeight: Math.round(height * 11.8)
       };
       setFlowDraft({
+        flowMode: 'free',
+        needSelectSize: false,
         selectedScene: customScene,
         selectedSizeCode: 'custom',
         customSize: { widthMm: width, heightMm: height }
@@ -104,9 +107,10 @@ Page({
       return;
     }
 
-    const selectedScene = this.data.allSizes.find((item) => item.code === this.data.selectedSizeCode);
+    const selectedScene = buildSceneBySizeCode(this.data.selectedSizeCode);
     this.saveRecent(this.data.selectedSizeCode);
     setFlowDraft({
+      needSelectSize: false,
       selectedScene: selectedScene || null,
       selectedSizeCode: this.data.selectedSizeCode,
       customSize: null
