@@ -1,12 +1,17 @@
 .hero-card { padding: 32rpx 24rpx; background: linear-gradient(180deg, #fff7ed 0%, #ffffff 100%); border: 1rpx solid #fdba74; }
 .hero-icon { width: 72rpx; height: 72rpx; margin-bottom: 16rpx; border-radius: 50%; background: #f97316; color: #ffffff; font-size: 42rpx; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.hero-title { margin-top: 12rpx; color: #7c2d12; font-size: 30rpx; font-weight: 700; line-height: 1.5; }
 .hero-desc { margin-top: 12rpx; color: #9a3412; font-size: 26rpx; line-height: 1.7; }
+.hero-summary { margin-top: 8rpx; color: #b45309; font-size: 24rpx; line-height: 1.7; }
 .panel { padding: 24rpx; }
 .meta-row { display: flex; justify-content: space-between; gap: 16rpx; padding: 12rpx 0; font-size: 25rpx; color: #334155; border-bottom: 1rpx solid #edf1f5; }
 .meta-row:last-child { border-bottom: none; }
-.reason-panel { background: #fff7ed; border: 1rpx solid #fed7aa; }
-.suggestion-panel { background: #f0fdf4; border: 1rpx solid #86efac; }
+.reason-panel { background: #fff1f2; border: 1rpx solid #fecdd3; }
+.suggestion-panel { background: #ecfeff; border: 1rpx solid #a5f3fc; }
 .detail-item { display: flex; gap: 16rpx; margin-top: 18rpx; align-items: flex-start; }
-.detail-index { width: 40rpx; height: 40rpx; border-radius: 50%; background: rgba(249, 115, 22, 0.14); color: #c2410c; font-size: 22rpx; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.detail-index.success { background: rgba(34, 197, 94, 0.14); color: #15803d; }
-.detail-text { flex: 1; color: #1e293b; font-size: 26rpx; line-height: 1.7; }
+.detail-index { width: 40rpx; height: 40rpx; border-radius: 50%; background: rgba(225, 29, 72, 0.12); color: #be123c; font-size: 22rpx; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.detail-index.success { background: rgba(6, 182, 212, 0.14); color: #0e7490; }
+.detail-main { flex: 1; }
+.detail-title { color: #0f172a; font-size: 26rpx; line-height: 1.7; }
+.detail-sub { margin-top: 6rpx; color: #475569; font-size: 24rpx; line-height: 1.7; }
+.detail-code { margin-top: 6rpx; color: #9f1239; font-size: 22rpx; line-height: 1.6; }

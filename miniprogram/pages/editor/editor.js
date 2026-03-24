@@ -38,12 +38,20 @@ function normalizeWarnings(warnings) {
 }
 
 function normalizeFailureDetail(error = {}) {
+  const reasons = Array.isArray(error.reasons) ? error.reasons.filter(Boolean) : [];
+  const suggestions = Array.isArray(error.suggestions) ? error.suggestions.filter(Boolean) : [];
+  const hasReasonTitle = reasons.some((item) => item && typeof item === 'object' && (item.title || item.detail));
+
   return {
+    title: error.detailTitle || (hasReasonTitle
+      ? '当前照片构图与光线不适合制作证件照'
+      : '当前照片不适合作为证件照原图'),
     message: error.message || error.msg || '照片检测未通过，请按提示调整后重试',
     code: error.code || '',
     taskId: error.taskId || (error.data && error.data.taskId) || '',
-    reasons: Array.isArray(error.reasons) ? error.reasons.filter(Boolean) : [],
-    suggestions: Array.isArray(error.suggestions) ? error.suggestions.filter(Boolean) : []
+    reasons,
+    suggestions,
+    detailSummary: error.detailSummary || ''
   };
 }
 
@@ -231,7 +239,7 @@ Page({
       storage.remove(STORAGE_KEYS.CURRENT_PROCESS_FAILURE);
       wx.navigateTo({ url: '/pages/result/result' });
     } catch (error) {
-      if (error && (error.reasons || error.suggestions || error.taskId || error.code)) {
+      if (error && (error.isBusinessError || error.reasons || error.suggestions || error.taskId || error.code)) {
         this.openProcessFailurePage(error);
         return;
       }

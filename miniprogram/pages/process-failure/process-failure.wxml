@@ -1,8 +1,10 @@
 <view class="container">
   <view class="card section hero-card">
     <view class="hero-icon">!</view>
-    <view class="title-lg">照片未通过检测</view>
+    <view class="title-lg">检测未通过</view>
+    <view class="hero-title">{{failure.title}}</view>
     <view class="hero-desc">{{failure.message}}</view>
+    <view wx:if="{{failure.detailSummary}}" class="hero-summary">{{failure.detailSummary}}</view>
   </view>
 
   <view class="card section panel">
@@ -15,7 +17,11 @@
     <view class="title-md">未通过原因</view>
     <view wx:for="{{failure.reasons}}" wx:key="index" class="detail-item">
       <view class="detail-index">{{index + 1}}</view>
-      <view class="detail-text">{{item}}</view>
+      <view class="detail-main">
+        <view class="detail-title">{{item.title}}</view>
+        <view wx:if="{{item.detail}}" class="detail-sub">{{item.detail}}</view>
+        <view wx:if="{{item.reasonCode}}" class="detail-code">原因码：{{item.reasonCode}}</view>
+      </view>
     </view>
   </view>
 
@@ -23,7 +29,9 @@
     <view class="title-md">建议处理方式</view>
     <view wx:for="{{failure.suggestions}}" wx:key="index" class="detail-item">
       <view class="detail-index success">{{index + 1}}</view>
-      <view class="detail-text">{{item}}</view>
+      <view class="detail-main">
+        <view class="detail-title">{{item}}</view>
+      </view>
     </view>
   </view>
 

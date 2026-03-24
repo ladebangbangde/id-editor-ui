@@ -114,10 +114,48 @@ function normalizeAssetPayload(payload = {}) {
 
 function normalizePhotoProcessFailure(error = {}) {
   const normalized = normalizeErrorPayload(error, '照片检测未通过');
+  const reasonList = Array.isArray(normalized.reasons) ? normalized.reasons : [];
+  const suggestionList = Array.isArray(normalized.suggestions) ? normalized.suggestions : [];
+
+  const reasons = reasonList
+    .map((item) => {
+      if (!item) return null;
+      if (typeof item === 'string') {
+        return {
+          type: 'text',
+          title: item,
+          detail: ''
+        };
+      }
+
+      if (typeof item === 'object') {
+        return {
+          type: 'object',
+          code: item.code || '',
+          title: item.title || item.name || item.message || '',
+          detail: item.detail || item.description || item.message || ''
+        };
+      }
+
+      return null;
+    })
+    .filter((item) => item && item.title);
+
+  const suggestions = suggestionList
+    .map((item) => {
+      if (!item) return '';
+      if (typeof item === 'string') return item;
+      if (typeof item === 'object') return item.title || item.detail || item.message || '';
+      return '';
+    })
+    .filter(Boolean);
+
   return {
     ...normalized,
     data: normalized.data || {},
-    taskId: normalized.taskId || (normalized.data && normalized.data.taskId) || ''
+    taskId: normalized.taskId || (normalized.data && normalized.data.taskId) || '',
+    reasons,
+    suggestions
   };
 }
 

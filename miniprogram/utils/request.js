@@ -32,7 +32,14 @@ function showError(message) {
 }
 
 function normalizeList(list) {
-  return Array.isArray(list) ? list.filter(Boolean) : [];
+  if (!Array.isArray(list)) return [];
+  return list
+    .map((item) => {
+      if (!item) return '';
+      if (typeof item === 'string') return item.trim();
+      return item;
+    })
+    .filter(Boolean);
 }
 
 function pickMessage(payload = {}, fallbackMessage = '请求失败') {
@@ -47,6 +54,8 @@ function pickMessage(payload = {}, fallbackMessage = '请求失败') {
 function normalizeErrorPayload(payload = {}, fallbackMessage = '请求失败') {
   const data = payload && typeof payload.data === 'object' ? payload.data : {};
   const statusCode = Number(payload.statusCode || payload.code || data.code || 0);
+  const reasons = normalizeList(payload.reasons || data.reasons);
+  const suggestions = normalizeList(payload.suggestions || data.suggestions);
 
   return {
     ...payload,
@@ -55,8 +64,10 @@ function normalizeErrorPayload(payload = {}, fallbackMessage = '请求失败') {
     statusCode,
     data,
     taskId: payload.taskId || data.taskId || '',
-    reasons: normalizeList(payload.reasons || data.reasons),
-    suggestions: normalizeList(payload.suggestions || data.suggestions),
+    reasons,
+    suggestions,
+    detailTitle: payload.detailTitle || data.detailTitle || data.title || '',
+    detailSummary: payload.detailSummary || data.detailSummary || data.summary || '',
     isBusinessError: true,
     isAuthError: statusCode === 401
   };
