@@ -14,15 +14,13 @@ Page({
   data: {
     draft: {},
     selectedColor: 'white',
-    formalWearOption: 'none',
     generating: false
   },
 
   onShow() {
     const draft = getFlowDraft();
     const selectedColor = draft.backgroundColor || 'white';
-    const formalWearOption = draft.formalWearOption || 'none';
-    this.setData({ draft, selectedColor, formalWearOption });
+    this.setData({ draft, selectedColor });
   },
 
   onColorChange(event) {
@@ -31,12 +29,6 @@ Page({
     setFlowDraft({ backgroundColor: selectedColor });
   },
 
-  onFormalWearChange(event) {
-    const { value } = event.currentTarget.dataset;
-    if (!value) return;
-    this.setData({ formalWearOption: value });
-    setFlowDraft({ formalWearOption: value, flowType: value === 'none' ? 'idPhoto' : 'formalWear' });
-  },
 
   goSelectSize() {
     wx.navigateTo({ url: '/pages/custom-size/custom-size' });
@@ -54,7 +46,7 @@ Page({
   },
 
   async handleGenerate() {
-    const { generating, selectedColor, formalWearOption, draft } = this.data;
+    const { generating, selectedColor, draft } = this.data;
     if (generating) return;
     if (!draft.sourceImagePath) {
       wx.showToast({ title: '请先上传原图', icon: 'none' });
@@ -68,8 +60,7 @@ Page({
     this.setData({ generating: true });
     setFlowDraft({
       backgroundColor: selectedColor,
-      formalWearOption,
-      flowType: formalWearOption === 'none' ? 'idPhoto' : 'formalWear'
+      flowType: 'idPhoto'
     });
 
     try {
@@ -83,7 +74,6 @@ Page({
         // TODO(server): 服务端支持完全自定义尺寸后，改为透传 customSize 生成而非一寸兜底。
         wx.showToast({ title: '当前先按一寸规格生成', icon: 'none' });
       }
-      // TODO(server): 待后端支持统一的“证件照+换装”处理接口后，这里按 formalWearOption 调用对应生成能力。
       const processed = await processPhoto(draft.sourceImagePath, {
         sizeCode: canonicalSizeCode,
         backgroundColor: selectedColor,
@@ -112,7 +102,6 @@ Page({
         qualityMessage: latestResult.qualityMessage || processed.qualityMessage || '',
         createdAt: latestResult.createdAt || formatTime(Date.now()),
         hdUrl: latestResult.hdUrl || processed.hdUrl || latestResult.resultUrl || processed.resultUrl || '',
-        formalWearOption
       };
       storage.set(STORAGE_KEYS.CURRENT_RESULT, result);
       wx.navigateTo({ url: '/pages/result/result' });
