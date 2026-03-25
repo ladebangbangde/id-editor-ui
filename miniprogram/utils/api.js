@@ -130,7 +130,10 @@ function normalizeReviewFields(payload = {}) {
 
 function normalizePhotoProcessFailure(error = {}) {
   const normalized = normalizeErrorPayload(error, '照片检测未通过');
+  const data = normalized && typeof normalized.data === 'object' ? normalized.data : {};
+  const nestedData = data && typeof data.data === 'object' ? data.data : {};
   const reasonList = Array.isArray(normalized.reasons) ? normalized.reasons : [];
+  const warningList = Array.isArray(normalized.warnings) ? normalized.warnings : [];
   const suggestionList = Array.isArray(normalized.suggestions) ? normalized.suggestions : [];
 
   const reasons = reasonList
@@ -166,11 +169,22 @@ function normalizePhotoProcessFailure(error = {}) {
     })
     .filter(Boolean);
 
+  const warnings = warningList
+    .map((item) => {
+      if (!item) return '';
+      if (typeof item === 'string') return item;
+      if (typeof item === 'object') return item.title || item.detail || item.message || '';
+      return String(item || '');
+    })
+    .filter(Boolean);
+
   return {
     ...normalized,
-    data: normalized.data || {},
+    data,
     taskId: normalized.taskId || (normalized.data && normalized.data.taskId) || '',
+    message: normalized.message || data.message || nestedData.message || (normalized.error && normalized.error.message) || '照片检测未通过',
     reasons,
+    warnings,
     suggestions
   };
 }
@@ -382,70 +396,74 @@ function getPhotoTask(taskId) {
 
 function getPhotoHistory(page = 1, pageSize = 10) {
   return request(`${getBaseUrl()}/photo/history?page=${page}&pageSize=${pageSize}`)
-    .then(unwrap)
-    .then((payload) => {
-      console.log('[api.getPhotoHistory] raw response', payload);
-      if (Array.isArray(payload)) {
+    .then((res) => {
+      const payload = res && res.data ? res.data : res;
+      console.log('[api.getPhotoHistory] raw payload', payload);
+      const success = payload && payload.success === true;
+      const code = Number(payload && payload.code);
+      const ok = success && code === 0;
+      const businessData = payload && payload.data && typeof payload.data === 'object' ? payload.data : {};
+      const normalizedPayload = ok ? businessData : (unwrap(payload) || {});
+
+      if (ok) {
+        console.log('[api.getPhotoHistory] business success payload', normalizedPayload);
+      }
+
+      const listContainer = normalizedPayload || {};
+      if (Array.isArray(listContainer)) {
         const normalized = {
-          list: payload.map(normalizeHistoryItem)
+          list: listContainer.map(normalizeHistoryItem)
         };
-        console.log('[api.getPhotoHistory] normalized image fields', normalized.list.map((item) => ({
-          taskId: item.taskId,
-          previewUrl: item.previewUrl,
-          resultUrl: item.resultUrl,
-          hdUrl: item.hdUrl
-        })));
         return normalized;
       }
-      if (payload && Array.isArray(payload.list)) {
-        const normalized = {
-          ...payload,
-          list: payload.list.map(normalizeHistoryItem)
+      if (listContainer && Array.isArray(listContainer.list)) {
+        return {
+          ...listContainer,
+          list: listContainer.list.map(normalizeHistoryItem)
         };
-        console.log('[api.getPhotoHistory] normalized image fields', normalized.list.map((item) => ({
-          taskId: item.taskId,
-          previewUrl: item.previewUrl,
-          resultUrl: item.resultUrl,
-          hdUrl: item.hdUrl
-        })));
-        return normalized;
       }
-      if (payload && Array.isArray(payload.items)) {
-        const normalizedItems = payload.items.map(normalizeHistoryItem);
-        const normalized = {
-          ...payload,
+      if (listContainer && Array.isArray(listContainer.items)) {
+        const normalizedItems = listContainer.items.map(normalizeHistoryItem);
+        return {
+          ...listContainer,
           list: normalizedItems,
           items: normalizedItems
         };
-        console.log('[api.getPhotoHistory] normalized image fields', normalized.list.map((item) => ({
-          taskId: item.taskId,
-          previewUrl: item.previewUrl,
-          resultUrl: item.resultUrl,
-          hdUrl: item.hdUrl
-        })));
-        return normalized;
       }
-      if (payload && Array.isArray(payload.records)) {
-        const normalizedRecords = payload.records.map(normalizeHistoryItem);
-        const normalized = {
-          ...payload,
+      if (listContainer && Array.isArray(listContainer.records)) {
+        const normalizedRecords = listContainer.records.map(normalizeHistoryItem);
+        return {
+          ...listContainer,
           list: normalizedRecords,
           records: normalizedRecords
         };
-        console.log('[api.getPhotoHistory] normalized image fields', normalized.list.map((item) => ({
-          taskId: item.taskId,
-          previewUrl: item.previewUrl,
-          resultUrl: item.resultUrl,
-          hdUrl: item.hdUrl
-        })));
-        return normalized;
       }
-      const normalized = {
-        ...payload,
+      return {
+        ...listContainer,
         list: []
       };
-      console.log('[api.getPhotoHistory] normalized image fields', []);
+    })
+    .then((normalized) => {
+      console.log('[api.getPhotoHistory] normalized image fields', (normalized.list || []).map((item) => ({
+        taskId: item.taskId,
+        previewUrl: item.previewUrl,
+        resultUrl: item.resultUrl,
+        hdUrl: item.hdUrl
+      })));
       return normalized;
+    })
+    .catch((error) => {
+      // 即便出现 HTTP 非 200，也尽量复用响应体里的业务信息，避免“明明有数据却报错”。
+      const normalizedError = normalizeErrorPayload(error, '历史记录加载失败');
+      const data = normalizedError && typeof normalizedError.data === 'object' ? normalizedError.data : {};
+      const list = data && Array.isArray(data.list) ? data.list : [];
+      if (list.length) {
+        return {
+          ...data,
+          list: list.map(normalizeHistoryItem)
+        };
+      }
+      throw normalizedError;
     });
 }
 

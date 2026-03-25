@@ -53,11 +53,13 @@ function normalizeSuggestions(suggestions = []) {
 Page({
   data: {
     failure: {
-      title: '当前照片不适合作为证件照原图',
+      title: '照片不符合证件照要求',
+      subtitle: '请根据以下原因调整后重新上传',
       message: '照片检测未通过，请调整后重试',
       code: '',
       taskId: '',
       reasons: [],
+      warnings: [],
       suggestions: [],
       createdAt: ''
     }
@@ -66,21 +68,25 @@ Page({
   onShow() {
     const failure = storage.get(STORAGE_KEYS.CURRENT_PROCESS_FAILURE, {}) || {};
     const normalizedReasons = normalizeReasons(failure.reasons);
+    const normalizedWarnings = normalizeSuggestions(failure.warnings);
     const normalizedSuggestions = normalizeSuggestions(failure.suggestions);
+    const fallbackReason = failure.message || (failure.error && failure.error.message) || '请重新上传更清晰的正面照片再试';
 
     this.setData({
       failure: {
-        title: failure.title || '当前照片不适合作为证件照原图',
+        title: failure.title || '照片不符合证件照要求',
+        subtitle: failure.subtitle || '请根据以下原因调整后重新上传',
         message: failure.message || '照片检测未通过，请调整后重试',
         code: failure.code || '',
         taskId: failure.taskId || '',
         detailSummary: failure.detailSummary || '',
         reasons: normalizedReasons.length ? normalizedReasons : [{
-          title: '暂未获取到具体原因',
-          detail: '请重新上传更清晰的正面照片再试',
+          title: fallbackReason,
+          detail: '',
           reasonCode: '',
-          displayText: '暂未获取到具体原因，请重新上传更清晰的正面照片再试。'
+          displayText: fallbackReason
         }],
+        warnings: normalizedWarnings,
         suggestions: normalizedSuggestions.length
           ? normalizedSuggestions
           : ['请检查光线、姿态、遮挡和尺寸后重新生成。'],
@@ -90,10 +96,10 @@ Page({
   },
 
   retry() {
-    wx.navigateBack({ delta: 1 });
+    wx.reLaunch({ url: '/pages/upload/upload' });
   },
 
   backToUpload() {
-    wx.reLaunch({ url: '/pages/upload/upload' });
+    wx.reLaunch({ url: '/pages/home/home' });
   }
 });

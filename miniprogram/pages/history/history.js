@@ -103,6 +103,11 @@ Page({
   data: {
     list: [],
     loading: false,
+    loadFailed: false,
+    loadErrorMessage: '',
+    page: 1,
+    pageSize: 20,
+    total: 0,
     manageMode: false,
     selectedIds: [],
     checkAll: false,
@@ -176,12 +181,13 @@ Page({
   },
 
   async fetchHistory(showLoading = true) {
+    const { page, pageSize } = this.data;
     if (showLoading) {
-      this.setData({ loading: true });
+      this.setData({ loading: true, loadFailed: false, loadErrorMessage: '' });
     }
 
     try {
-      const data = await getPhotoHistory(1, 20);
+      const data = await getPhotoHistory(page, pageSize);
       console.log('[history] normalized history payload', data);
       const list = this.applyLocalMutations((data.list || []).map(normalizeRecord));
       console.log('[history] final record image bindings', list.map((item) => ({
@@ -193,8 +199,21 @@ Page({
         logImageUrlRisk('previewUrl', item.previewUrl, item.id);
       });
       this.syncSelection(list, this.data.selectedIds);
+      this.setData({
+        loadFailed: false,
+        loadErrorMessage: '',
+        total: Number(data.total || list.length || 0),
+        page: Number(data.page || page || 1),
+        pageSize: Number(data.pageSize || pageSize || 20)
+      });
     } catch (error) {
-      this.setData({ list: [], selectedIds: [], checkAll: false });
+      this.setData({
+        list: [],
+        selectedIds: [],
+        checkAll: false,
+        loadFailed: true,
+        loadErrorMessage: error.message || '历史记录加载失败'
+      });
       wx.showToast({ title: '历史记录加载失败', icon: 'none' });
     } finally {
       if (showLoading) {

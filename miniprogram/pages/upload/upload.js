@@ -25,7 +25,9 @@ Page({
     imagePath: '',
     flowMode: 'free',
     needSelectSize: true,
-    selectedSizeCode: ''
+    selectedSizeCode: '',
+    // 避免短时间重复点击导致 chooseMedia 被调用两次，出现“二次弹窗”。
+    isPickingImage: false
   },
 
   onLoad(options) {
@@ -55,11 +57,20 @@ Page({
   },
 
   chooseFromCamera() {
-    this.tryOpenCameraWithPermission();
+    this.handleSelectPhoto(['camera']);
   },
 
   chooseFromAlbum() {
-    this.pickImage(['album']);
+    this.handleSelectPhoto(['album']);
+  },
+
+  handleSelectPhoto(sourceType = ['album']) {
+    if (this.data.isPickingImage) return;
+    if (sourceType.includes('camera')) {
+      this.tryOpenCameraWithPermission();
+      return;
+    }
+    this.pickImage(sourceType);
   },
 
   tryOpenCameraWithPermission() {
@@ -106,6 +117,8 @@ Page({
   },
 
   pickImage(sourceType) {
+    if (this.data.isPickingImage) return;
+    this.setData({ isPickingImage: true });
     wx.chooseMedia({
       count: 1,
       mediaType: ['image'],
@@ -131,6 +144,13 @@ Page({
           selectedSizeCode: this.data.selectedSizeCode || '',
           selectedScene: this.data.sceneInfo || null
         });
+      },
+      fail: () => {
+        // 用户取消选择时不弹错误提示，避免打断操作。
+      },
+      complete: () => {
+        // 无论成功/失败都释放锁，保证下一次点击可正常触发。
+        this.setData({ isPickingImage: false });
       }
     });
   },

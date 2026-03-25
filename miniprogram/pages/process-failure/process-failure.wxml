@@ -1,9 +1,9 @@
 <view class="container">
   <view class="card section hero-card">
     <view class="hero-icon">!</view>
-    <view class="title-lg">检测未通过</view>
-    <view class="hero-title">{{failure.title}}</view>
-    <view class="hero-desc">{{failure.message}}</view>
+    <view class="title-lg">{{failure.title}}</view>
+    <view class="hero-desc">{{failure.subtitle}}</view>
+    <view class="hero-title">{{failure.message}}</view>
     <view wx:if="{{failure.detailSummary}}" class="hero-summary">{{failure.detailSummary}}</view>
   </view>
 
@@ -25,6 +25,16 @@
     </view>
   </view>
 
+  <view wx:if="{{failure.warnings.length}}" class="card section panel warning-panel">
+    <view class="title-md">风险提示</view>
+    <view wx:for="{{failure.warnings}}" wx:key="index" class="detail-item">
+      <view class="detail-index warning">{{index + 1}}</view>
+      <view class="detail-main">
+        <view class="detail-title">{{item}}</view>
+      </view>
+    </view>
+  </view>
+
   <view class="card section panel suggestion-panel">
     <view class="title-md">建议处理方式</view>
     <view wx:for="{{failure.suggestions}}" wx:key="index" class="detail-item">
@@ -35,7 +45,7 @@
     </view>
   </view>
 
-  <primary-button text="返回修改后重试" bind:tap="retry"></primary-button>
+  <primary-button text="重新选择照片" bind:tap="retry"></primary-button>
   <view style="height: 12rpx"></view>
-  <primary-button text="重新上传照片" type="secondary" bind:tap="backToUpload"></primary-button>
+  <primary-button text="返回首页" type="secondary" bind:tap="backToUpload"></primary-button>
 </view>

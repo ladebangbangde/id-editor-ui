@@ -11,7 +11,7 @@
   </view>
 
   <view class="card section panel">
-    <upload-box image="{{imagePath}}" bind:tap="chooseFromAlbum"></upload-box>
+    <upload-box image="{{imagePath}}" bind:select="chooseFromAlbum"></upload-box>
   </view>
 
   <view class="button-row section">

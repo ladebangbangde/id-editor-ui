@@ -42,32 +42,58 @@ function normalizeList(list) {
     .filter(Boolean);
 }
 
+function pickPayloadFromResponse(payload = {}) {
+  if (!payload || typeof payload !== 'object') return {};
+  const responseData = payload.response && payload.response.data;
+  if (responseData && typeof responseData === 'object') {
+    return responseData;
+  }
+  if (payload.data && typeof payload.data === 'object') {
+    return payload.data;
+  }
+  return payload;
+}
+
 function pickMessage(payload = {}, fallbackMessage = '请求失败') {
-  const data = payload && typeof payload.data === 'object' ? payload.data : {};
+  const business = pickPayloadFromResponse(payload);
+  const data = business && typeof business.data === 'object' ? business.data : {};
   return payload.message
     || payload.msg
+    || business.message
+    || business.msg
     || data.message
     || data.msg
     || fallbackMessage;
 }
 
 function normalizeErrorPayload(payload = {}, fallbackMessage = '请求失败') {
-  const data = payload && typeof payload.data === 'object' ? payload.data : {};
-  const statusCode = Number(payload.statusCode || payload.code || data.code || 0);
-  const reasons = normalizeList(payload.reasons || data.reasons);
-  const suggestions = normalizeList(payload.suggestions || data.suggestions);
+  const business = pickPayloadFromResponse(payload);
+  const data = business && typeof business.data === 'object' ? business.data : {};
+  const nestedData = data && typeof data.data === 'object' ? data.data : {};
+  const statusCode = Number(payload.statusCode || business.statusCode || business.code || data.code || 0);
+  const reasons = normalizeList(
+    business.reasons || data.reasons || nestedData.reasons || payload.reasons
+  );
+  const warnings = normalizeList(
+    business.warnings || data.warnings || nestedData.warnings || payload.warnings
+  );
+  const suggestions = normalizeList(
+    business.suggestions || data.suggestions || nestedData.suggestions || payload.suggestions
+  );
 
   return {
+    ...business,
     ...payload,
-    message: pickMessage(payload, fallbackMessage),
-    code: payload.code || statusCode || '',
+    message: pickMessage(business, fallbackMessage),
+    code: business.code || payload.code || statusCode || '',
     statusCode,
-    data,
-    taskId: payload.taskId || data.taskId || '',
+    data: Object.keys(data).length ? data : (business.data || {}),
+    taskId: business.taskId || payload.taskId || data.taskId || nestedData.taskId || '',
     reasons,
+    warnings,
     suggestions,
-    detailTitle: payload.detailTitle || data.detailTitle || data.title || '',
-    detailSummary: payload.detailSummary || data.detailSummary || data.summary || '',
+    detailTitle: business.detailTitle || payload.detailTitle || data.detailTitle || nestedData.detailTitle || data.title || '',
+    detailSummary: business.detailSummary || payload.detailSummary || data.detailSummary || nestedData.detailSummary || data.summary || '',
     isBusinessError: true,
     isAuthError: statusCode === 401
   };

@@ -30,6 +30,56 @@ function mergeRiskWarnings(result = {}) {
   ]);
 }
 
+function normalizeSuggestionList(list = []) {
+  if (!Array.isArray(list)) return [];
+  return list
+    .map((item) => {
+      if (!item) return '';
+      if (typeof item === 'string') return item;
+      if (typeof item === 'object') return item.title || item.detail || item.message || '';
+      return String(item || '');
+    })
+    .filter(Boolean);
+}
+
+function buildFailurePayload(payload = {}, fallback = {}) {
+  const reasons = normalizeDetailList(
+    payload.reasons
+      || (payload.data && payload.data.reasons)
+      || (payload.data && payload.data.data && payload.data.data.reasons)
+      || []
+  );
+  const warnings = normalizeSuggestionList(
+    payload.warnings
+      || (payload.data && payload.data.warnings)
+      || (payload.data && payload.data.data && payload.data.data.warnings)
+      || []
+  );
+  const suggestions = normalizeSuggestionList(
+    payload.suggestions
+      || (payload.data && payload.data.suggestions)
+      || (payload.data && payload.data.data && payload.data.data.suggestions)
+      || []
+  );
+  const message = payload.message
+    || payload.qualityMessage
+    || (payload.error && payload.error.message)
+    || fallback.message
+    || '请根据以下原因调整后重新上传';
+
+  return {
+    title: '照片不符合证件照要求',
+    subtitle: '请根据以下原因调整后重新上传',
+    message,
+    code: payload.code || fallback.code || '',
+    taskId: payload.taskId || fallback.taskId || '',
+    reasons,
+    warnings,
+    suggestions,
+    createdAt: payload.createdAt || fallback.createdAt || formatTime(Date.now())
+  };
+}
+
 function deriveReviewState(result = {}) {
   const quality = String(result.qualityStatus || '').toUpperCase();
   const status = String(result.status || '').toUpperCase();
@@ -164,15 +214,12 @@ Page({
       });
 
       if (reviewState === 'failed') {
-        const failurePayload = {
-          title: result.message || result.qualityMessage || '照片检测未通过',
-          message: result.message || result.qualityMessage || '请调整照片后重试',
-          code: result.code || '',
-          taskId: result.taskId || '',
-          reasons: normalizeDetailList(result.details),
-          suggestions: mergedRiskWarnings,
-          createdAt: result.createdAt || ''
-        };
+        const failurePayload = buildFailurePayload({
+          ...result,
+          reasons: result.details,
+          warnings: mergedRiskWarnings,
+          suggestions: result.riskTips
+        });
         storage.set(STORAGE_KEYS.CURRENT_PROCESS_FAILURE, failurePayload);
         wx.navigateTo({ url: '/pages/process-failure/process-failure' });
         return;
@@ -180,6 +227,25 @@ Page({
       storage.set(STORAGE_KEYS.CURRENT_RESULT, result);
       wx.navigateTo({ url: '/pages/result/result' });
     } catch (error) {
+      const failurePayload = buildFailurePayload(error, {
+        message: '生成失败，请重试'
+      });
+      const hasBusinessContent = Boolean(error && (
+        error.isBusinessError
+        || error.success === false
+        || typeof error.code !== 'undefined'
+        || (error.data && typeof error.data === 'object')
+      ));
+      const hasFailureDetails = hasBusinessContent || failurePayload.reasons.length
+        || failurePayload.warnings.length
+        || failurePayload.suggestions.length;
+
+      if (hasFailureDetails) {
+        // 兼容 HTTP 非 200 但响应体携带业务失败详情的场景，统一进入失败结果页。
+        storage.set(STORAGE_KEYS.CURRENT_PROCESS_FAILURE, failurePayload);
+        wx.navigateTo({ url: '/pages/process-failure/process-failure' });
+        return;
+      }
       wx.showToast({ title: error.message || '生成失败，请重试', icon: 'none' });
     } finally {
       this.setData({ generating: false });

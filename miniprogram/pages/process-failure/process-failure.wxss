@@ -7,10 +7,12 @@
 .meta-row { display: flex; justify-content: space-between; gap: 16rpx; padding: 12rpx 0; font-size: 25rpx; color: #334155; border-bottom: 1rpx solid #edf1f5; }
 .meta-row:last-child { border-bottom: none; }
 .reason-panel { background: #fff1f2; border: 1rpx solid #fecdd3; }
+.warning-panel { background: #fffbeb; border: 1rpx solid #fcd34d; }
 .suggestion-panel { background: #ecfeff; border: 1rpx solid #a5f3fc; }
 .detail-item { display: flex; gap: 16rpx; margin-top: 18rpx; align-items: flex-start; }
 .detail-index { width: 40rpx; height: 40rpx; border-radius: 50%; background: rgba(225, 29, 72, 0.12); color: #be123c; font-size: 22rpx; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .detail-index.success { background: rgba(6, 182, 212, 0.14); color: #0e7490; }
+.detail-index.warning { background: rgba(245, 158, 11, 0.15); color: #b45309; }
 .detail-main { flex: 1; }
 .detail-title { color: #0f172a; font-size: 26rpx; line-height: 1.7; }
 .detail-sub { margin-top: 6rpx; color: #475569; font-size: 24rpx; line-height: 1.7; }
