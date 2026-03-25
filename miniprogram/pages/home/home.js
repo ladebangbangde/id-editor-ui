@@ -475,7 +475,7 @@ Page({
       selectedScene: item.canonicalScene || buildSceneBySizeCode('one_inch'),
       selectedSizeCode: item.canonicalSizeCode || 'one_inch'
     });
-    wx.navigateTo({ url: `/pages/upload/upload?autostartCamera=1&flowMode=template&needSelectSize=0&selectedSizeCode=${item.canonicalSizeCode || 'one_inch'}&from=home-template` });
+    wx.navigateTo({ url: `/pages/upload/upload?flowMode=template&needSelectSize=0&selectedSizeCode=${item.canonicalSizeCode || 'one_inch'}&from=home-template` });
   },
 
   handleRetry() {
@@ -502,7 +502,7 @@ Page({
 
     if (action.routeType === 'upload') {
       resetFlowDraft({ flowType: 'idPhoto', flowMode: 'free', needSelectSize: true });
-      wx.navigateTo({ url: '/pages/upload/upload?autostartCamera=1&flowMode=free&needSelectSize=1&from=home-photo' });
+      wx.navigateTo({ url: '/pages/upload/upload?flowMode=free&needSelectSize=1&from=home-photo' });
       return;
     }
 
