@@ -188,6 +188,6 @@ Page({
   },
 
   retake() {
-    wx.redirectTo({ url: '/pages/upload/upload?autostartCamera=1&from=result-retake' });
+    wx.redirectTo({ url: '/pages/upload/upload?from=result-retake' });
   }
 });

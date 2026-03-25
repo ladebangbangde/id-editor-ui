@@ -23,7 +23,6 @@ Page({
   data: {
     sceneInfo: null,
     imagePath: '',
-    autoStartCamera: false,
     flowMode: 'free',
     needSelectSize: true,
     selectedSizeCode: ''
@@ -32,7 +31,6 @@ Page({
   onLoad(options) {
     const draft = getFlowDraft();
     const sceneInfo = resolveSceneInfo(options, draft);
-    const autoStartCamera = options.autostartCamera === '1';
     const flowMode = options.flowMode || draft.flowMode || 'free';
     const needSelectSize = options.needSelectSize
       ? options.needSelectSize !== '0'
@@ -43,7 +41,6 @@ Page({
     this.setData({
       sceneInfo: canonicalScene || sceneInfo,
       imagePath: draft.sourceImagePath || '',
-      autoStartCamera,
       flowMode,
       needSelectSize,
       selectedSizeCode
@@ -55,13 +52,6 @@ Page({
       selectedSizeCode,
       selectedScene: canonicalScene || sceneInfo || null
     });
-  },
-
-  onShow() {
-    if (this.data.autoStartCamera) {
-      this.setData({ autoStartCamera: false });
-      this.tryOpenCameraWithPermission();
-    }
   },
 
   chooseFromCamera() {
