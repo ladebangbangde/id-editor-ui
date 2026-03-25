@@ -3,15 +3,50 @@ const storage = require('../../utils/storage');
 const { CANONICAL_SIZE_OPTIONS, buildSceneBySizeCode } = require('../../utils/size-codes');
 
 const RECENT_SIZE_KEY = 'recent_size_codes';
+const HOT_SIZE_FALLBACK_KEYS = ['one_inch', 'two_inch', 'small_one_inch', 'passport_photo', 'teacher_exam'];
 
 function normalizeTemplate(item = {}) {
+  const isHot = Boolean(
+    item.isHot
+      || item.hot
+      || item.featured
+      || item.popular
+      || item.recommend
+      || item.recommended
+  );
   return {
     ...item,
     code: item.sizeCode,
     name: item.label,
     sizeText: `${item.widthMm || '--'}×${item.heightMm || '--'}mm`,
-    pixelText: `${item.pixelWidth || '--'}×${item.pixelHeight || '--'}px`
+    pixelText: `${item.pixelWidth || '--'}×${item.pixelHeight || '--'}px`,
+    isHot
   };
+}
+
+function dedupeByCode(list = []) {
+  const map = {};
+  return list.filter((item) => {
+    if (!item || !item.code || map[item.code]) return false;
+    map[item.code] = true;
+    return true;
+  });
+}
+
+function deriveHotSizes(allSizes = []) {
+  const byMarker = allSizes.filter((item) => item.isHot);
+  if (byMarker.length) {
+    return dedupeByCode(byMarker).slice(0, 6);
+  }
+
+  const byPresetKey = HOT_SIZE_FALLBACK_KEYS
+    .map((key) => allSizes.find((item) => item.code === key))
+    .filter(Boolean);
+  if (byPresetKey.length) {
+    return dedupeByCode(byPresetKey).slice(0, 6);
+  }
+
+  return dedupeByCode(allSizes).slice(0, 6);
 }
 
 Page({
@@ -33,9 +68,18 @@ Page({
     const selectedSizeCode = draft.selectedSizeCode || (draft.selectedScene && draft.selectedScene.sceneKey) || '';
     const recentCodes = storage.get(RECENT_SIZE_KEY, []);
     const recentSizes = allSizes.filter((item) => recentCodes.includes(item.code)).slice(0, 4);
+    const hotSizes = deriveHotSizes(allSizes);
+    console.log('[custom-size] size source = local static CANONICAL_SIZE_OPTIONS', {
+      total: allSizes.length,
+      hotCount: hotSizes.length,
+      markerFields: ['isHot', 'hot', 'featured', 'popular', 'recommend', 'recommended']
+    });
+    if (!hotSizes.length) {
+      console.warn('[custom-size] hot size list empty after fallback');
+    }
     this.setData({
       allSizes,
-      hotSizes: allSizes.filter((item) => item.featured).slice(0, 6),
+      hotSizes,
       recentSizes,
       selectedSizeCode,
       filteredSizes: allSizes

@@ -18,11 +18,17 @@
     <view class="preview-list">
       <view class="preview-item">
         <view class="text-muted">普通图（适合预览/分享）</view>
-        <image class="preview" src="{{result.previewUrl}}" mode="aspectFit"></image>
+        <block wx:if="{{result.previewUrl && !previewImageFailed}}">
+          <image class="preview" src="{{result.previewUrl}}" mode="aspectFit" binderror="handlePreviewImageError"></image>
+        </block>
+        <view wx:else class="preview-fallback">普通图加载失败，请稍后重试或重新生成</view>
       </view>
       <view class="preview-item">
         <view class="text-muted">高清图（适合打印/正式提交）</view>
-        <image class="preview" src="{{result.hdUrl || result.resultUrl || result.previewUrl}}" mode="aspectFit"></image>
+        <block wx:if="{{(result.hdUrl || result.resultUrl || result.previewUrl) && !hdImageFailed}}">
+          <image class="preview" src="{{result.hdUrl || result.resultUrl || result.previewUrl}}" mode="aspectFit" binderror="handleHdImageError"></image>
+        </block>
+        <view wx:else class="preview-fallback">高清图加载失败，请检查网络或图片地址有效性</view>
       </view>
     </view>
   </view>

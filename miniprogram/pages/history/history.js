@@ -1,5 +1,6 @@
 const { getPhotoHistory } = require('../../utils/api');
 const { formatTime, getColorLabel } = require('../../utils/format');
+const { pickBestImageUrl: pickImageFromCandidates, cleanUrl, isLikelyLocalPath } = require('../../utils/image-url');
 const { getFriendlySceneName, getFriendlySizeText, pickBestImageUrl } = require('../../utils/photo-display');
 
 function buildStatus(item = {}) {
@@ -17,7 +18,6 @@ const EDIT_STORAGE_KEY = 'history_edit_map';
 const DELETE_STORAGE_KEY = 'history_deleted_ids';
 
 function normalizeRecord(item = {}) {
-  const scene = item.scene || {};
   const id = item.taskId || item.imageId || item.id;
   const warnings = Array.isArray(item.warnings) ? item.warnings : [];
   const backgroundColor = item.backgroundColorLabel
@@ -26,6 +26,23 @@ function normalizeRecord(item = {}) {
     || '--';
   const friendlyName = getFriendlySceneName(item, '证件照');
   const friendlySizeText = getFriendlySizeText(item);
+  const previewUrl = pickImageFromCandidates([
+    item.previewUrl,
+    item.preview_url,
+    item.result && item.result.previewUrl,
+    item.result && item.result.preview_url,
+    item.resultUrl,
+    item.result_url,
+    item.hdUrl,
+    item.hd_url,
+    item.originalUrl,
+    item.original_url
+  ]);
+  const displayUrl = pickImageFromCandidates([
+    item.displayUrl,
+    previewUrl,
+    pickBestImageUrl(item)
+  ]);
   return {
     id,
     taskId: id,
@@ -37,8 +54,9 @@ function normalizeRecord(item = {}) {
     sizeCode: item.sizeCode || '',
     background: backgroundColor,
     backgroundColor,
-    imageUrl: pickBestImageUrl(item),
-    previewUrl: pickBestImageUrl(item),
+    imageUrl: displayUrl,
+    previewUrl,
+    displayUrl,
     resultUrl: item.resultUrl || '',
     createdAt: formatTime(item.createdAt),
     status: buildStatus(item),
@@ -47,6 +65,20 @@ function normalizeRecord(item = {}) {
     warnings,
     selected: false
   };
+}
+
+function logImageUrlRisk(tag, url, itemId) {
+  const cleaned = cleanUrl(url);
+  if (!cleaned) {
+    console.warn(`[history] ${tag} is empty`, itemId);
+    return;
+  }
+  if (/^http:\/\//i.test(cleaned)) {
+    console.warn(`[history] ${tag} uses http, might be blocked on device`, itemId, cleaned);
+  }
+  if (isLikelyLocalPath(cleaned)) {
+    console.warn(`[history] ${tag} looks like local/private address`, itemId, cleaned);
+  }
 }
 
 function getStorageValue(key, fallback) {
@@ -150,7 +182,16 @@ Page({
 
     try {
       const data = await getPhotoHistory(1, 20);
+      console.log('[history] normalized history payload', data);
       const list = this.applyLocalMutations((data.list || []).map(normalizeRecord));
+      console.log('[history] final record image bindings', list.map((item) => ({
+        id: item.id,
+        previewUrl: item.previewUrl,
+        displayUrl: item.displayUrl
+      })));
+      list.forEach((item) => {
+        logImageUrlRisk('previewUrl', item.previewUrl, item.id);
+      });
       this.syncSelection(list, this.data.selectedIds);
     } catch (error) {
       this.setData({ list: [], selectedIds: [], checkAll: false });

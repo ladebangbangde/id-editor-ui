@@ -323,7 +323,17 @@ function processPhoto(filePath, payload = {}) {
     showErrorToast: false
   })
     .then(unwrap)
-    .then((result) => normalizeAssetPayload(result))
+    .then((result) => {
+      console.log('[api.processPhoto] raw response', result);
+      const normalized = normalizeAssetPayload(result);
+      console.log('[api.processPhoto] normalized image fields', {
+        previewUrl: normalized.previewUrl,
+        resultUrl: normalized.resultUrl,
+        hdUrl: normalized.hdUrl,
+        originalUrl: normalized.originalUrl
+      });
+      return normalized;
+    })
     .catch((error) => {
       throw normalizePhotoProcessFailure(error);
     });
@@ -332,42 +342,86 @@ function processPhoto(filePath, payload = {}) {
 function getPhotoTask(taskId) {
   return request(`${getBaseUrl()}/photo/tasks/${taskId}`)
     .then(unwrap)
-    .then((payload) => normalizeHistoryItem(payload));
+    .then((payload) => {
+      console.log('[api.getPhotoTask] raw response', payload);
+      const normalized = normalizeHistoryItem(payload);
+      console.log('[api.getPhotoTask] normalized image fields', {
+        taskId: normalized.taskId,
+        previewUrl: normalized.previewUrl,
+        resultUrl: normalized.resultUrl,
+        hdUrl: normalized.hdUrl,
+        printLayoutUrl: normalized.printLayoutUrl
+      });
+      return normalized;
+    });
 }
 
 function getPhotoHistory(page = 1, pageSize = 10) {
   return request(`${getBaseUrl()}/photo/history?page=${page}&pageSize=${pageSize}`)
     .then(unwrap)
     .then((payload) => {
+      console.log('[api.getPhotoHistory] raw response', payload);
       if (Array.isArray(payload)) {
-        return {
+        const normalized = {
           list: payload.map(normalizeHistoryItem)
         };
+        console.log('[api.getPhotoHistory] normalized image fields', normalized.list.map((item) => ({
+          taskId: item.taskId,
+          previewUrl: item.previewUrl,
+          resultUrl: item.resultUrl,
+          hdUrl: item.hdUrl
+        })));
+        return normalized;
       }
       if (payload && Array.isArray(payload.list)) {
-        return {
+        const normalized = {
           ...payload,
           list: payload.list.map(normalizeHistoryItem)
         };
+        console.log('[api.getPhotoHistory] normalized image fields', normalized.list.map((item) => ({
+          taskId: item.taskId,
+          previewUrl: item.previewUrl,
+          resultUrl: item.resultUrl,
+          hdUrl: item.hdUrl
+        })));
+        return normalized;
       }
       if (payload && Array.isArray(payload.items)) {
-        return {
+        const normalizedItems = payload.items.map(normalizeHistoryItem);
+        const normalized = {
           ...payload,
-          list: payload.items.map(normalizeHistoryItem),
-          items: payload.items.map(normalizeHistoryItem)
+          list: normalizedItems,
+          items: normalizedItems
         };
+        console.log('[api.getPhotoHistory] normalized image fields', normalized.list.map((item) => ({
+          taskId: item.taskId,
+          previewUrl: item.previewUrl,
+          resultUrl: item.resultUrl,
+          hdUrl: item.hdUrl
+        })));
+        return normalized;
       }
       if (payload && Array.isArray(payload.records)) {
-        return {
+        const normalizedRecords = payload.records.map(normalizeHistoryItem);
+        const normalized = {
           ...payload,
-          list: payload.records.map(normalizeHistoryItem),
-          records: payload.records.map(normalizeHistoryItem)
+          list: normalizedRecords,
+          records: normalizedRecords
         };
+        console.log('[api.getPhotoHistory] normalized image fields', normalized.list.map((item) => ({
+          taskId: item.taskId,
+          previewUrl: item.previewUrl,
+          resultUrl: item.resultUrl,
+          hdUrl: item.hdUrl
+        })));
+        return normalized;
       }
-      return {
+      const normalized = {
         ...payload,
         list: []
       };
+      console.log('[api.getPhotoHistory] normalized image fields', []);
+      return normalized;
     });
 }
 
@@ -472,74 +526,6 @@ function getAdminStats(token) {
   }).then(unwrap);
 }
 
-function normalizeFormalWearTask(task = {}) {
-  const normalized = normalizeAssetPayload(task);
-  const options = normalized.options || normalized.config || {};
-  const progress = Number(normalized.progress || normalized.percent || 0);
-  const status = String(normalized.status || normalized.taskStatus || normalized.task_status || '').toLowerCase();
-
-  return {
-    ...normalized,
-    taskId: normalized.taskId || normalized.task_id || normalized.id || '',
-    status: status || 'processing',
-    progress: Number.isFinite(progress) ? progress : 0,
-    previewUrl: normalized.previewUrl || normalized.resultUrl || normalized.downloadUrl || '',
-    resultUrl: normalized.resultUrl || normalized.previewUrl || normalized.downloadUrl || '',
-    originalUrl: normalized.originalUrl || normalized.sourceUrl || normalized.source_url || '',
-    options: {
-      gender: options.gender || normalized.gender || '',
-      style: options.style || normalized.style || '',
-      color: options.color || normalized.color || ''
-    },
-    tips: Array.isArray(normalized.tips) ? normalized.tips : []
-  };
-}
-
-function buildFormalWearMockResult(payload = {}) {
-  const encodedStyle = encodeURIComponent(payload.styleLabel || '标准正装');
-  const encodedColor = encodeURIComponent(payload.colorLabel || '黑色');
-  const originalUrl = payload.originalUrl || payload.localImagePath || '';
-
-  return normalizeFormalWearTask({
-    taskId: `mock_formal_wear_${Date.now()}`,
-    status: 'success',
-    progress: 100,
-    originalUrl,
-    previewUrl: `https://dummyimage.com/900x1200/f3f6ff/3558d8&text=${encodedStyle}%20${encodedColor}`,
-    resultUrl: `https://dummyimage.com/1200x1600/eaf0ff/2643b7&text=%E6%8D%A2%E8%A3%85%E5%AE%8C%E6%88%90`,
-    options: {
-      gender: payload.gender || '',
-      style: payload.style || '',
-      color: payload.color || ''
-    },
-    tips: ['当前为前端占位结果，待 server 接口完成后可无缝替换为真实生成结果。']
-  });
-}
-
-function createFormalWearTask(filePath, payload = {}) {
-  const formData = {
-    gender: payload.gender || '',
-    style: payload.style || '',
-    color: payload.color || ''
-  };
-
-  return uploadFile(`${getBaseUrl()}/formal-wear/tasks`, filePath, formData, {
-    showLoading: true,
-    loadingText: '提交中',
-    showErrorToast: false
-  })
-    .then(unwrap)
-    .then((result) => normalizeFormalWearTask(result));
-}
-
-function getFormalWearTask(taskId) {
-  return request(`${getBaseUrl()}/formal-wear/tasks/${taskId}`, 'GET', {}, {
-    showErrorToast: false
-  })
-    .then(unwrap)
-    .then((result) => normalizeFormalWearTask(result));
-}
-
 const generateIdPhoto = generateImage;
 
 module.exports = {
@@ -570,11 +556,7 @@ module.exports = {
   downloadHd,
   downloadPrint,
   getAdminStats,
-  buildFormalWearMockResult,
-  createFormalWearTask,
-  getFormalWearTask,
   normalizeAssetUrl,
   normalizeAssetPayload,
   normalizeHistoryItem,
-  normalizeFormalWearTask
 };

@@ -5,7 +5,10 @@
     </view>
   </view>
 
-  <image class="thumb" src="{{record.displayUrl || record.previewUrl}}" mode="aspectFill"></image>
+  <block wx:if="{{thumbUrl && !imageLoadFailed}}">
+    <image class="thumb" src="{{thumbUrl}}" mode="aspectFill" binderror="handleImageError"></image>
+  </block>
+  <view wx:else class="thumb thumb-fallback">暂无预览</view>
 
   <view class="main">
     <view class="row-between">
