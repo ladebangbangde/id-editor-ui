@@ -2,6 +2,7 @@ const { STORAGE_KEYS, MOCK_RESULT } = require('../../utils/constants');
 const storage = require('../../utils/storage');
 const { saveImageFromUrl } = require('../../utils/save-image');
 const { getFlowDraft } = require('../../utils/flow-draft');
+const { pickBestImageUrl: pickImageFromCandidates, cleanUrl, isLikelyLocalPath } = require('../../utils/image-url');
 const {
   getFriendlySceneName,
   getFriendlySceneHint,
@@ -9,6 +10,44 @@ const {
   getQualityStatusLabel,
   pickBestImageUrl
 } = require('../../utils/photo-display');
+
+function buildPreviewUrl(result = {}) {
+  return pickImageFromCandidates([
+    result.previewUrl,
+    result.preview_url,
+    result.result && result.result.previewUrl,
+    result.result && result.result.preview_url,
+    result.resultUrl,
+    result.result_url,
+    result.hdUrl,
+    result.hd_url
+  ]);
+}
+
+function buildHdUrl(result = {}) {
+  return pickImageFromCandidates([
+    result.hdUrl,
+    result.hd_url,
+    result.resultUrl,
+    result.result_url,
+    result.previewUrl,
+    result.preview_url
+  ]);
+}
+
+function logImageUrlRisk(tag, url) {
+  const cleaned = cleanUrl(url);
+  if (!cleaned) {
+    console.warn(`[result] ${tag} is empty`);
+    return;
+  }
+  if (/^http:\/\//i.test(cleaned)) {
+    console.warn(`[result] ${tag} uses http, might be blocked on device`, cleaned);
+  }
+  if (isLikelyLocalPath(cleaned)) {
+    console.warn(`[result] ${tag} looks like local/private address, might not be reachable on device`, cleaned);
+  }
+}
 
 function buildRiskSummary(result = {}) {
   const warnings = Array.isArray(result.warnings) ? result.warnings : [];
@@ -35,6 +74,14 @@ function normalizeResult(result = {}) {
   const sceneHint = getFriendlySceneHint(result);
   const qualityText = getQualityStatusLabel(result.qualityStatus);
   const layoutUrl = result.printLayoutUrl || result.layoutUrl || '';
+  const previewUrl = buildPreviewUrl(result);
+  const hdUrl = buildHdUrl(result);
+  const displayUrl = pickImageFromCandidates([
+    result.displayUrl,
+    previewUrl,
+    hdUrl,
+    pickBestImageUrl(result)
+  ]);
 
   return {
     ...result,
@@ -43,7 +90,9 @@ function normalizeResult(result = {}) {
     sceneHint,
     sizeText: getFriendlySizeText(result),
     qualityText,
-    hdUrl: result.hdUrl || result.resultUrl || '',
+    previewUrl,
+    hdUrl,
+    displayUrl,
     layoutUrl,
     printLayoutUrl: layoutUrl,
     fileDesc: layoutUrl
@@ -60,19 +109,41 @@ function normalizeResult(result = {}) {
 
 Page({
   data: {
-    result: null
+    result: null,
+    previewImageFailed: false,
+    hdImageFailed: false
   },
 
   onShow() {
-    const result = storage.get(STORAGE_KEYS.CURRENT_RESULT, null) || MOCK_RESULT;
+    const rawResult = storage.get(STORAGE_KEYS.CURRENT_RESULT, null) || MOCK_RESULT;
     const draft = getFlowDraft();
+    console.log('[result] raw storage result', rawResult);
     this.setData({
+      previewImageFailed: false,
+      hdImageFailed: false,
       result: normalizeResult({
-        ...result,
-        sourceImageUrl: result.sourceImageUrl || draft.sourceImageUrl || draft.sourceImagePath || '',
-        displayUrl: pickBestImageUrl(result)
+        ...rawResult,
+        sourceImageUrl: rawResult.sourceImageUrl || draft.sourceImageUrl || draft.sourceImagePath || '',
+        displayUrl: pickBestImageUrl(rawResult)
       })
     });
+    console.log('[result] normalized image fields', {
+      previewUrl: this.data.result && this.data.result.previewUrl,
+      hdUrl: this.data.result && this.data.result.hdUrl,
+      displayUrl: this.data.result && this.data.result.displayUrl
+    });
+    logImageUrlRisk('previewUrl', this.data.result && this.data.result.previewUrl);
+    logImageUrlRisk('hdUrl', this.data.result && this.data.result.hdUrl);
+  },
+
+  handlePreviewImageError(event) {
+    console.error('[result] preview image render failed', event && event.detail, this.data.result && this.data.result.previewUrl);
+    this.setData({ previewImageFailed: true });
+  },
+
+  handleHdImageError(event) {
+    console.error('[result] hd image render failed', event && event.detail, this.data.result && this.data.result.hdUrl);
+    this.setData({ hdImageFailed: true });
   },
 
   async saveAsset(url, options = {}) {

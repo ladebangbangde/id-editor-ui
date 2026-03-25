@@ -323,7 +323,17 @@ function processPhoto(filePath, payload = {}) {
     showErrorToast: false
   })
     .then(unwrap)
-    .then((result) => normalizeAssetPayload(result))
+    .then((result) => {
+      console.log('[api.processPhoto] raw response', result);
+      const normalized = normalizeAssetPayload(result);
+      console.log('[api.processPhoto] normalized image fields', {
+        previewUrl: normalized.previewUrl,
+        resultUrl: normalized.resultUrl,
+        hdUrl: normalized.hdUrl,
+        originalUrl: normalized.originalUrl
+      });
+      return normalized;
+    })
     .catch((error) => {
       throw normalizePhotoProcessFailure(error);
     });
@@ -332,42 +342,86 @@ function processPhoto(filePath, payload = {}) {
 function getPhotoTask(taskId) {
   return request(`${getBaseUrl()}/photo/tasks/${taskId}`)
     .then(unwrap)
-    .then((payload) => normalizeHistoryItem(payload));
+    .then((payload) => {
+      console.log('[api.getPhotoTask] raw response', payload);
+      const normalized = normalizeHistoryItem(payload);
+      console.log('[api.getPhotoTask] normalized image fields', {
+        taskId: normalized.taskId,
+        previewUrl: normalized.previewUrl,
+        resultUrl: normalized.resultUrl,
+        hdUrl: normalized.hdUrl,
+        printLayoutUrl: normalized.printLayoutUrl
+      });
+      return normalized;
+    });
 }
 
 function getPhotoHistory(page = 1, pageSize = 10) {
   return request(`${getBaseUrl()}/photo/history?page=${page}&pageSize=${pageSize}`)
     .then(unwrap)
     .then((payload) => {
+      console.log('[api.getPhotoHistory] raw response', payload);
       if (Array.isArray(payload)) {
-        return {
+        const normalized = {
           list: payload.map(normalizeHistoryItem)
         };
+        console.log('[api.getPhotoHistory] normalized image fields', normalized.list.map((item) => ({
+          taskId: item.taskId,
+          previewUrl: item.previewUrl,
+          resultUrl: item.resultUrl,
+          hdUrl: item.hdUrl
+        })));
+        return normalized;
       }
       if (payload && Array.isArray(payload.list)) {
-        return {
+        const normalized = {
           ...payload,
           list: payload.list.map(normalizeHistoryItem)
         };
+        console.log('[api.getPhotoHistory] normalized image fields', normalized.list.map((item) => ({
+          taskId: item.taskId,
+          previewUrl: item.previewUrl,
+          resultUrl: item.resultUrl,
+          hdUrl: item.hdUrl
+        })));
+        return normalized;
       }
       if (payload && Array.isArray(payload.items)) {
-        return {
+        const normalizedItems = payload.items.map(normalizeHistoryItem);
+        const normalized = {
           ...payload,
-          list: payload.items.map(normalizeHistoryItem),
-          items: payload.items.map(normalizeHistoryItem)
+          list: normalizedItems,
+          items: normalizedItems
         };
+        console.log('[api.getPhotoHistory] normalized image fields', normalized.list.map((item) => ({
+          taskId: item.taskId,
+          previewUrl: item.previewUrl,
+          resultUrl: item.resultUrl,
+          hdUrl: item.hdUrl
+        })));
+        return normalized;
       }
       if (payload && Array.isArray(payload.records)) {
-        return {
+        const normalizedRecords = payload.records.map(normalizeHistoryItem);
+        const normalized = {
           ...payload,
-          list: payload.records.map(normalizeHistoryItem),
-          records: payload.records.map(normalizeHistoryItem)
+          list: normalizedRecords,
+          records: normalizedRecords
         };
+        console.log('[api.getPhotoHistory] normalized image fields', normalized.list.map((item) => ({
+          taskId: item.taskId,
+          previewUrl: item.previewUrl,
+          resultUrl: item.resultUrl,
+          hdUrl: item.hdUrl
+        })));
+        return normalized;
       }
-      return {
+      const normalized = {
         ...payload,
         list: []
       };
+      console.log('[api.getPhotoHistory] normalized image fields', []);
+      return normalized;
     });
 }
 
