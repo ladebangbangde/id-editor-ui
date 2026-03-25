@@ -12,7 +12,6 @@ function createDefaultDraft() {
     selectedSizeCode: '',
     customSize: null,
     backgroundColor: 'white',
-    formalWearOption: 'none',
     fromHistoryTaskId: ''
   };
 }

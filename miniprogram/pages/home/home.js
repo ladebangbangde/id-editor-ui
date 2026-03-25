@@ -39,38 +39,11 @@ const MAIN_ACTIONS = [
   }
 ];
 
-const QUICK_ACTIONS = [
-  {
-    key: 'formal-wear',
-    title: '一键换装',
-    subtitle: '一键切换正装风格，适配报名与证件场景',
-    routeType: 'formal-wear'
-  }
-];
-
-const HOME_FEATURE_FLAGS = {
-  showFormalWearEntry: false
-};
-
 function getHomeBrandContent() {
-  if (HOME_FEATURE_FLAGS.showFormalWearEntry) {
-    return {
-      subtitle: '标准寸照、换底色、换装',
-      tags: ['常用尺寸']
-    };
-  }
-
   return {
     subtitle: '标准寸照与换底色',
     tags: ['常用尺寸']
   };
-}
-
-function getVisibleQuickActions() {
-  if (!HOME_FEATURE_FLAGS.showFormalWearEntry) {
-    return [];
-  }
-  return QUICK_ACTIONS;
 }
 
 const HOME_TEMPLATE_MAP = {
@@ -390,7 +363,6 @@ function matchTemplateKeyword(item = {}, keyword = '') {
 
 Page({
   data: {
-    showFormalWearEntry: HOME_FEATURE_FLAGS.showFormalWearEntry,
     brandContent: getHomeBrandContent(),
     loading: true,
     error: false,
@@ -399,7 +371,6 @@ Page({
     activeTab: HOME_TABS[0].key,
     activeTabLabel: HOME_TABS[0].label,
     mainActions: MAIN_ACTIONS,
-    quickActions: getVisibleQuickActions(),
     allTemplateList: [],
     templateList: [],
     searchKeyword: '',
@@ -489,10 +460,6 @@ Page({
     this.navigateByAction(item);
   },
 
-  handleQuickActionTap(event) {
-    const { item } = event.currentTarget.dataset;
-    this.navigateByAction(item);
-  },
 
   handleTemplateTap(event) {
     const { item } = event.currentTarget.dataset;
@@ -550,10 +517,6 @@ Page({
       return;
     }
 
-    if (action.routeType === 'formal-wear') {
-      wx.navigateTo({ url: '/pages/formal-wear/formal-wear' });
-      return;
-    }
 
     wx.showToast({ title: action.toastText || '功能开发中', icon: 'none' });
   }

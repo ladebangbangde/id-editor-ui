@@ -36,7 +36,6 @@ function normalizeDetail(detail = {}) {
       widthMm: detail.widthMm || 0,
       heightMm: detail.heightMm || 0
     },
-    formalWearOption: detail.formalWearOption || 'none',
     qualityStatus: getQualityStatusLabel(detail.qualityStatus),
     qualityMessage: detail.qualityMessage || '',
     warnings,
@@ -96,13 +95,12 @@ Page({
     setFlowDraft({
       sourceImagePath: record.sourceImagePath || '',
       sourceImageUrl: record.sourceImageUrl || record.displayUrl || '',
-      flowType: record.formalWearOption && record.formalWearOption !== 'none' ? 'formalWear' : 'idPhoto',
+      flowType: 'idPhoto',
       flowMode: 'template',
       needSelectSize: false,
       selectedScene: record.sceneInfo || null,
       selectedSizeCode: record.sizeCode || (record.sceneInfo && record.sceneInfo.sceneKey) || '',
       backgroundColor: record.backgroundColor || 'white',
-      formalWearOption: record.formalWearOption || 'none',
       fromHistoryTaskId: record.taskId || ''
     });
     wx.navigateTo({ url: '/pages/editor/editor' });
