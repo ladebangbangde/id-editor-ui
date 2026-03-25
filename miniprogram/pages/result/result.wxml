@@ -1,13 +1,16 @@
 <view class="container">
   <view class="card section status">
-    <view class="title-lg">制作完成</view>
-    <view class="text-muted">照片已经准备好啦，确认一下效果后就可以直接保存到相册。</view>
+    <view wx:if="{{result.reviewState === 'failed'}}" class="title-lg">检测未通过</view>
+    <view wx:elif="{{result.reviewState === 'warning'}}" class="title-lg">制作完成（有提醒）</view>
+    <view wx:else class="title-lg">制作完成</view>
+    <view wx:if="{{result.reviewState === 'failed'}}" class="text-muted">检测结果未通过，建议根据提示调整后重新生成。</view>
+    <view wx:else class="text-muted">照片已经准备好啦，确认一下效果后就可以直接保存到相册。</view>
   </view>
 
-  <view class="card section panel quality-banner {{result.riskLevel === 'warning' ? 'quality-banner-warning' : 'quality-banner-passed'}}">
+  <view class="card section panel quality-banner {{result.riskLevel === 'failed' ? 'quality-banner-warning' : (result.riskLevel === 'warning' ? 'quality-banner-warning' : 'quality-banner-passed')}}">
     <view class="quality-banner-header">
       <view class="title-md">{{result.riskTitle}}</view>
-      <view class="quality-tag {{result.riskLevel === 'warning' ? 'quality-tag-warning' : 'quality-tag-passed'}}">{{result.qualityText}}</view>
+      <view class="quality-tag {{result.riskLevel === 'failed' ? 'quality-tag-warning' : (result.riskLevel === 'warning' ? 'quality-tag-warning' : 'quality-tag-passed')}}">{{result.qualityText}}</view>
     </view>
     <view class="quality-message">{{result.riskMessage}}</view>
     <view class="quality-count">{{result.riskCountText}}</view>

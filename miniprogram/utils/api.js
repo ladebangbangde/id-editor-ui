@@ -112,6 +112,22 @@ function normalizeAssetPayload(payload = {}) {
   return normalized;
 }
 
+function normalizeReviewFields(payload = {}) {
+  const normalized = { ...payload };
+  normalized.status = normalized.status || normalized.taskStatus || normalized.task_status || '';
+  normalized.qualityStatus = normalized.qualityStatus || normalized.quality_status || normalized.status || '';
+  normalized.code = normalized.code || normalized.errorCode || normalized.error_code || '';
+  normalized.message = normalized.message || normalized.msg || normalized.qualityMessage || normalized.quality_message || '';
+  normalized.details = Array.isArray(normalized.details)
+    ? normalized.details
+    : (Array.isArray(normalized.detailList) ? normalized.detailList : []);
+  normalized.riskTips = Array.isArray(normalized.riskTips)
+    ? normalized.riskTips
+    : (Array.isArray(normalized.risk_tips) ? normalized.risk_tips : []);
+  normalized.warnings = Array.isArray(normalized.warnings) ? normalized.warnings : [];
+  return normalized;
+}
+
 function normalizePhotoProcessFailure(error = {}) {
   const normalized = normalizeErrorPayload(error, '照片检测未通过');
   const reasonList = Array.isArray(normalized.reasons) ? normalized.reasons : [];
@@ -160,9 +176,9 @@ function normalizePhotoProcessFailure(error = {}) {
 }
 
 function normalizeHistoryItem(item = {}) {
-  const normalized = normalizeAssetPayload(item);
+  const normalized = normalizeReviewFields(normalizeAssetPayload(item));
   const scene = normalizeScene(normalized.scene || {});
-  const result = normalizeAssetPayload(normalized.result || {});
+  const result = normalizeReviewFields(normalizeAssetPayload(normalized.result || {}));
   const widthMm = Number(normalized.widthMm || normalized.width_mm || scene.widthMm || 0);
   const heightMm = Number(normalized.heightMm || normalized.height_mm || scene.heightMm || 0);
   const backgroundColor = normalized.backgroundColor || normalized.background_color
@@ -207,6 +223,14 @@ function normalizeHistoryItem(item = {}) {
       || result.qualityStatus || result.quality_status || '',
     qualityMessage: normalized.qualityMessage || normalized.quality_message
       || result.qualityMessage || result.quality_message || '',
+    code: normalized.code || result.code || '',
+    message: normalized.message || result.message || '',
+    details: Array.isArray(normalized.details)
+      ? normalized.details
+      : (Array.isArray(result.details) ? result.details : []),
+    riskTips: Array.isArray(normalized.riskTips)
+      ? normalized.riskTips
+      : (Array.isArray(result.riskTips) ? result.riskTips : []),
     sizeCode: normalized.sizeCode || normalized.size_code || result.sizeCode || result.size_code || '',
     warnings: Array.isArray(normalized.warnings)
       ? normalized.warnings
@@ -325,7 +349,7 @@ function processPhoto(filePath, payload = {}) {
     .then(unwrap)
     .then((result) => {
       console.log('[api.processPhoto] raw response', result);
-      const normalized = normalizeAssetPayload(result);
+      const normalized = normalizeReviewFields(normalizeAssetPayload(result));
       console.log('[api.processPhoto] normalized image fields', {
         previewUrl: normalized.previewUrl,
         resultUrl: normalized.resultUrl,

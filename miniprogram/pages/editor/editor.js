@@ -10,6 +10,42 @@ function normalizeWarnings(warnings) {
   return Array.isArray(warnings) ? warnings.filter(Boolean) : [];
 }
 
+function normalizeDetailList(list) {
+  if (!Array.isArray(list)) return [];
+  return list
+    .map((item) => {
+      if (!item) return '';
+      if (typeof item === 'string') return item;
+      if (typeof item === 'object') return item.message || item.detail || item.title || '';
+      return '';
+    })
+    .filter(Boolean);
+}
+
+function mergeRiskWarnings(result = {}) {
+  return normalizeWarnings([
+    ...(Array.isArray(result.warnings) ? result.warnings : []),
+    ...(Array.isArray(result.riskTips) ? result.riskTips : []),
+    ...normalizeDetailList(result.details)
+  ]);
+}
+
+function deriveReviewState(result = {}) {
+  const quality = String(result.qualityStatus || '').toUpperCase();
+  const status = String(result.status || '').toUpperCase();
+  const code = String(result.code || '').toUpperCase();
+  const failedSignals = ['FAILED', 'FAIL', 'REJECT', 'BLOCK', 'INVALID', 'ERROR'];
+  const warningSignals = ['WARNING', 'WARN', 'RISK', 'REVIEW'];
+
+  if (failedSignals.some((signal) => quality.includes(signal) || status.includes(signal) || code.includes(signal))) {
+    return 'failed';
+  }
+  if (warningSignals.some((signal) => quality.includes(signal) || status.includes(signal) || code.includes(signal))) {
+    return 'warning';
+  }
+  return 'passed';
+}
+
 Page({
   data: {
     draft: {},
@@ -81,6 +117,15 @@ Page({
       });
       const latestResult = await this.refreshTaskResult(processed.taskId, processed);
       const sceneInfo = draft.selectedScene || {};
+      const mergedRiskWarnings = mergeRiskWarnings({
+        ...processed,
+        ...latestResult
+      });
+      const qualityMessage = latestResult.qualityMessage
+        || processed.qualityMessage
+        || latestResult.message
+        || processed.message
+        || '';
       const result = {
         imagePath: draft.sourceImagePath,
         sourceImagePath: draft.sourceImagePath,
@@ -97,12 +142,41 @@ Page({
         sizeCode: latestResult.sizeCode || processed.sizeCode || canonicalSizeCode,
         width: latestResult.width || processed.width || sceneInfo.pixelWidth || 0,
         height: latestResult.height || processed.height || sceneInfo.pixelHeight || 0,
-        warnings: normalizeWarnings(latestResult.warnings || processed.warnings),
+        warnings: mergedRiskWarnings,
         qualityStatus: latestResult.qualityStatus || processed.qualityStatus || '',
-        qualityMessage: latestResult.qualityMessage || processed.qualityMessage || '',
+        qualityMessage,
         createdAt: latestResult.createdAt || formatTime(Date.now()),
         hdUrl: latestResult.hdUrl || processed.hdUrl || latestResult.resultUrl || processed.resultUrl || '',
+        code: latestResult.code || processed.code || '',
+        message: latestResult.message || processed.message || '',
+        details: latestResult.details || processed.details || [],
+        riskTips: latestResult.riskTips || processed.riskTips || []
       };
+      const reviewState = deriveReviewState(result);
+      console.log('[editor] generation raw result', { processed, latestResult });
+      console.log('[editor] generation mapped status', {
+        reviewState,
+        qualityStatus: result.qualityStatus,
+        status: result.status,
+        code: result.code,
+        warnings: result.warnings,
+        message: result.message
+      });
+
+      if (reviewState === 'failed') {
+        const failurePayload = {
+          title: result.message || result.qualityMessage || '照片检测未通过',
+          message: result.message || result.qualityMessage || '请调整照片后重试',
+          code: result.code || '',
+          taskId: result.taskId || '',
+          reasons: normalizeDetailList(result.details),
+          suggestions: mergedRiskWarnings,
+          createdAt: result.createdAt || ''
+        };
+        storage.set(STORAGE_KEYS.CURRENT_PROCESS_FAILURE, failurePayload);
+        wx.navigateTo({ url: '/pages/process-failure/process-failure' });
+        return;
+      }
       storage.set(STORAGE_KEYS.CURRENT_RESULT, result);
       wx.navigateTo({ url: '/pages/result/result' });
     } catch (error) {

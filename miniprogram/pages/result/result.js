@@ -51,7 +51,16 @@ function logImageUrlRisk(tag, url) {
 
 function buildRiskSummary(result = {}) {
   const warnings = Array.isArray(result.warnings) ? result.warnings : [];
-  if (result.qualityStatus === 'WARNING' || warnings.length) {
+  const reviewState = result.reviewState || 'passed';
+  if (reviewState === 'failed') {
+    return {
+      riskLevel: 'failed',
+      riskTitle: '检测未通过，请按提示调整后重试',
+      riskMessage: result.qualityMessage || result.message || '本次结果未通过审核，暂不建议保存。',
+      riskCountText: warnings.length ? `有 ${warnings.length} 条需要处理的问题` : '请按未通过原因调整后重新生成'
+    };
+  }
+  if (reviewState === 'warning') {
     return {
       riskLevel: 'warning',
       riskTitle: '生成已经完成，保存前再看一眼会更安心',
@@ -68,11 +77,44 @@ function buildRiskSummary(result = {}) {
   };
 }
 
-function normalizeResult(result = {}) {
+function deriveReviewState(result = {}) {
+  const quality = String(result.qualityStatus || '').toUpperCase();
+  const status = String(result.status || '').toUpperCase();
+  const code = String(result.code || '').toUpperCase();
+  const failedSignals = ['FAILED', 'FAIL', 'REJECT', 'BLOCK', 'INVALID', 'ERROR'];
+  const warningSignals = ['WARNING', 'WARN', 'RISK', 'REVIEW'];
+
+  if (failedSignals.some((signal) => quality.includes(signal) || status.includes(signal) || code.includes(signal))) {
+    return 'failed';
+  }
+  if (warningSignals.some((signal) => quality.includes(signal) || status.includes(signal) || code.includes(signal))) {
+    return 'warning';
+  }
+  return 'passed';
+}
+
+function normalizeWarnings(result = {}) {
   const warnings = Array.isArray(result.warnings) ? result.warnings : [];
+  const riskTips = Array.isArray(result.riskTips) ? result.riskTips : [];
+  const details = Array.isArray(result.details)
+    ? result.details
+      .map((item) => {
+        if (!item) return '';
+        if (typeof item === 'string') return item;
+        if (typeof item === 'object') return item.message || item.detail || item.title || '';
+        return '';
+      })
+      .filter(Boolean)
+    : [];
+  return [...warnings, ...riskTips, ...details];
+}
+
+function normalizeResult(result = {}) {
+  const warnings = normalizeWarnings(result);
   const friendlyName = getFriendlySceneName(result, '证件照');
   const sceneHint = getFriendlySceneHint(result);
-  const qualityText = getQualityStatusLabel(result.qualityStatus);
+  const reviewState = deriveReviewState(result);
+  const qualityText = getQualityStatusLabel(result.qualityStatus || result.status || '');
   const layoutUrl = result.printLayoutUrl || result.layoutUrl || '';
   const previewUrl = buildPreviewUrl(result);
   const hdUrl = buildHdUrl(result);
@@ -90,6 +132,7 @@ function normalizeResult(result = {}) {
     sceneHint,
     sizeText: getFriendlySizeText(result),
     qualityText,
+    reviewState,
     previewUrl,
     hdUrl,
     displayUrl,
@@ -101,8 +144,9 @@ function normalizeResult(result = {}) {
     ...buildRiskSummary({
       ...result,
       warnings,
-      qualityStatus: result.qualityStatus,
-      qualityMessage: result.qualityMessage
+      reviewState,
+      qualityStatus: result.qualityStatus || result.status,
+      qualityMessage: result.qualityMessage || result.message
     })
   };
 }
@@ -118,15 +162,24 @@ Page({
     const rawResult = storage.get(STORAGE_KEYS.CURRENT_RESULT, null) || MOCK_RESULT;
     const draft = getFlowDraft();
     console.log('[result] raw storage result', rawResult);
+    const normalized = normalizeResult({
+      ...rawResult,
+      sourceImageUrl: rawResult.sourceImageUrl || draft.sourceImageUrl || draft.sourceImagePath || '',
+      displayUrl: pickBestImageUrl(rawResult)
+    });
+    const renderBranch = normalized.reviewState || 'passed';
     this.setData({
       previewImageFailed: false,
       hdImageFailed: false,
-      result: normalizeResult({
-        ...rawResult,
-        sourceImageUrl: rawResult.sourceImageUrl || draft.sourceImageUrl || draft.sourceImagePath || '',
-        displayUrl: pickBestImageUrl(rawResult)
-      })
+      result: normalized
     });
+    console.log('[result] mapped status', {
+      reviewState: normalized.reviewState,
+      qualityStatus: normalized.qualityStatus,
+      status: normalized.status,
+      code: normalized.code
+    });
+    console.log('[result] render branch hit', renderBranch);
     console.log('[result] normalized image fields', {
       previewUrl: this.data.result && this.data.result.previewUrl,
       hdUrl: this.data.result && this.data.result.hdUrl,
