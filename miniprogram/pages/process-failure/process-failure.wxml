@@ -8,8 +8,7 @@
   </view>
 
   <view class="card section panel">
-    <view class="meta-row"><text>错误码</text><text>{{failure.code || '--'}}</text></view>
-    <view class="meta-row"><text>任务 ID</text><text>{{failure.taskId || '--'}}</text></view>
+        <view class="meta-row"><text>任务 ID</text><text>{{failure.taskId || '--'}}</text></view>
     <view class="meta-row"><text>检测时间</text><text>{{failure.createdAt || '--'}}</text></view>
   </view>
 
@@ -20,8 +19,7 @@
       <view class="detail-main">
         <view class="detail-title">{{item.title}}</view>
         <view wx:if="{{item.detail}}" class="detail-sub">{{item.detail}}</view>
-        <view wx:if="{{item.reasonCode}}" class="detail-code">原因码：{{item.reasonCode}}</view>
-      </view>
+              </view>
     </view>
   </view>
 

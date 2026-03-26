@@ -7,9 +7,16 @@ const {
   getFriendlySceneName,
   getFriendlySceneHint,
   getFriendlySizeText,
-  getQualityStatusLabel,
   pickBestImageUrl
 } = require('../../utils/photo-display');
+const {
+  deriveDisplayState,
+  getFriendlyStatusText,
+  getFriendlyStatusSummary,
+  getFriendlyIssueText,
+  getFriendlyWarnings,
+  getFriendlySaveHint
+} = require('../../utils/photo-status-text');
 
 function buildPreviewUrl(result = {}) {
   return pickImageFromCandidates([
@@ -55,66 +62,42 @@ function buildRiskSummary(result = {}) {
   if (reviewState === 'failed') {
     return {
       riskLevel: 'failed',
-      riskTitle: '检测未通过，请按提示调整后重试',
-      riskMessage: result.qualityMessage || result.message || '本次结果未通过审核，暂不建议保存。',
-      riskCountText: warnings.length ? `有 ${warnings.length} 条需要处理的问题` : '请按未通过原因调整后重新生成'
+      riskTitle: '建议注意',
+      riskMessage: warnings[0] || getFriendlyIssueText(result.code, result.qualityMessage || result.message),
+      riskCountText: warnings.length > 1 ? `有 ${warnings.length} 条提醒` : '请按提示调整后重试'
     };
   }
   if (reviewState === 'warning') {
     return {
       riskLevel: 'warning',
-      riskTitle: '生成已经完成，保存前再看一眼会更安心',
-      riskMessage: result.qualityMessage || '照片已经生成好啦，建议先看看这几条小提醒。',
-      riskCountText: warnings.length ? `有 ${warnings.length} 条温馨提醒` : '建议先确认脸部和边缘是否自然'
+      riskTitle: '建议注意',
+      riskMessage: warnings[0] || getFriendlyIssueText(result.code, result.qualityMessage),
+      riskCountText: warnings.length > 1 ? `有 ${warnings.length} 条提醒` : '建议保存前再检查一下效果'
     };
   }
 
   return {
     riskLevel: 'passed',
-    riskTitle: '照片状态不错，可以放心保存',
-    riskMessage: result.qualityMessage || '质量检测通过，接下来直接保存到相册就好。',
-    riskCountText: '目前没有额外风险提示'
+    riskTitle: '建议注意',
+    riskMessage: result.qualityMessage || '当前效果看起来正常，可以直接保存使用',
+    riskCountText: '目前没有额外提醒'
   };
-}
-
-function deriveReviewState(result = {}) {
-  const quality = String(result.qualityStatus || '').toUpperCase();
-  const status = String(result.status || '').toUpperCase();
-  const code = String(result.code || '').toUpperCase();
-  const failedSignals = ['FAILED', 'FAIL', 'REJECT', 'BLOCK', 'INVALID', 'ERROR'];
-  const warningSignals = ['WARNING', 'WARN', 'RISK', 'REVIEW'];
-
-  if (failedSignals.some((signal) => quality.includes(signal) || status.includes(signal) || code.includes(signal))) {
-    return 'failed';
-  }
-  if (warningSignals.some((signal) => quality.includes(signal) || status.includes(signal) || code.includes(signal))) {
-    return 'warning';
-  }
-  return 'passed';
 }
 
 function normalizeWarnings(result = {}) {
   const warnings = Array.isArray(result.warnings) ? result.warnings : [];
   const riskTips = Array.isArray(result.riskTips) ? result.riskTips : [];
-  const details = Array.isArray(result.details)
-    ? result.details
-      .map((item) => {
-        if (!item) return '';
-        if (typeof item === 'string') return item;
-        if (typeof item === 'object') return item.message || item.detail || item.title || '';
-        return '';
-      })
-      .filter(Boolean)
-    : [];
-  return [...warnings, ...riskTips, ...details];
+  const details = Array.isArray(result.details) ? result.details : [];
+  return getFriendlyWarnings([...warnings, ...riskTips, ...details]);
 }
 
 function normalizeResult(result = {}) {
   const warnings = normalizeWarnings(result);
   const friendlyName = getFriendlySceneName(result, '证件照');
   const sceneHint = getFriendlySceneHint(result);
-  const reviewState = deriveReviewState(result);
-  const qualityText = getQualityStatusLabel(result.qualityStatus || result.status || '');
+  const reviewState = deriveDisplayState(result);
+  const summary = getFriendlyStatusSummary(reviewState);
+  const qualityText = reviewState === 'failed' ? '不建议直接使用' : getFriendlyStatusText(result.qualityStatus || result.status || (reviewState === 'warning' ? 'WARNING' : 'SUCCESS'));
   const layoutUrl = result.printLayoutUrl || result.layoutUrl || '';
   const previewUrl = buildPreviewUrl(result);
   const hdUrl = buildHdUrl(result);
@@ -133,14 +116,13 @@ function normalizeResult(result = {}) {
     sizeText: getFriendlySizeText(result),
     qualityText,
     reviewState,
+    statusSummary: summary,
     previewUrl,
     hdUrl,
     displayUrl,
     layoutUrl,
     printLayoutUrl: layoutUrl,
-    fileDesc: layoutUrl
-      ? '高清图和排版图都可以直接保存到手机相册'
-      : '生成好的照片可以直接保存到手机相册',
+    fileDesc: getFriendlySaveHint(reviewState),
     ...buildRiskSummary({
       ...result,
       warnings,

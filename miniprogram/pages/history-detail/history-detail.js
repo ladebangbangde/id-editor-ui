@@ -6,12 +6,20 @@ const {
   getFriendlySceneName,
   getFriendlySceneHint,
   getFriendlySizeText,
-  getQualityStatusLabel,
   pickBestImageUrl
 } = require('../../utils/photo-display');
+const {
+  deriveDisplayState,
+  getFriendlyStatusText,
+  getFriendlyIssueText,
+  getFriendlyWarnings,
+  getFriendlySaveHint
+} = require('../../utils/photo-status-text');
 
 function normalizeDetail(detail = {}) {
-  const warnings = Array.isArray(detail.warnings) ? detail.warnings : [];
+  const warnings = getFriendlyWarnings(Array.isArray(detail.warnings) ? detail.warnings : []);
+  const reviewState = deriveDisplayState(detail);
+
   return {
     taskId: detail.taskId || detail.id,
     imageId: detail.imageId || '',
@@ -36,9 +44,12 @@ function normalizeDetail(detail = {}) {
       widthMm: detail.widthMm || 0,
       heightMm: detail.heightMm || 0
     },
-    qualityStatus: getQualityStatusLabel(detail.qualityStatus),
-    qualityMessage: detail.qualityMessage || '',
+    qualityStatus: reviewState === 'failed'
+      ? '不建议直接使用'
+      : getFriendlyStatusText(detail.qualityStatus || detail.status || (reviewState === 'warning' ? 'WARNING' : 'SUCCESS')),
+    qualityMessage: warnings[0] || getFriendlyIssueText(detail.code || '', detail.qualityMessage || ''),
     warnings,
+    fileDesc: getFriendlySaveHint(reviewState),
     createdAt: formatTime(detail.createdAt)
   };
 }
