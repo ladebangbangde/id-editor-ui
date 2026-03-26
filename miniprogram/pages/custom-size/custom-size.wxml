@@ -18,17 +18,6 @@
   <view class="card section panel">
     <view class="title-md">热门标准尺寸</view>
     <view class="size-list">
-      <view wx:for="{{hotSizes}}" wx:key="code" class="size-item {{selectedSizeCode===item.code?'active':''}}" data-code="{{item.code}}" bindtap="handleSelectSize">
-        <view>{{item.name}}</view>
-        <view class="text-muted">{{item.usage}}</view>
-        <view class="text-muted">{{item.sizeText}} / {{item.pixelText}}</view>
-      </view>
-    </view>
-  </view>
-
-  <view class="card section panel">
-    <view class="title-md">全部尺寸</view>
-    <view class="size-list">
       <view wx:for="{{filteredSizes}}" wx:key="code" class="size-item {{selectedSizeCode===item.code?'active':''}}" data-code="{{item.code}}" bindtap="handleSelectSize">
         <view>{{item.name}}</view>
         <view class="text-muted">{{item.usage}}</view>

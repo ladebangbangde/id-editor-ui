@@ -82,13 +82,13 @@ Page({
       hotSizes,
       recentSizes,
       selectedSizeCode,
-      filteredSizes: allSizes
+      filteredSizes: hotSizes
     });
   },
 
   handleKeywordInput(event) {
     const keyword = (event.detail.value || '').trim();
-    const filteredSizes = this.data.allSizes.filter((item) => {
+    const filteredSizes = this.data.hotSizes.filter((item) => {
       const text = `${item.name} ${item.code} ${item.sizeText}`.toLowerCase();
       return text.includes(keyword.toLowerCase());
     });
