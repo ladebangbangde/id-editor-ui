@@ -129,6 +129,7 @@ const QUALITY_STATUS_MAP = {
   FAILED: '建议重拍',
   PROCESSING: '处理中'
 };
+let hasLoggedUnexpectedRawSize = false;
 
 function normalizeSpecKey(key = '') {
   if (!key) return '';
@@ -160,12 +161,57 @@ function getFriendlySceneHint(input = {}) {
   return input.tip || input.description || '';
 }
 
+function isDevEnv() {
+  if (typeof wx === 'undefined' || typeof wx.getAccountInfoSync !== 'function') return false;
+  const info = wx.getAccountInfoSync() || {};
+  const miniProgram = info.miniProgram || {};
+  return miniProgram.envVersion !== 'release';
+}
+
+function logUnexpectedRawSize(rawSize) {
+  if (hasLoggedUnexpectedRawSize || !isDevEnv()) return;
+  hasLoggedUnexpectedRawSize = true;
+  console.debug('[photo-display] unexpected rawSize type in history formatter', {
+    rawSizeType: rawSize === null ? 'null' : typeof rawSize,
+    rawSize
+  });
+}
+
+function normalizeSize(rawSize, fallback = '--') {
+  if (rawSize === null || rawSize === undefined) return fallback;
+
+  if (typeof rawSize === 'string') {
+    const normalized = rawSize.trim();
+    if (!normalized) return fallback;
+    return normalized.replace(/[×*]/g, 'x');
+  }
+
+  if (typeof rawSize === 'number') {
+    return Number.isFinite(rawSize) ? String(rawSize) : fallback;
+  }
+
+  if (typeof rawSize === 'object') {
+    const width = rawSize.width ?? rawSize.w;
+    const height = rawSize.height ?? rawSize.h;
+    if (width !== undefined && width !== null && height !== undefined && height !== null) {
+      return `${width}x${height}`;
+    }
+  }
+
+  logUnexpectedRawSize(rawSize);
+  return fallback;
+}
+
 function getFriendlySizeText(input = {}) {
   const title = getFriendlySceneName(input, '证件照');
   const widthMm = Number(input.widthMm || (input.scene && input.scene.widthMm) || 0);
   const heightMm = Number(input.heightMm || (input.scene && input.scene.heightMm) || 0);
   const mmText = widthMm && heightMm ? `${widthMm}×${heightMm}mm` : '';
-  const rawSize = input.sizeText || input.size || '';
+  const originalRawSize = input.sizeText !== undefined ? input.sizeText : input.size;
+  const rawSize = normalizeSize(originalRawSize, '');
+  if (typeof originalRawSize !== 'string') {
+    logUnexpectedRawSize(originalRawSize);
+  }
 
   if (title && mmText) {
     return `${title} · ${mmText}`;
