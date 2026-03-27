@@ -14,21 +14,38 @@
   </view>
 
   <view class="card section panel">
-    <view class="title-md">结果展示</view>
-    <view class="preview-list">
-      <view class="preview-item">
-        <view class="text-muted">普通图（适合预览/分享）</view>
-        <block wx:if="{{result.previewUrl && !previewImageFailed}}">
-          <image class="preview" src="{{result.previewUrl}}" mode="aspectFit" binderror="handlePreviewImageError"></image>
+    <view class="title-md">请选择要保存的图片</view>
+    <view class="text-muted compare-hint">左右均为正式候选结果，请选择你更满意的一张后保存</view>
+
+    <view class="candidate-list">
+      <view
+        wx:for="{{result.candidates}}"
+        wx:key="candidateId"
+        class="candidate-item {{selectedCandidateId === item.candidateId ? 'candidate-item-selected' : ''}}"
+        data-candidate-id="{{item.candidateId}}"
+        bindtap="selectCandidate"
+      >
+        <view class="candidate-header">
+          <view class="candidate-label">{{item.label || ('方案 ' + (index === 0 ? 'A' : 'B'))}}</view>
+          <view class="candidate-check {{selectedCandidateId === item.candidateId ? 'candidate-check-selected' : ''}}">
+            <text wx:if="{{selectedCandidateId === item.candidateId}}">✓</text>
+          </view>
+        </view>
+
+        <block wx:if="{{item.imageUrl && !imageFailMap[item.candidateId]}}">
+          <image
+            class="candidate-image"
+            src="{{item.imageUrl}}"
+            mode="aspectFit"
+            data-candidate-id="{{item.candidateId}}"
+            binderror="handleCandidateImageError"
+          ></image>
         </block>
-        <view wx:else class="preview-fallback">普通图加载失败，请稍后重试或重新生成</view>
-      </view>
-      <view class="preview-item">
-        <view class="text-muted">高清图（适合打印/正式提交）</view>
-        <block wx:if="{{(result.hdUrl || result.resultUrl || result.previewUrl) && !hdImageFailed}}">
-          <image class="preview" src="{{result.hdUrl || result.resultUrl || result.previewUrl}}" mode="aspectFit" binderror="handleHdImageError"></image>
-        </block>
-        <view wx:else class="preview-fallback">高清图加载失败，请检查网络或图片地址有效性</view>
+        <view wx:else class="preview-fallback">{{item.fallbackText || '候选图加载失败，请稍后重试'}}</view>
+
+        <view class="candidate-tip">{{item.qualityMessage || '建议检查边缘与五官细节后再保存'}}</view>
+        <view wx:if="{{item.warnings && item.warnings.length}}" class="candidate-warning">{{item.warnings[0]}}</view>
+        <view wx:if="{{selectedCandidateId === item.candidateId}}" class="picked-tag">已选择</view>
       </view>
     </view>
   </view>
@@ -57,8 +74,7 @@
   </view>
 
   <view class="button-row section">
-    <view class="button-item"><primary-button text="保存普通图" type="secondary" bind:tap="savePreview"></primary-button></view>
-    <view class="button-item"><primary-button text="保存高清图" bind:tap="saveHd"></primary-button></view>
+    <view class="button-item"><primary-button text="保存图片" bind:tap="saveSelectedCandidate"></primary-button></view>
   </view>
   <view wx:if="{{result.printLayoutUrl}}" class="section">
     <primary-button text="保存排版图" type="secondary" bind:tap="saveLayout"></primary-button>

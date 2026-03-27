@@ -42,6 +42,24 @@ function normalizeSuggestionList(list = []) {
     .filter(Boolean);
 }
 
+function normalizeProcessingCandidates(result = {}) {
+  const list = Array.isArray(result.candidates) ? result.candidates : [];
+  return list
+    .map((item, index) => {
+      const candidateId = item.candidateId || item.candidate_id || '';
+      const label = item.label || `方案 ${index === 0 ? 'A' : 'B'}`;
+      const imageUrl = item.imageUrl || item.image_url || item.previewUrl || item.preview_url
+        || item.resultUrl || item.result_url || item.hdUrl || item.hd_url || '';
+      return {
+        ...item,
+        candidateId,
+        label,
+        imageUrl
+      };
+    })
+    .filter((item) => item.imageUrl);
+}
+
 function buildFailurePayload(payload = {}, fallback = {}) {
   const reasons = normalizeDetailList(
     payload.reasons
@@ -197,6 +215,9 @@ Page({
         qualityMessage,
         createdAt: latestResult.createdAt || formatTime(Date.now()),
         hdUrl: latestResult.hdUrl || processed.hdUrl || latestResult.resultUrl || processed.resultUrl || '',
+        candidates: normalizeProcessingCandidates(latestResult).length
+          ? normalizeProcessingCandidates(latestResult)
+          : normalizeProcessingCandidates(processed),
         code: latestResult.code || processed.code || '',
         message: latestResult.message || processed.message || '',
         details: latestResult.details || processed.details || [],

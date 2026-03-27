@@ -2,7 +2,8 @@ const { STORAGE_KEYS, MOCK_RESULT } = require('../../utils/constants');
 const storage = require('../../utils/storage');
 const { saveImageFromUrl } = require('../../utils/save-image');
 const { getFlowDraft } = require('../../utils/flow-draft');
-const { pickBestImageUrl: pickImageFromCandidates, cleanUrl, isLikelyLocalPath } = require('../../utils/image-url');
+const { request } = require('../../utils/request');
+const { pickBestImageUrl: pickImageFromCandidates } = require('../../utils/image-url');
 const {
   getFriendlySceneName,
   getFriendlySceneHint,
@@ -18,42 +19,91 @@ const {
   getFriendlySaveHint
 } = require('../../utils/photo-status-text');
 
-function buildPreviewUrl(result = {}) {
-  return pickImageFromCandidates([
-    result.previewUrl,
-    result.preview_url,
-    result.result && result.result.previewUrl,
-    result.result && result.result.preview_url,
-    result.resultUrl,
-    result.result_url,
-    result.hdUrl,
-    result.hd_url
-  ]);
+const ENGINEERING_HINT_PATTERN = /(engine|backend|compare|fallback|legacy|baidu|debug|trace|pipeline)/i;
+
+function getApiBaseUrl() {
+  const app = getApp();
+  return (app && app.globalData && app.globalData.apiBaseUrl) || '';
 }
 
-function buildHdUrl(result = {}) {
-  return pickImageFromCandidates([
-    result.hdUrl,
-    result.hd_url,
-    result.resultUrl,
-    result.result_url,
-    result.previewUrl,
-    result.preview_url
-  ]);
+function sanitizeHintText(text = '', fallback = '') {
+  const normalized = String(text || '').trim();
+  if (!normalized) return fallback;
+  if (ENGINEERING_HINT_PATTERN.test(normalized)) return fallback;
+  return normalized;
 }
 
-function logImageUrlRisk(tag, url) {
-  const cleaned = cleanUrl(url);
-  if (!cleaned) {
-    console.warn(`[result] ${tag} is empty`);
-    return;
+function normalizeCandidateWarnings(candidate = {}) {
+  const warnings = Array.isArray(candidate.warnings) ? candidate.warnings : [];
+  const riskTips = Array.isArray(candidate.riskTips) ? candidate.riskTips : [];
+  const details = Array.isArray(candidate.details) ? candidate.details : [];
+  return getFriendlyWarnings([...warnings, ...riskTips, ...details])
+    .map((item) => sanitizeHintText(item, '建议放大查看细节后再决定'))
+    .filter(Boolean);
+}
+
+function normalizeCandidates(result = {}) {
+  const sourceList = Array.isArray(result.candidates) ? result.candidates : [];
+  const candidates = sourceList
+    .map((candidate, index) => {
+      const candidateId = candidate.candidateId || candidate.candidate_id || '';
+      const label = sanitizeHintText(candidate.label, '') || `方案 ${index === 0 ? 'A' : 'B'}`;
+      const imageUrl = pickImageFromCandidates([
+        candidate.imageUrl,
+        candidate.image_url,
+        candidate.previewUrl,
+        candidate.preview_url,
+        candidate.resultUrl,
+        candidate.result_url,
+        candidate.hdUrl,
+        candidate.hd_url
+      ]);
+      const qualityMessage = sanitizeHintText(
+        candidate.qualityMessage || candidate.quality_message || candidate.message || '',
+        '建议放大查看细节后再保存'
+      );
+      const warnings = normalizeCandidateWarnings(candidate);
+
+      return {
+        ...candidate,
+        candidateId,
+        label,
+        imageUrl,
+        qualityMessage,
+        warnings,
+        fallbackText: `${label}加载失败，请稍后重试`
+      };
+    })
+    .filter((candidate) => candidate.imageUrl);
+
+  if (candidates.length >= 2) {
+    return candidates.slice(0, 2);
   }
-  if (/^http:\/\//i.test(cleaned)) {
-    console.warn(`[result] ${tag} uses http, might be blocked on device`, cleaned);
-  }
-  if (isLikelyLocalPath(cleaned)) {
-    console.warn(`[result] ${tag} looks like local/private address, might not be reachable on device`, cleaned);
-  }
+
+  const legacyFallback = [
+    {
+      candidateId: 'legacy_a',
+      label: '方案 A',
+      imageUrl: result.previewUrl || result.preview_url || result.displayUrl || '',
+      qualityMessage: '建议放大查看边缘效果后再保存',
+      warnings: []
+    },
+    {
+      candidateId: 'legacy_b',
+      label: '方案 B',
+      imageUrl: result.hdUrl || result.hd_url || result.resultUrl || result.result_url || '',
+      qualityMessage: '建议检查衣领与头发细节后再保存',
+      warnings: []
+    }
+  ].filter((item) => item.imageUrl);
+
+  const merged = [...candidates, ...legacyFallback].slice(0, 2);
+  return merged.map((item, index) => ({
+    ...item,
+    candidateId: item.candidateId || `candidate_${index + 1}`,
+    label: item.label || `方案 ${index === 0 ? 'A' : 'B'}`,
+    fallbackText: `${item.label || `方案 ${index === 0 ? 'A' : 'B'}`}加载失败，请稍后重试`
+  }));
 }
 
 function buildRiskSummary(result = {}) {
@@ -88,7 +138,9 @@ function normalizeWarnings(result = {}) {
   const warnings = Array.isArray(result.warnings) ? result.warnings : [];
   const riskTips = Array.isArray(result.riskTips) ? result.riskTips : [];
   const details = Array.isArray(result.details) ? result.details : [];
-  return getFriendlyWarnings([...warnings, ...riskTips, ...details]);
+  return getFriendlyWarnings([...warnings, ...riskTips, ...details])
+    .map((item) => sanitizeHintText(item, '建议检查细节后再保存'))
+    .filter(Boolean);
 }
 
 function normalizeResult(result = {}) {
@@ -97,28 +149,28 @@ function normalizeResult(result = {}) {
   const sceneHint = getFriendlySceneHint(result);
   const reviewState = deriveDisplayState(result);
   const summary = getFriendlyStatusSummary(reviewState);
-  const qualityText = reviewState === 'failed' ? '不建议直接使用' : getFriendlyStatusText(result.qualityStatus || result.status || (reviewState === 'warning' ? 'WARNING' : 'SUCCESS'));
+  const qualityText = reviewState === 'failed'
+    ? '不建议直接使用'
+    : getFriendlyStatusText(result.qualityStatus || result.status || (reviewState === 'warning' ? 'WARNING' : 'SUCCESS'));
   const layoutUrl = result.printLayoutUrl || result.layoutUrl || '';
-  const previewUrl = buildPreviewUrl(result);
-  const hdUrl = buildHdUrl(result);
+  const candidates = normalizeCandidates(result);
   const displayUrl = pickImageFromCandidates([
+    candidates[0] && candidates[0].imageUrl,
+    candidates[1] && candidates[1].imageUrl,
     result.displayUrl,
-    previewUrl,
-    hdUrl,
     pickBestImageUrl(result)
   ]);
 
   return {
     ...result,
     warnings,
+    candidates,
     sceneName: friendlyName,
     sceneHint,
     sizeText: getFriendlySizeText(result),
     qualityText,
     reviewState,
     statusSummary: summary,
-    previewUrl,
-    hdUrl,
     displayUrl,
     layoutUrl,
     printLayoutUrl: layoutUrl,
@@ -136,69 +188,81 @@ function normalizeResult(result = {}) {
 Page({
   data: {
     result: null,
-    previewImageFailed: false,
-    hdImageFailed: false
+    selectedCandidateId: '',
+    imageFailMap: {}
   },
 
   onShow() {
     const rawResult = storage.get(STORAGE_KEYS.CURRENT_RESULT, null) || MOCK_RESULT;
     const draft = getFlowDraft();
-    console.log('[result] raw storage result', rawResult);
     const normalized = normalizeResult({
       ...rawResult,
       sourceImageUrl: rawResult.sourceImageUrl || draft.sourceImageUrl || draft.sourceImagePath || '',
       displayUrl: pickBestImageUrl(rawResult)
     });
-    const renderBranch = normalized.reviewState || 'passed';
+
     this.setData({
-      previewImageFailed: false,
-      hdImageFailed: false,
-      result: normalized
+      result: normalized,
+      selectedCandidateId: '',
+      imageFailMap: {}
     });
-    console.log('[result] mapped status', {
-      reviewState: normalized.reviewState,
-      qualityStatus: normalized.qualityStatus,
-      status: normalized.status,
-      code: normalized.code
-    });
-    console.log('[result] render branch hit', renderBranch);
-    console.log('[result] normalized image fields', {
-      previewUrl: this.data.result && this.data.result.previewUrl,
-      hdUrl: this.data.result && this.data.result.hdUrl,
-      displayUrl: this.data.result && this.data.result.displayUrl
-    });
-    logImageUrlRisk('previewUrl', this.data.result && this.data.result.previewUrl);
-    logImageUrlRisk('hdUrl', this.data.result && this.data.result.hdUrl);
   },
 
-  handlePreviewImageError(event) {
-    console.error('[result] preview image render failed', event && event.detail, this.data.result && this.data.result.previewUrl);
-    this.setData({ previewImageFailed: true });
+  handleCandidateImageError(event) {
+    const candidateId = event.currentTarget.dataset.candidateId;
+    if (!candidateId) return;
+    this.setData({
+      [`imageFailMap.${candidateId}`]: true
+    });
   },
 
-  handleHdImageError(event) {
-    console.error('[result] hd image render failed', event && event.detail, this.data.result && this.data.result.hdUrl);
-    this.setData({ hdImageFailed: true });
+  selectCandidate(event) {
+    const candidateId = event.currentTarget.dataset.candidateId;
+    if (!candidateId) return;
+    this.setData({ selectedCandidateId: candidateId });
   },
 
   async saveAsset(url, options = {}) {
     await saveImageFromUrl(url, options);
   },
 
-  savePreview() {
-    const { result } = this.data;
-    this.saveAsset(result && result.previewUrl, {
-      loadingText: '正在保存普通图',
-      successText: '普通图已保存到相册'
+  async confirmSaveSelection(taskId, candidateId) {
+    const apiBaseUrl = getApiBaseUrl();
+    if (!apiBaseUrl || !taskId || !candidateId) return;
+    await request(`${apiBaseUrl}/photo/tasks/${taskId}/confirm`, 'POST', {
+      taskId,
+      candidateId
+    }, {
+      showLoading: false,
+      showErrorToast: false
     });
   },
 
-  saveHd() {
-    const { result } = this.data;
-    this.saveAsset(result && (result.hdUrl || result.resultUrl), {
-      loadingText: '正在保存高清图',
-      successText: '高清图已保存到相册'
-    });
+  async saveSelectedCandidate() {
+    const { result, selectedCandidateId } = this.data;
+    if (!selectedCandidateId) {
+      wx.showToast({ title: '请先选择要保存的图片', icon: 'none' });
+      return;
+    }
+
+    const selectedCandidate = (result && Array.isArray(result.candidates)
+      ? result.candidates.find((item) => item.candidateId === selectedCandidateId)
+      : null) || null;
+
+    if (!selectedCandidate || !selectedCandidate.imageUrl) {
+      wx.showToast({ title: '当前图片暂不可保存，请稍后重试', icon: 'none' });
+      return;
+    }
+
+    try {
+      await this.confirmSaveSelection(result.taskId, selectedCandidate.candidateId);
+      await this.saveAsset(selectedCandidate.imageUrl, {
+        loadingText: '正在保存图片',
+        successText: '图片已保存到相册'
+      });
+    } catch (error) {
+      wx.showToast({ title: error.message || '保存失败，请稍后重试', icon: 'none' });
+    }
   },
 
   saveLayout() {
