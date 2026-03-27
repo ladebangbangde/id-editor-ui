@@ -6,6 +6,8 @@ const { STORAGE_KEYS } = require('../../utils/constants');
 const { getFlowDraft, setFlowDraft } = require('../../utils/flow-draft');
 const { toCanonicalSizeCode } = require('../../utils/size-codes');
 
+const ALLOWED_BACKGROUND_COLORS = ['blue', 'white', 'red'];
+
 function normalizeWarnings(warnings) {
   return Array.isArray(warnings) ? warnings.filter(Boolean) : [];
 }
@@ -114,6 +116,17 @@ function deriveReviewState(result = {}) {
   return 'passed';
 }
 
+function normalizeBackgroundColor(value = '') {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  const lowered = raw.toLowerCase();
+  if (ALLOWED_BACKGROUND_COLORS.includes(lowered)) return lowered;
+  if (raw === '白色') return 'white';
+  if (raw === '蓝色') return 'blue';
+  if (raw === '红色') return 'red';
+  return '';
+}
+
 Page({
   data: {
     draft: {},
@@ -161,14 +174,21 @@ Page({
       return;
     }
 
+    const normalizedBackgroundColor = normalizeBackgroundColor(selectedColor || draft.backgroundColor);
+    if (!normalizedBackgroundColor) {
+      wx.showToast({ title: '背景色参数不合法，请重新选择', icon: 'none' });
+      return;
+    }
+
     this.setData({ generating: true });
     setFlowDraft({
-      backgroundColor: selectedColor,
+      backgroundColor: normalizedBackgroundColor,
       flowType: 'idPhoto'
     });
 
     try {
-      const canonicalSizeCode = toCanonicalSizeCode(draft.selectedSizeCode || draft.selectedScene.sceneKey)
+      const selectedSizeCode = draft.selectedSizeCode || (draft.selectedScene && draft.selectedScene.sceneKey) || '';
+      const canonicalSizeCode = toCanonicalSizeCode(selectedSizeCode)
         || (draft.selectedSizeCode === 'custom' ? 'one_inch' : '');
       if (!canonicalSizeCode) {
         wx.showToast({ title: '当前尺寸暂不支持，请更换尺寸', icon: 'none' });
@@ -178,11 +198,20 @@ Page({
         // TODO(server): 服务端支持完全自定义尺寸后，改为透传 customSize 生成而非一寸兜底。
         wx.showToast({ title: '当前先按一寸规格生成', icon: 'none' });
       }
-      const processed = await processPhoto(draft.sourceImagePath, {
+      const processFormData = {
         sizeCode: canonicalSizeCode,
-        backgroundColor: selectedColor,
+        backgroundColor: normalizedBackgroundColor,
         enhance: false
+      };
+      console.log('[editor] processPhoto payload', {
+        sourceImagePath: draft.sourceImagePath,
+        selectedSizeCode,
+        selectedScene: draft.selectedScene || null,
+        canonicalSizeCode,
+        backgroundColor: normalizedBackgroundColor,
+        formData: processFormData
       });
+      const processed = await processPhoto(draft.sourceImagePath, processFormData);
       const latestResult = await this.refreshTaskResult(processed.taskId, processed);
       const sceneInfo = draft.selectedScene || {};
       const mergedRiskWarnings = mergeRiskWarnings({
@@ -205,8 +234,8 @@ Page({
         status: latestResult.status || processed.status || '',
         previewUrl: latestResult.previewUrl || processed.previewUrl || '',
         resultUrl: latestResult.resultUrl || processed.resultUrl || '',
-        backgroundColor: latestResult.backgroundColor || processed.backgroundColor || selectedColor,
-        backgroundColorLabel: getColorLabel(latestResult.backgroundColor || processed.backgroundColor || selectedColor),
+        backgroundColor: latestResult.backgroundColor || processed.backgroundColor || normalizedBackgroundColor,
+        backgroundColorLabel: getColorLabel(latestResult.backgroundColor || processed.backgroundColor || normalizedBackgroundColor),
         sizeCode: latestResult.sizeCode || processed.sizeCode || canonicalSizeCode,
         width: latestResult.width || processed.width || sceneInfo.pixelWidth || 0,
         height: latestResult.height || processed.height || sceneInfo.pixelHeight || 0,
