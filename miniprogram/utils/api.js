@@ -1,4 +1,5 @@
 const { request, uploadFile, normalizeErrorPayload } = require('./request');
+const { COLOR_OPTIONS } = require('./constants');
 
 function getBaseUrl() {
   return getApp().globalData.apiBaseUrl;
@@ -108,6 +109,18 @@ function normalizeAssetPayload(payload = {}) {
   normalized.hdUrl = normalized.hdUrl || normalized.hd_url || '';
   normalized.originalUrl = normalized.originalUrl || normalized.original_url || '';
   normalized.downloadUrl = normalized.downloadUrl || normalized.download_url || '';
+
+  return normalized;
+}
+
+function normalizeBackgroundColor(value = '') {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (!normalized) return '';
+  const option = COLOR_OPTIONS.find((item) => item.value === normalized);
+  if (option) return option.value;
+
+  const labelMatched = COLOR_OPTIONS.find((item) => String(item.label || '').trim() === String(value || '').trim());
+  if (labelMatched) return labelMatched.value;
 
   return normalized;
 }
@@ -346,14 +359,27 @@ function getPhotoSpecs() {
 }
 
 function processPhoto(filePath, payload = {}) {
+  const normalizedBackgroundColor = normalizeBackgroundColor(payload.backgroundColor);
+  const normalizedSizeCode = String(payload.sizeCode || '').trim();
   const formData = {
-    sizeCode: payload.sizeCode,
-    backgroundColor: payload.backgroundColor
+    sizeCode: normalizedSizeCode,
+    backgroundColor: normalizedBackgroundColor
   };
 
   if (typeof payload.enhance !== 'undefined') {
     formData.enhance = String(payload.enhance);
   }
+
+  const requestPayload = {
+    endpoint: `${getBaseUrl()}/photo/process`,
+    method: 'POST',
+    transport: 'multipart/form-data',
+    fileField: 'file',
+    filePath,
+    isLocalTempPath: /^wxfile:\/\//i.test(String(filePath || '')),
+    formData
+  };
+  console.log('[api.processPhoto] request payload', requestPayload);
 
   return uploadFile(`${getBaseUrl()}/photo/process`, filePath, formData, {
     showLoading: true,
