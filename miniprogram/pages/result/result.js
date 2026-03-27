@@ -20,10 +20,34 @@ const {
 } = require('../../utils/photo-status-text');
 
 const ENGINEERING_HINT_PATTERN = /(engine|backend|compare|fallback|legacy|baidu|debug|trace|pipeline)/i;
+const CANDIDATE_BINDINGS = [
+  {
+    slot: 'A',
+    candidateId: 'baidu',
+    defaultLabel: '方案 A'
+  },
+  {
+    slot: 'B',
+    candidateId: 'legacy',
+    defaultLabel: '方案 B'
+  }
+];
 
 function getApiBaseUrl() {
   const app = getApp();
   return (app && app.globalData && app.globalData.apiBaseUrl) || '';
+}
+
+function isDevMode() {
+  const wxConfig = typeof __wxConfig !== 'undefined' ? __wxConfig : null;
+  if (wxConfig && wxConfig.envVersion === 'develop') return true;
+  const app = getApp();
+  return Boolean(app && app.globalData && app.globalData.env === 'development');
+}
+
+function debugLog(tag, payload) {
+  if (!isDevMode()) return;
+  console.log(`[result.debug] ${tag}`, payload);
 }
 
 function sanitizeHintText(text = '', fallback = '') {
@@ -44,66 +68,71 @@ function normalizeCandidateWarnings(candidate = {}) {
 
 function normalizeCandidates(result = {}) {
   const sourceList = Array.isArray(result.candidates) ? result.candidates : [];
-  const candidates = sourceList
-    .map((candidate, index) => {
-      const candidateId = candidate.candidateId || candidate.candidate_id || '';
-      const label = sanitizeHintText(candidate.label, '') || `方案 ${index === 0 ? 'A' : 'B'}`;
-      const imageUrl = pickImageFromCandidates([
-        candidate.imageUrl,
-        candidate.image_url,
-        candidate.previewUrl,
-        candidate.preview_url,
-        candidate.resultUrl,
-        candidate.result_url,
-        candidate.hdUrl,
-        candidate.hd_url
-      ]);
-      const qualityMessage = sanitizeHintText(
-        candidate.qualityMessage || candidate.quality_message || candidate.message || '',
-        '建议放大查看细节后再保存'
-      );
-      const warnings = normalizeCandidateWarnings(candidate);
+  const normalizedMap = {};
 
-      return {
-        ...candidate,
-        candidateId,
-        label,
-        imageUrl,
-        qualityMessage,
-        warnings,
-        fallbackText: `${label}加载失败，请稍后重试`
-      };
-    })
-    .filter((candidate) => candidate.imageUrl);
+  sourceList.forEach((candidate) => {
+    const rawCandidateId = (candidate.candidateId || candidate.candidate_id || '').toLowerCase();
+    if (!rawCandidateId || normalizedMap[rawCandidateId]) return;
 
-  if (candidates.length >= 2) {
-    return candidates.slice(0, 2);
-  }
+    const imageUrl = pickImageFromCandidates([
+      candidate.imageUrl,
+      candidate.image_url,
+      candidate.previewUrl,
+      candidate.preview_url,
+      candidate.resultUrl,
+      candidate.result_url,
+      candidate.hdUrl,
+      candidate.hd_url
+    ]);
+    const hdUrl = pickImageFromCandidates([
+      candidate.hdUrl,
+      candidate.hd_url,
+      candidate.resultUrl,
+      candidate.result_url,
+      candidate.imageUrl,
+      candidate.image_url
+    ]);
+    const qualityMessage = sanitizeHintText(
+      candidate.qualityMessage || candidate.quality_message || candidate.message || '',
+      '建议放大查看细节后再保存'
+    );
+    const warnings = normalizeCandidateWarnings(candidate);
 
-  const legacyFallback = [
-    {
-      candidateId: 'legacy_a',
-      label: '方案 A',
-      imageUrl: result.previewUrl || result.preview_url || result.displayUrl || '',
-      qualityMessage: '建议放大查看边缘效果后再保存',
-      warnings: []
-    },
-    {
-      candidateId: 'legacy_b',
-      label: '方案 B',
-      imageUrl: result.hdUrl || result.hd_url || result.resultUrl || result.result_url || '',
-      qualityMessage: '建议检查衣领与头发细节后再保存',
-      warnings: []
-    }
-  ].filter((item) => item.imageUrl);
+    normalizedMap[rawCandidateId] = {
+      ...candidate,
+      candidateId: rawCandidateId,
+      imageUrl,
+      hdUrl,
+      qualityMessage,
+      warnings
+    };
+  });
 
-  const merged = [...candidates, ...legacyFallback].slice(0, 2);
-  return merged.map((item, index) => ({
-    ...item,
-    candidateId: item.candidateId || `candidate_${index + 1}`,
-    label: item.label || `方案 ${index === 0 ? 'A' : 'B'}`,
-    fallbackText: `${item.label || `方案 ${index === 0 ? 'A' : 'B'}`}加载失败，请稍后重试`
-  }));
+  const cards = CANDIDATE_BINDINGS.map((binding) => {
+    const candidate = normalizedMap[binding.candidateId] || {};
+    const label = sanitizeHintText(candidate.label, '') || binding.defaultLabel;
+    return {
+      ...candidate,
+      slot: binding.slot,
+      candidateId: binding.candidateId,
+      label,
+      imageUrl: candidate.imageUrl || '',
+      hdUrl: candidate.hdUrl || '',
+      qualityMessage: candidate.qualityMessage || '建议放大查看细节后再保存',
+      warnings: Array.isArray(candidate.warnings) ? candidate.warnings : [],
+      fallbackText: `${label}加载失败或暂未生成，请稍后重试`
+    };
+  });
+
+  debugLog('raw candidates', sourceList);
+  debugLog('candidate cards', cards.map((item) => ({
+    slot: item.slot,
+    candidateId: item.candidateId,
+    imageUrl: item.imageUrl,
+    hdUrl: item.hdUrl
+  })));
+
+  return cards;
 }
 
 function buildRiskSummary(result = {}) {
@@ -154,12 +183,18 @@ function normalizeResult(result = {}) {
     : getFriendlyStatusText(result.qualityStatus || result.status || (reviewState === 'warning' ? 'WARNING' : 'SUCCESS'));
   const layoutUrl = result.printLayoutUrl || result.layoutUrl || '';
   const candidates = normalizeCandidates(result);
+  const leftCard = candidates.find((item) => item.slot === 'A') || null;
+  const rightCard = candidates.find((item) => item.slot === 'B') || null;
   const displayUrl = pickImageFromCandidates([
-    candidates[0] && candidates[0].imageUrl,
-    candidates[1] && candidates[1].imageUrl,
+    leftCard && leftCard.imageUrl,
+    rightCard && rightCard.imageUrl,
     result.displayUrl,
     pickBestImageUrl(result)
   ]);
+  debugLog('render urls', {
+    left: leftCard ? { candidateId: leftCard.candidateId, imageUrl: leftCard.imageUrl, hdUrl: leftCard.hdUrl } : null,
+    right: rightCard ? { candidateId: rightCard.candidateId, imageUrl: rightCard.imageUrl, hdUrl: rightCard.hdUrl } : null
+  });
 
   return {
     ...result,
@@ -201,9 +236,11 @@ Page({
       displayUrl: pickBestImageUrl(rawResult)
     });
 
+    const defaultSelected = (normalized.candidates.find((item) => item.imageUrl) || {}).candidateId || '';
+
     this.setData({
       result: normalized,
-      selectedCandidateId: '',
+      selectedCandidateId: defaultSelected,
       imageFailMap: {}
     });
   },
@@ -249,14 +286,16 @@ Page({
       ? result.candidates.find((item) => item.candidateId === selectedCandidateId)
       : null) || null;
 
-    if (!selectedCandidate || !selectedCandidate.imageUrl) {
+    const selectedImageUrl = selectedCandidate && (selectedCandidate.hdUrl || selectedCandidate.imageUrl);
+
+    if (!selectedCandidate || !selectedImageUrl) {
       wx.showToast({ title: '当前图片暂不可保存，请稍后重试', icon: 'none' });
       return;
     }
 
     try {
       await this.confirmSaveSelection(result.taskId, selectedCandidate.candidateId);
-      await this.saveAsset(selectedCandidate.imageUrl, {
+      await this.saveAsset(selectedImageUrl, {
         loadingText: '正在保存图片',
         successText: '图片已保存到相册'
       });
