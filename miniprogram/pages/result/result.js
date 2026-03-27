@@ -20,18 +20,6 @@ const {
 } = require('../../utils/photo-status-text');
 
 const ENGINEERING_HINT_PATTERN = /(engine|backend|compare|fallback|legacy|baidu|debug|trace|pipeline)/i;
-const CANDIDATE_BINDINGS = [
-  {
-    slot: 'A',
-    candidateId: 'baidu',
-    defaultLabel: '方案 A'
-  },
-  {
-    slot: 'B',
-    candidateId: 'legacy',
-    defaultLabel: '方案 B'
-  }
-];
 
 function getApiBaseUrl() {
   const app = getApp();
@@ -68,61 +56,87 @@ function normalizeCandidateWarnings(candidate = {}) {
 
 function normalizeCandidates(result = {}) {
   const sourceList = Array.isArray(result.candidates) ? result.candidates : [];
-  const normalizedMap = {};
+  const candidates = sourceList
+    .map((candidate, index) => {
+      const candidateId = String(candidate.candidateId || candidate.candidate_id || `candidate_${index + 1}`).trim();
+      const label = sanitizeHintText(candidate.label, '') || `方案 ${index === 0 ? 'A' : 'B'}`;
+      const imageUrl = pickImageFromCandidates([
+        candidate.imageUrl,
+        candidate.image_url,
+        candidate.previewUrl,
+        candidate.preview_url,
+        candidate.resultUrl,
+        candidate.result_url,
+        candidate.hdUrl,
+        candidate.hd_url
+      ]);
+      const hdUrl = pickImageFromCandidates([
+        candidate.hdUrl,
+        candidate.hd_url,
+        candidate.resultUrl,
+        candidate.result_url,
+        candidate.imageUrl,
+        candidate.image_url
+      ]);
+      const qualityMessage = sanitizeHintText(
+        candidate.qualityMessage || candidate.quality_message || candidate.message || '',
+        '建议放大查看细节后再保存'
+      );
+      const warnings = normalizeCandidateWarnings(candidate);
 
-  sourceList.forEach((candidate) => {
-    const rawCandidateId = (candidate.candidateId || candidate.candidate_id || '').toLowerCase();
-    if (!rawCandidateId || normalizedMap[rawCandidateId]) return;
+      return {
+        ...candidate,
+        candidateId,
+        label,
+        imageUrl,
+        hdUrl,
+        qualityMessage,
+        warnings,
+        fallbackText: `${label}加载失败或暂未生成，请稍后重试`
+      };
+    })
+    .filter((candidate) => candidate.imageUrl);
 
-    const imageUrl = pickImageFromCandidates([
-      candidate.imageUrl,
-      candidate.image_url,
-      candidate.previewUrl,
-      candidate.preview_url,
-      candidate.resultUrl,
-      candidate.result_url,
-      candidate.hdUrl,
-      candidate.hd_url
-    ]);
-    const hdUrl = pickImageFromCandidates([
-      candidate.hdUrl,
-      candidate.hd_url,
-      candidate.resultUrl,
-      candidate.result_url,
-      candidate.imageUrl,
-      candidate.image_url
-    ]);
-    const qualityMessage = sanitizeHintText(
-      candidate.qualityMessage || candidate.quality_message || candidate.message || '',
-      '建议放大查看细节后再保存'
-    );
-    const warnings = normalizeCandidateWarnings(candidate);
+  const topLevelFallback = [
+    {
+      candidateId: 'fallback_preview',
+      label: '方案 A',
+      imageUrl: result.previewUrl || result.preview_url || result.displayUrl || '',
+      hdUrl: result.hdUrl || result.hd_url || result.resultUrl || result.result_url || '',
+      qualityMessage: '建议放大查看边缘效果后再保存',
+      warnings: []
+    },
+    {
+      candidateId: 'fallback_hd',
+      label: '方案 B',
+      imageUrl: result.hdUrl || result.hd_url || result.resultUrl || result.result_url || '',
+      hdUrl: result.hdUrl || result.hd_url || result.resultUrl || result.result_url || '',
+      qualityMessage: '建议检查衣领与头发细节后再保存',
+      warnings: []
+    }
+  ]
+    .filter((item) => item.imageUrl)
+    .map((item) => ({
+      ...item,
+      fallbackText: `${item.label}加载失败或暂未生成，请稍后重试`
+    }));
 
-    normalizedMap[rawCandidateId] = {
-      ...candidate,
-      candidateId: rawCandidateId,
-      imageUrl,
-      hdUrl,
-      qualityMessage,
-      warnings
-    };
-  });
+  const merged = [...candidates];
+  if (merged.length < 2) {
+    topLevelFallback.forEach((item) => {
+      const exists = merged.some((candidate) => candidate.imageUrl === item.imageUrl);
+      if (!exists && merged.length < 2) {
+        merged.push(item);
+      }
+    });
+  }
 
-  const cards = CANDIDATE_BINDINGS.map((binding) => {
-    const candidate = normalizedMap[binding.candidateId] || {};
-    const label = sanitizeHintText(candidate.label, '') || binding.defaultLabel;
-    return {
-      ...candidate,
-      slot: binding.slot,
-      candidateId: binding.candidateId,
-      label,
-      imageUrl: candidate.imageUrl || '',
-      hdUrl: candidate.hdUrl || '',
-      qualityMessage: candidate.qualityMessage || '建议放大查看细节后再保存',
-      warnings: Array.isArray(candidate.warnings) ? candidate.warnings : [],
-      fallbackText: `${label}加载失败或暂未生成，请稍后重试`
-    };
-  });
+  const cards = merged.slice(0, 2).map((item, index) => ({
+    ...item,
+    label: item.label || `方案 ${index === 0 ? 'A' : 'B'}`,
+    candidateId: item.candidateId || `candidate_${index + 1}`,
+    fallbackText: item.fallbackText || `${item.label || `方案 ${index === 0 ? 'A' : 'B'}`}加载失败或暂未生成，请稍后重试`
+  }));
 
   debugLog('raw candidates', sourceList);
   debugLog('candidate cards', cards.map((item) => ({
@@ -183,8 +197,8 @@ function normalizeResult(result = {}) {
     : getFriendlyStatusText(result.qualityStatus || result.status || (reviewState === 'warning' ? 'WARNING' : 'SUCCESS'));
   const layoutUrl = result.printLayoutUrl || result.layoutUrl || '';
   const candidates = normalizeCandidates(result);
-  const leftCard = candidates.find((item) => item.slot === 'A') || null;
-  const rightCard = candidates.find((item) => item.slot === 'B') || null;
+  const leftCard = candidates[0] || null;
+  const rightCard = candidates[1] || null;
   const displayUrl = pickImageFromCandidates([
     leftCard && leftCard.imageUrl,
     rightCard && rightCard.imageUrl,
