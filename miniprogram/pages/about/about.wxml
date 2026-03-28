@@ -1,8 +1,8 @@
 <view class="container about-page">
   <view class="card section about-card">
     <view class="title-md about-title">关于这个小工具</view>
-    <view class="about-desc">制作不易，如果可以的话请给予些支持，谢谢各位 💛</view>
-    <view class="about-sub">如果这个小工具帮到了你，欢迎随手支持一下呀。</view>
+    <!-- <view class="about-desc">制作不易，如果可以的话请给予些支持，谢谢各位 💛</view> -->
+    <view class="about-sub">制作不易,如果这个小工具帮到了你，欢迎随手支持一下呀。</view>
   </view>
 
   <view class="card section support-card">
