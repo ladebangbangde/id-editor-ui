@@ -1,10 +1,10 @@
 .home-page {
-  padding-bottom: 44rpx;
+  padding-bottom: 48rpx;
 }
 
 .brand-bar {
-  padding: 24rpx;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(248, 251, 255, 0.96) 100%);
+  padding: 28rpx;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.98) 0%, rgba(245, 250, 255, 0.96) 65%, rgba(255, 246, 235, 0.8) 100%);
   box-shadow: 0 14rpx 34rpx rgba(80, 106, 165, 0.08);
 }
 
@@ -98,12 +98,16 @@
 .brand-tag {
   padding: 8rpx 14rpx;
   border-radius: 999rpx;
-  background: #f5f8ff;
+  background: linear-gradient(180deg, #f5f8ff 0%, #fff5e9 100%);
   color: #60708c;
 }
 
+.feature-section {
+  margin-top: 12rpx;
+}
+
 .feature-section-head {
-  margin-bottom: 14rpx;
+  margin-bottom: 12rpx;
 }
 
 .section-head {
@@ -162,21 +166,22 @@
   bottom: 18rpx;
   width: 10rpx;
   height: 10rpx;
-  background: #ff9a61;
+  background: #ffab73;
   transform: rotate(45deg);
   border-radius: 4rpx;
+  box-shadow: 0 0 0 6rpx rgba(255, 171, 115, 0.2);
 }
 
 .main-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18rpx;
+  gap: 14rpx;
 }
 
 .main-card {
-  min-height: 196rpx;
-  padding: 24rpx;
-  box-shadow: 0 14rpx 32rpx rgba(15, 23, 42, 0.05);
+  min-height: 162rpx;
+  padding: 20rpx;
+  box-shadow: 0 10rpx 22rpx rgba(15, 23, 42, 0.045);
 }
 
 .main-card-camera {
@@ -285,29 +290,31 @@
 .dot-three { left: 28rpx; top: 20rpx; }
 
 .main-badge {
-  padding: 8rpx 16rpx;
+  padding: 6rpx 14rpx;
   border-radius: 999rpx;
-  background: rgba(255, 255, 255, 0.88);
-  color: #64748b;
-  font-size: 20rpx;
+  background: rgba(255, 246, 236, 0.95);
+  color: #c87b38;
+  font-size: 18rpx;
+  font-weight: 600;
 }
 
 .main-title {
-  margin-top: 22rpx;
-  font-size: 32rpx;
+  margin-top: 16rpx;
+  font-size: 28rpx;
   font-weight: 700;
   color: #0f172a;
 }
 
 .main-desc {
-  margin-top: 8rpx;
+  margin-top: 6rpx;
   line-height: 1.4;
+  font-size: 22rpx;
 }
 
 .size-focus-card {
-  padding: 28rpx;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-  box-shadow: 0 18rpx 44rpx rgba(49, 94, 251, 0.08);
+  padding: 32rpx;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
+  box-shadow: 0 20rpx 48rpx rgba(49, 94, 251, 0.1);
 }
 
 .size-section-head {
@@ -487,7 +494,7 @@
 .template-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18rpx;
+  gap: 20rpx;
 }
 
 .size-template-grid {
@@ -495,9 +502,10 @@
 }
 
 .template-card {
-  padding: 22rpx;
+  padding: 24rpx;
   background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
   box-shadow: 0 12rpx 28rpx rgba(15, 23, 42, 0.05);
+  border: 1rpx solid #e8effa;
 }
 
 .template-head {
@@ -563,8 +571,8 @@
   flex-shrink: 0;
   padding: 4rpx 10rpx;
   border-radius: 999rpx;
-  background: #fff1f2;
-  color: #e11d48;
+  background: #fff4e8;
+  color: #d97706;
   font-size: 18rpx;
 }
 
@@ -593,6 +601,11 @@
   white-space: nowrap;
   background: #f1f5fb;
   color: #607089;
+}
+
+.section-subtitle {
+  margin-top: 4rpx;
+  font-size: 22rpx;
 }
 
 .knowledge-card {

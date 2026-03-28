@@ -20,11 +20,11 @@ const MAIN_ACTIONS = [
   {
     key: 'photo',
     title: '拍摄证件照',
-    subtitle: '标准拍照',
+    subtitle: '点按直接拍摄',
     iconClass: 'icon-camera',
     iconType: 'camera',
     cardClass: 'main-card-camera',
-    badge: '常用',
+    badge: '拍摄',
     routeType: 'upload'
   },
   {
@@ -34,7 +34,7 @@ const MAIN_ACTIONS = [
     iconClass: 'icon-color',
     iconType: 'palette',
     cardClass: 'main-card-color',
-    badge: '推荐',
+    badge: '换底',
     routeType: 'background'
   }
 ];
@@ -42,7 +42,7 @@ const MAIN_ACTIONS = [
 function getHomeBrandContent() {
   return {
     subtitle: '标准寸照与换底色',
-    tags: ['常用尺寸']
+    tags: ['常用尺寸', '快速出图']
   };
 }
 
@@ -502,7 +502,7 @@ Page({
 
     if (action.routeType === 'upload') {
       resetFlowDraft({ flowType: 'idPhoto', flowMode: 'free', needSelectSize: true });
-      wx.navigateTo({ url: '/pages/upload/upload?flowMode=free&needSelectSize=1&from=home-photo' });
+      wx.navigateTo({ url: '/pages/upload/upload?flowMode=free&needSelectSize=1&from=home-photo&entry=camera&cameraOnly=1' });
       return;
     }
 

@@ -1,5 +1,3 @@
-const { adminLogin, getAdminStats } = require('../../utils/api');
-
 function buildProfileState(app) {
   const globalData = (app && app.globalData) || {};
   const me = globalData.me || {};
@@ -130,6 +128,11 @@ Page({
     wx.navigateTo({ url: '/pages/faq/faq' });
   },
 
+
+  goAbout() {
+    wx.navigateTo({ url: '/pages/about/about' });
+  },
+
   async handleLoginTap() {
     const app = getApp();
     this.setData({ authLoading: true, loginError: '', authStatus: 'loading' });
@@ -172,19 +175,5 @@ Page({
     await app.logout();
     this.syncProfileState();
     wx.showToast({ title: '已退出登录', icon: 'none' });
-  },
-
-  async tapItem() {
-    const app = getApp();
-    try {
-      if (!app.globalData.adminToken) {
-        const data = await adminLogin();
-        app.globalData.adminToken = data.token || 'demo-token';
-      }
-      await getAdminStats(app.globalData.adminToken);
-      wx.showToast({ title: '接口已连通', icon: 'none' });
-    } catch (error) {
-      wx.showToast({ title: '功能建设中', icon: 'none' });
-    }
   }
 });

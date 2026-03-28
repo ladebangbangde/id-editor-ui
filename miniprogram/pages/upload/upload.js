@@ -27,7 +27,8 @@ Page({
     needSelectSize: true,
     selectedSizeCode: '',
     // 避免短时间重复点击导致 chooseMedia 被调用两次，出现“二次弹窗”。
-    isPickingImage: false
+    isPickingImage: false,
+    cameraOnly: false
   },
 
   onLoad(options) {
@@ -40,12 +41,15 @@ Page({
     const selectedSizeCode = toCanonicalSizeCode(options.selectedSizeCode || draft.selectedSizeCode || (sceneInfo && sceneInfo.sceneKey)) || '';
     const canonicalScene = buildSceneBySizeCode(selectedSizeCode);
 
+    const cameraOnly = options.cameraOnly === '1' || options.entry === 'camera';
+
     this.setData({
       sceneInfo: canonicalScene || sceneInfo,
       imagePath: draft.sourceImagePath || '',
       flowMode,
       needSelectSize,
-      selectedSizeCode
+      selectedSizeCode,
+      cameraOnly
     });
 
     setFlowDraft({
@@ -54,6 +58,12 @@ Page({
       selectedSizeCode,
       selectedScene: canonicalScene || sceneInfo || null
     });
+
+    if (options.entry === 'camera') {
+      wx.nextTick(() => {
+        this.tryOpenCameraWithPermission();
+      });
+    }
   },
 
   chooseFromCamera() {
@@ -106,7 +116,7 @@ Page({
   promptOpenSetting() {
     wx.showModal({
       title: '需要相机权限',
-      content: '未获得相机权限，无法直接拍摄。你可以前往设置开启权限或改用相册上传。',
+      content: '未获得相机权限，暂时无法拍摄证件照。请在设置中开启相机权限后重试。',
       confirmText: '去设置',
       success: (res) => {
         if (res.confirm) {

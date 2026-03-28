@@ -1,6 +1,6 @@
 <view class="container">
   <view class="card section panel">
-    <view class="title-lg">上传照片</view>
+    <view class="title-lg">{{cameraOnly ? '拍摄证件照' : '上传照片'}}</view>
     <view class="text-muted current">模板默认：{{sceneInfo.sceneName || '未指定（拍完可选尺寸）'}}</view>
     <view class="tips">
       <view>请正对镜头</view>
@@ -11,12 +11,13 @@
   </view>
 
   <view class="card section panel">
-    <upload-box image="{{imagePath}}" bind:select="chooseFromAlbum"></upload-box>
+    <upload-box wx:if="{{cameraOnly}}" image="{{imagePath}}" bind:select="chooseFromCamera"></upload-box>
+    <upload-box wx:else image="{{imagePath}}" bind:select="chooseFromAlbum"></upload-box>
   </view>
 
   <view class="button-row section">
     <view class="button-item"><primary-button text="拍照" type="secondary" bind:tap="chooseFromCamera"></primary-button></view>
-    <view class="button-item"><primary-button text="从相册选择" type="secondary" bind:tap="chooseFromAlbum"></primary-button></view>
+    <view wx:if="{{!cameraOnly}}" class="button-item"><primary-button text="从相册选择" type="secondary" bind:tap="chooseFromAlbum"></primary-button></view>
   </view>
 
   <primary-button text="{{needSelectSize ? '下一步：选择尺寸' : '下一步：参数配置'}}" bind:tap="nextStep"></primary-button>

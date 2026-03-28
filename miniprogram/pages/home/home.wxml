@@ -21,47 +21,6 @@
     </view>
   </view>
 
-  <view class="section feature-section">
-    <view class="section-head feature-section-head">
-      <view class="section-title-wrap">
-        <view class="section-icon section-icon-tools">
-          <view class="tools-icon-camera"></view>
-          <view class="tools-icon-spark"></view>
-        </view>
-        <view class="title-md">常用功能</view>
-      </view>
-    </view>
-    <view class="main-grid">
-      <view
-        wx:for="{{mainActions}}"
-        wx:key="key"
-        class="card main-card {{item.cardClass}}"
-        data-item="{{item}}"
-        bindtap="handleMainActionTap"
-      >
-        <view class="main-card-head">
-          <view class="main-icon {{item.iconClass}}">
-            <view wx:if="{{item.iconType === 'camera'}}" class="icon-camera-shape">
-              <view class="icon-camera-top"></view>
-              <view class="icon-camera-body"></view>
-              <view class="icon-camera-lens"></view>
-            </view>
-            <view wx:elif="{{item.iconType === 'palette'}}" class="icon-palette-shape">
-              <view class="icon-palette-main"></view>
-              <view class="icon-palette-hole"></view>
-              <view class="icon-palette-dot dot-one"></view>
-              <view class="icon-palette-dot dot-two"></view>
-              <view class="icon-palette-dot dot-three"></view>
-            </view>
-          </view>
-          <view wx:if="{{item.badge}}" class="main-badge">{{item.badge}}</view>
-        </view>
-        <view class="main-title">{{item.title}}</view>
-        <view class="text-muted main-desc">{{item.subtitle}}</view>
-      </view>
-    </view>
-  </view>
-
   <view class="card section size-focus-card">
     <view class="section-head size-section-head">
       <view class="section-title-wrap">
@@ -69,7 +28,10 @@
           <view class="size-icon-card"></view>
           <view class="size-icon-ruler"></view>
         </view>
-        <view class="title-md">尺寸模板</view>
+        <view>
+          <view class="title-md">尺寸模板</view>
+          <view class="text-muted section-subtitle">先选尺寸，再进入编辑更省心</view>
+        </view>
       </view>
     </view>
 
@@ -163,6 +125,50 @@
         </view>
       </view>
     </block>
+  </view>
+
+  <view class="section feature-section">
+    <view class="section-head feature-section-head">
+      <view class="section-title-wrap">
+        <view class="section-icon section-icon-tools">
+          <view class="tools-icon-camera"></view>
+          <view class="tools-icon-spark"></view>
+        </view>
+        <view>
+          <view class="title-md">快捷功能</view>
+          <view class="text-muted section-subtitle">拍照与换底仍保留在这里</view>
+        </view>
+      </view>
+    </view>
+    <view class="main-grid">
+      <view
+        wx:for="{{mainActions}}"
+        wx:key="key"
+        class="card main-card {{item.cardClass}}"
+        data-item="{{item}}"
+        bindtap="handleMainActionTap"
+      >
+        <view class="main-card-head">
+          <view class="main-icon {{item.iconClass}}">
+            <view wx:if="{{item.iconType === 'camera'}}" class="icon-camera-shape">
+              <view class="icon-camera-top"></view>
+              <view class="icon-camera-body"></view>
+              <view class="icon-camera-lens"></view>
+            </view>
+            <view wx:elif="{{item.iconType === 'palette'}}" class="icon-palette-shape">
+              <view class="icon-palette-main"></view>
+              <view class="icon-palette-hole"></view>
+              <view class="icon-palette-dot dot-one"></view>
+              <view class="icon-palette-dot dot-two"></view>
+              <view class="icon-palette-dot dot-three"></view>
+            </view>
+          </view>
+          <view wx:if="{{item.badge}}" class="main-badge">{{item.badge}}</view>
+        </view>
+        <view class="main-title">{{item.title}}</view>
+        <view class="text-muted main-desc">{{item.subtitle}}</view>
+      </view>
+    </view>
   </view>
 
   <view class="card section knowledge-card" bindtap="goFaq">
