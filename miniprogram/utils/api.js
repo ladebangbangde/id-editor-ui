@@ -263,8 +263,34 @@ function normalizeHistoryItem(item = {}) {
       ? normalized.warnings
       : (Array.isArray(result.warnings) ? result.warnings : []),
     createdAt: normalized.createdAt || normalized.created_at || '',
-    status: normalized.status || normalized.taskStatus || normalized.task_status || ''
+    status: normalized.status || normalized.taskStatus || normalized.task_status || '',
+    stageCode: normalized.stageCode || normalized.stage_code || normalized.stage || '',
+    stageName: normalized.stageName || normalized.stage_name || '',
+    stageDescription: normalized.stageDescription || normalized.stage_description || ''
   };
+}
+
+function createPhotoTask(filePath, payload = {}) {
+  const normalizedBackgroundColor = normalizeBackgroundColor(payload.backgroundColor);
+  const normalizedSizeCode = String(payload.sizeCode || '').trim();
+  const formData = {
+    sizeCode: normalizedSizeCode,
+    backgroundColor: normalizedBackgroundColor
+  };
+
+  if (typeof payload.enhance !== 'undefined') {
+    formData.enhance = String(payload.enhance);
+  }
+
+  return uploadFile(`${getBaseUrl()}/photo/tasks`, filePath, formData, {
+    showLoading: false,
+    showErrorToast: false
+  })
+    .then(unwrap)
+    .then((result) => normalizeHistoryItem(result))
+    .catch((error) => {
+      throw normalizePhotoProcessFailure(error);
+    });
 }
 
 function clearAuthState() {
@@ -609,6 +635,7 @@ module.exports = {
   processPhoto,
   getPhotoHistory,
   getPhotoTask,
+  createPhotoTask,
   // legacy APIs, kept for compatibility only.
   uploadImage,
   generateImage,
