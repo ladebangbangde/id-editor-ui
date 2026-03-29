@@ -460,6 +460,10 @@ Page({
     this.navigateByAction(item);
   },
 
+  handleStartCreate() {
+    this.navigateByAction({ routeType: 'upload' });
+  },
+
 
   handleTemplateTap(event) {
     const { item } = event.currentTarget.dataset;
