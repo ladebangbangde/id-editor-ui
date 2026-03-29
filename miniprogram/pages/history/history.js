@@ -4,13 +4,36 @@ const { pickBestImageUrl: pickImageFromCandidates, cleanUrl, isLikelyLocalPath }
 const { getFriendlySceneName, getFriendlySizeText, pickBestImageUrl } = require('../../utils/photo-display');
 
 function buildStatus(item = {}) {
-  if (item.status) return item.status;
-  if (item.qualityStatus === 'PASSED' || item.qualityStatus === 'WARNING') {
-    return 'success';
+  const rawStatus = String(item.status || '').trim().toLowerCase();
+  const statusMap = {
+    success: 'success',
+    succeeded: 'success',
+    completed: 'success',
+    done: 'success',
+    failed: 'failed',
+    fail: 'failed',
+    error: 'failed',
+    processing: 'processing',
+    pending: 'processing',
+    queued: 'processing',
+    running: 'processing'
+  };
+  if (rawStatus && statusMap[rawStatus]) {
+    return statusMap[rawStatus];
   }
-  if (item.qualityStatus === 'FAILED') {
-    return 'failed';
+
+  const rawQualityStatus = String(item.qualityStatus || '').trim().toLowerCase();
+  const qualityMap = {
+    passed: 'success',
+    pass: 'success',
+    warning: 'success',
+    failed: 'failed',
+    fail: 'failed'
+  };
+  if (rawQualityStatus && qualityMap[rawQualityStatus]) {
+    return qualityMap[rawQualityStatus];
   }
+
   return 'processing';
 }
 
