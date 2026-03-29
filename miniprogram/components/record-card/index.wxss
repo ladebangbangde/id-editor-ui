@@ -42,11 +42,35 @@
   line-height: 1;
 }
 
+.thumb-group {
+  width: 286rpx;
+  display: flex;
+  gap: 10rpx;
+}
+
+.candidate-block {
+  flex: 1;
+}
+
 .thumb {
-  width: 130rpx;
+  width: 100%;
   height: 166rpx;
   border-radius: 12rpx;
   background: #f1f5f9;
+}
+
+.thumb-half {
+  height: 148rpx;
+}
+
+.candidate-label {
+  margin-top: 8rpx;
+  padding: 4rpx 10rpx;
+  border-radius: 999rpx;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 20rpx;
+  text-align: center;
 }
 
 .thumb-fallback {

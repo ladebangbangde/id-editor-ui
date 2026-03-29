@@ -202,6 +202,43 @@ function normalizePhotoProcessFailure(error = {}) {
   };
 }
 
+function mapCandidateSourceLabel(sourceValue = '') {
+  const source = String(sourceValue || '').trim().toLowerCase();
+  if (source === 'baidu') return '百度方案';
+  if (source === 'legacy' || source === 'local') return '本地方案';
+  return source ? '候选方案' : '';
+}
+
+function normalizeCandidateItem(item = {}, index = 0) {
+  if (!item || typeof item !== 'object') return null;
+  const stageSource = item.source || item.engineKey || item.engine_key || item.provider || item.channel || '';
+  const source = String(stageSource || '').trim().toLowerCase();
+  const sourceLabel = mapCandidateSourceLabel(source);
+  const previewUrl = normalizeAssetUrl(
+    item.previewUrl || item.preview_url || item.imageUrl || item.image_url || ''
+  );
+  const resultUrl = normalizeAssetUrl(item.resultUrl || item.result_url || previewUrl || '');
+  const hdUrl = normalizeAssetUrl(item.hdUrl || item.hd_url || resultUrl || previewUrl || '');
+  const imageUrl = normalizeAssetUrl(item.imageUrl || item.image_url || previewUrl || resultUrl || hdUrl || '');
+  const label = item.label || sourceLabel || `方案${index + 1}`;
+
+  if (!imageUrl && !previewUrl && !resultUrl && !hdUrl) {
+    return null;
+  }
+
+  return {
+    ...item,
+    candidateId: item.candidateId || item.candidate_id || item.id || `${source || 'candidate'}_${index + 1}`,
+    label,
+    source,
+    sourceLabel: sourceLabel || label,
+    imageUrl,
+    previewUrl: previewUrl || imageUrl,
+    resultUrl: resultUrl || imageUrl,
+    hdUrl: hdUrl || resultUrl || imageUrl
+  };
+}
+
 function normalizeHistoryItem(item = {}) {
   const normalized = normalizeReviewFields(normalizeAssetPayload(item));
   const scene = normalizeScene(normalized.scene || {});
@@ -227,6 +264,16 @@ function normalizeHistoryItem(item = {}) {
         }
         return '';
       })
+      .filter(Boolean)
+    : [];
+  const candidateRawList = normalized.candidates
+    || normalized.candidateList
+    || normalized.candidate_list
+    || (result && (result.candidates || result.candidateList || result.candidate_list))
+    || [];
+  const candidates = Array.isArray(candidateRawList)
+    ? candidateRawList
+      .map((candidate, index) => normalizeCandidateItem(candidate, index))
       .filter(Boolean)
     : [];
 
@@ -286,7 +333,8 @@ function normalizeHistoryItem(item = {}) {
     stageCode: normalized.stageCode || normalized.stage_code || normalized.stage || '',
     stageName: normalized.stageName || normalized.stage_name || '',
     stageDescription: normalized.stageDescription || normalized.stage_description || '',
-    stageCodes
+    stageCodes,
+    candidates
   };
 }
 

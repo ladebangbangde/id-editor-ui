@@ -43,6 +43,44 @@ function normalizeRecord(item = {}) {
     previewUrl,
     pickBestImageUrl(item)
   ]);
+  const normalizedCandidates = Array.isArray(item.candidates)
+    ? item.candidates
+      .map((candidate, index) => {
+        const source = String(candidate.source || '').trim().toLowerCase();
+        const sourceLabel = candidate.sourceLabel
+          || (source === 'baidu' ? '百度方案' : ((source === 'legacy' || source === 'local') ? '本地方案' : '候选方案'));
+        const imageUrl = pickImageFromCandidates([
+          candidate.imageUrl,
+          candidate.previewUrl,
+          candidate.resultUrl,
+          candidate.hdUrl
+        ]);
+        if (!imageUrl) return null;
+        return {
+          candidateId: candidate.candidateId || `${id || 'history'}_${index + 1}`,
+          label: candidate.label || sourceLabel || `方案${index + 1}`,
+          source,
+          sourceLabel,
+          imageUrl,
+          previewUrl: candidate.previewUrl || imageUrl,
+          resultUrl: candidate.resultUrl || imageUrl,
+          hdUrl: candidate.hdUrl || candidate.resultUrl || imageUrl
+        };
+      })
+      .filter(Boolean)
+    : [];
+  const displayCandidates = normalizedCandidates.length
+    ? normalizedCandidates.slice(0, 2)
+    : [{
+      candidateId: `${id || 'history'}_default`,
+      label: '主图',
+      source: '',
+      sourceLabel: '',
+      imageUrl: displayUrl,
+      previewUrl,
+      resultUrl: item.resultUrl || previewUrl || '',
+      hdUrl: item.hdUrl || item.resultUrl || previewUrl || ''
+    }];
   return {
     id,
     taskId: id,
@@ -63,6 +101,7 @@ function normalizeRecord(item = {}) {
     qualityStatus: item.qualityStatus || '',
     qualityMessage: item.qualityMessage || '',
     warnings,
+    candidates: displayCandidates,
     selected: false
   };
 }
@@ -235,7 +274,7 @@ Page({
   },
 
   handleCardTap(event) {
-    const { record } = event.detail;
+    const { record, candidate } = event.detail;
     if (!record || !record.id) return;
 
     if (this.data.manageMode) {
@@ -243,7 +282,10 @@ Page({
       return;
     }
 
-    wx.navigateTo({ url: `/pages/history-detail/history-detail?taskId=${record.taskId}` });
+    const candidateQuery = candidate && candidate.candidateId
+      ? `&candidateId=${encodeURIComponent(candidate.candidateId)}`
+      : '';
+    wx.navigateTo({ url: `/pages/history-detail/history-detail?taskId=${record.taskId}${candidateQuery}` });
   },
 
   toggleSelectById(id) {
