@@ -27,23 +27,14 @@ Component({
   },
 
   data: {
-    stageName: '正在准备处理',
-    stageDescription: '正在同步处理进度，请稍候。',
+    displayStageName: '正在准备处理',
+    displayStageDescription: '正在同步处理进度，请稍候。',
     stageList: []
   },
 
   observers: {
-    stageCode(value) {
-      this.syncStageMeta(value, this.properties.status);
-    },
-    stageName() {
+    'stageCode, status, errorMessage, stageName, stageDescription'() {
       this.syncStageMeta(this.properties.stageCode, this.properties.status);
-    },
-    stageDescription() {
-      this.syncStageMeta(this.properties.stageCode, this.properties.status);
-    },
-    status(value) {
-      this.syncStageMeta(this.properties.stageCode, value);
     }
   },
 
@@ -74,8 +65,8 @@ Component({
       });
 
       this.setData({
-        stageName: this.properties.stageName || stageMeta.name || '正在准备处理',
-        stageDescription: isFailed
+        displayStageName: this.properties.stageName || stageMeta.name || '正在准备处理',
+        displayStageDescription: isFailed
           ? (this.properties.errorMessage || '请稍后重试，或重新上传照片。')
           : (this.properties.stageDescription || stageMeta.description || '正在同步处理进度，请稍候。'),
         stageList

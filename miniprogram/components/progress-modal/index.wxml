@@ -4,8 +4,8 @@
     <view class="subtitle">请稍候，处理完成后会自动继续</view>
 
     <view class="stage-block">
-      <view class="stage-name">{{stageName}}</view>
-      <view class="stage-desc">{{stageDescription}}</view>
+      <view class="stage-name">{{displayStageName}}</view>
+      <view class="stage-desc">{{displayStageDescription}}</view>
       <view class="elapsed">已等待 {{elapsedSeconds}} 秒</view>
     </view>
 
