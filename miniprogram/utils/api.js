@@ -466,6 +466,19 @@ function getPhotoTask(taskId) {
     });
 }
 
+function getPhotoTaskStatus(taskId) {
+  return request(`${getBaseUrl()}/photo/tasks/${taskId}/status`)
+    .then(unwrap)
+    .then((payload) => {
+      const normalized = normalizeHistoryItem(payload);
+      const stageText = normalized.stageText || normalized.stage_text || '';
+      if (!normalized.stageName && stageText) {
+        normalized.stageName = stageText;
+      }
+      return normalized;
+    });
+}
+
 function getPhotoHistory(page = 1, pageSize = 10) {
   return request(`${getBaseUrl()}/photo/history?page=${page}&pageSize=${pageSize}`)
     .then((res) => {
@@ -655,6 +668,7 @@ module.exports = {
   processPhoto,
   getPhotoHistory,
   getPhotoTask,
+  getPhotoTaskStatus,
   createPhotoTask,
   // legacy APIs, kept for compatibility only.
   uploadImage,

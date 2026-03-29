@@ -1,6 +1,6 @@
 const { getColorLabel, formatTime } = require('../../utils/format');
 const { getFriendlySceneName, getFriendlySizeText } = require('../../utils/photo-display');
-const { createPhotoTask, getPhotoTask } = require('../../utils/api');
+const { createPhotoTask, getPhotoTask, getPhotoTaskStatus } = require('../../utils/api');
 const { createTaskPoller, resolveProgressByStage, normalizeStageCode } = require('../../utils/task-progress');
 const storage = require('../../utils/storage');
 const { STORAGE_KEYS } = require('../../utils/constants');
@@ -225,7 +225,9 @@ Page({
 
   updateProgressState(task = {}) {
     const stageCode = normalizeStageCode(task.stageCode || task.stage);
-    if (!stageCode && !task.stageName && !task.stageDescription) return;
+    const stageName = task.stageName || task.stage_name || task.stageText || task.stage_text || '';
+    const stageDescription = task.stageDescription || task.stage_description || '';
+    if (!stageCode && !stageName && !stageDescription) return;
 
     const targetProgress = resolveProgressByStage(stageCode, this.data.progressValue);
     const safeProgress = Math.max(this.data.progressValue, targetProgress);
@@ -233,8 +235,8 @@ Page({
     this.setData({
       progressStatus: 'processing',
       progressStageCode: stageCode,
-      progressStageName: task.stageName || task.stage_name || this.data.progressStageName,
-      progressStageDescription: task.stageDescription || task.stage_description || this.data.progressStageDescription,
+      progressStageName: stageName || this.data.progressStageName,
+      progressStageDescription: stageDescription || this.data.progressStageDescription,
       progressValue: safeProgress,
       elapsedSeconds: typeof task.elapsedSeconds === 'number' ? task.elapsedSeconds : this.data.elapsedSeconds
     });
@@ -352,7 +354,7 @@ Page({
       });
 
       this.taskPoller = createTaskPoller({
-        fetchTask: getPhotoTask,
+        fetchTask: getPhotoTaskStatus,
         timeout: POLL_TIMEOUT_MS,
         onUpdate: (snapshot) => {
           this.updateProgressState(snapshot);
