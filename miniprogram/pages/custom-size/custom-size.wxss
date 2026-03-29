@@ -5,4 +5,8 @@
 .tip { margin-top: 8rpx; }
 .size-list { display: flex; flex-direction: column; gap: 12rpx; margin-top: 12rpx; }
 .size-item { border: 1rpx solid #dce3ec; border-radius: 16rpx; padding: 16rpx 20rpx; background: #fff; }
-.size-item.active { border-color: #315efb; background: #eef3ff; }
+.size-item.active {
+  border-color: rgba(49, 94, 251, 0.55);
+  background: rgba(49, 94, 251, 0.12);
+  box-shadow: 0 8rpx 18rpx rgba(49, 94, 251, 0.12);
+}

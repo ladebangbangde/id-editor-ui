@@ -1,0 +1,27 @@
+<view wx:if="{{visible}}" class="progress-mask">
+  <view class="progress-card">
+    <view class="title">正在为你处理照片</view>
+    <view class="subtitle">请稍候，处理完成后会自动继续</view>
+
+    <view class="stage-block">
+      <view class="stage-name">{{displayStageName}}</view>
+      <view class="stage-desc">{{displayStageDescription}}</view>
+      <view class="elapsed">已等待 {{elapsedSeconds}} 秒</view>
+    </view>
+
+    <view class="track">
+      <view class="bar" style="width: {{progress}}%;"></view>
+    </view>
+
+    <view class="stage-list">
+      <view wx:for="{{stageList}}" wx:key="code" class="stage-item {{item.active ? 'is-active' : ''}} {{item.done ? 'is-done' : ''}}">
+        <view class="dot"></view>
+        <view class="text">{{item.label}}</view>
+      </view>
+    </view>
+
+    <view wx:if="{{status === 'failed' || status === 'timeout'}}" class="action-row">
+      <button class="retry-btn" hoverClass="none" bindtap="onRetryTap">重试</button>
+    </view>
+  </view>
+</view>

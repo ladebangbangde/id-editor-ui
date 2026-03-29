@@ -14,6 +14,37 @@ function buildThumbUrl(record = {}) {
   ]);
 }
 
+function normalizeCardCandidates(record = {}) {
+  const rawList = Array.isArray(record.candidates) ? record.candidates : [];
+  if (!rawList.length) {
+    const fallbackUrl = buildThumbUrl(record);
+    return fallbackUrl ? [{
+      candidateId: `${record.id || 'record'}_default`,
+      label: '主图',
+      sourceLabel: '',
+      imageUrl: fallbackUrl
+    }] : [];
+  }
+  return rawList
+    .map((item, index) => {
+      const imageUrl = pickImageFromCandidates([
+        item.imageUrl,
+        item.previewUrl,
+        item.resultUrl,
+        item.hdUrl
+      ]);
+      if (!imageUrl) return null;
+      return {
+        candidateId: item.candidateId || `${record.id || 'record'}_${index + 1}`,
+        label: item.label || `方案${index + 1}`,
+        sourceLabel: item.sourceLabel || '',
+        imageUrl
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 2);
+}
+
 Component({
   properties: {
     record: { type: Object, value: {} },
@@ -22,6 +53,7 @@ Component({
   data: {
     statusText: '',
     thumbUrl: '',
+    candidates: [],
     imageLoadFailed: false
   },
   observers: {
@@ -30,6 +62,7 @@ Component({
       this.setData({
         statusText: getStatusLabel((v || {}).status),
         thumbUrl,
+        candidates: normalizeCardCandidates(v || {}),
         imageLoadFailed: false
       });
       console.log('[record-card] bind record image fields', {
@@ -57,6 +90,12 @@ Component({
     },
     handleToggle() {
       this.triggerEvent('toggle', { id: this.data.record.id, record: this.data.record });
+    },
+    handleCandidateTap(event) {
+      const { index } = event.currentTarget.dataset;
+      const candidate = this.data.candidates[index];
+      if (!candidate) return;
+      this.triggerEvent('tap', { record: this.data.record, candidate });
     },
     handleImageError(event) {
       console.error('[record-card] image render failed', event && event.detail, this.data.record && this.data.record.id, this.data.thumbUrl);

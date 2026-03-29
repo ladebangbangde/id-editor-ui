@@ -1,12 +1,15 @@
 const { getColorLabel, formatTime } = require('../../utils/format');
 const { getFriendlySceneName, getFriendlySizeText } = require('../../utils/photo-display');
-const { processPhoto, getPhotoTask } = require('../../utils/api');
+const { createPhotoTask, getPhotoTask, getPhotoTaskStatus } = require('../../utils/api');
+const { createTaskPoller, resolveProgressByStage, normalizeStageCode } = require('../../utils/task-progress');
 const storage = require('../../utils/storage');
 const { STORAGE_KEYS } = require('../../utils/constants');
 const { getFlowDraft, setFlowDraft } = require('../../utils/flow-draft');
 const { toCanonicalSizeCode } = require('../../utils/size-codes');
 
 const ALLOWED_BACKGROUND_COLORS = ['blue', 'white', 'red'];
+const POLL_TIMEOUT_MS = 120000;
+const SUCCESS_STAY_MS = 800;
 
 function normalizeWarnings(warnings) {
   return Array.isArray(warnings) ? warnings.filter(Boolean) : [];
@@ -131,7 +134,15 @@ Page({
   data: {
     draft: {},
     selectedColor: 'white',
-    generating: false
+    generating: false,
+    progressVisible: false,
+    progressStatus: 'init',
+    progressStageCode: '',
+    progressStageName: '',
+    progressStageDescription: '',
+    progressValue: 5,
+    elapsedSeconds: 0,
+    progressErrorMessage: ''
   },
 
   onShow() {
@@ -140,12 +151,24 @@ Page({
     this.setData({ draft, selectedColor });
   },
 
+  onHide() {
+    this.clearProgressRuntime();
+  },
+
+  onUnload() {
+    this.clearProgressRuntime();
+  },
+
   onColorChange(event) {
     const selectedColor = event.detail.value;
     this.setData({ selectedColor });
     setFlowDraft({ backgroundColor: selectedColor });
   },
 
+  onRetryGenerate() {
+    if (this.data.generating) return;
+    this.handleGenerate();
+  },
 
   goSelectSize() {
     wx.navigateTo({ url: '/pages/custom-size/custom-size' });
@@ -155,11 +178,120 @@ Page({
     if (!taskId) return fallbackResult;
     try {
       const latest = await getPhotoTask(taskId);
-      if (latest && (latest.previewUrl || latest.resultUrl)) return latest;
+      if (latest) return latest;
     } catch (error) {
       // ignore refresh failure
     }
     return fallbackResult;
+  },
+
+  clearProgressRuntime() {
+    if (this.taskPoller) {
+      this.taskPoller.stop();
+      this.taskPoller = null;
+    }
+    if (this.elapsedTimer) {
+      clearInterval(this.elapsedTimer);
+      this.elapsedTimer = null;
+    }
+    this.taskStartedAt = 0;
+  },
+
+  showProgressModal() {
+    this.setData({
+      progressVisible: true,
+      progressStatus: 'processing',
+      progressStageCode: '',
+      progressStageName: '',
+      progressStageDescription: '',
+      progressValue: 5,
+      elapsedSeconds: 0,
+      progressErrorMessage: ''
+    });
+  },
+
+  startElapsedTicker() {
+    if (this.elapsedTimer) {
+      clearInterval(this.elapsedTimer);
+    }
+    this.elapsedTimer = setInterval(() => {
+      if (!this.taskStartedAt) return;
+      const elapsedSeconds = Math.floor((Date.now() - this.taskStartedAt) / 1000);
+      if (elapsedSeconds !== this.data.elapsedSeconds) {
+        this.setData({ elapsedSeconds });
+      }
+    }, 1000);
+  },
+
+  updateProgressState(task = {}) {
+    const stageCode = normalizeStageCode(task.stageCode || task.stage);
+    const stageName = task.stageName || task.stage_name || task.stageText || task.stage_text || '';
+    const stageDescription = task.stageDescription || task.stage_description || '';
+    if (!stageCode && !stageName && !stageDescription) return;
+
+    const targetProgress = resolveProgressByStage(stageCode, this.data.progressValue);
+    const safeProgress = Math.max(this.data.progressValue, targetProgress);
+
+    this.setData({
+      progressStatus: 'processing',
+      progressStageCode: stageCode,
+      progressStageName: stageName || this.data.progressStageName,
+      progressStageDescription: stageDescription || this.data.progressStageDescription,
+      progressValue: safeProgress,
+      elapsedSeconds: typeof task.elapsedSeconds === 'number' ? task.elapsedSeconds : this.data.elapsedSeconds
+    });
+  },
+
+  async finalizeSuccess(taskSnapshot, draft, normalizedBackgroundColor, canonicalSizeCode) {
+    const latestResult = await this.refreshTaskResult(taskSnapshot.taskId, taskSnapshot);
+    const sceneInfo = draft.selectedScene || {};
+    const mergedRiskWarnings = mergeRiskWarnings(latestResult);
+    const qualityMessage = latestResult.qualityMessage || latestResult.message || '';
+    const result = {
+      imagePath: draft.sourceImagePath,
+      sourceImagePath: draft.sourceImagePath,
+      sourceImageUrl: draft.sourceImageUrl || draft.sourceImagePath,
+      sceneInfo,
+      sceneName: getFriendlySceneName({ sceneKey: sceneInfo.sceneKey, sceneName: sceneInfo.sceneName }, '证件照'),
+      sizeText: getFriendlySizeText(sceneInfo),
+      taskId: latestResult.taskId || taskSnapshot.taskId || '',
+      status: latestResult.status || 'success',
+      previewUrl: latestResult.previewUrl || '',
+      resultUrl: latestResult.resultUrl || '',
+      backgroundColor: latestResult.backgroundColor || normalizedBackgroundColor,
+      backgroundColorLabel: getColorLabel(latestResult.backgroundColor || normalizedBackgroundColor),
+      sizeCode: latestResult.sizeCode || canonicalSizeCode,
+      width: latestResult.width || sceneInfo.pixelWidth || 0,
+      height: latestResult.height || sceneInfo.pixelHeight || 0,
+      warnings: mergedRiskWarnings,
+      qualityStatus: latestResult.qualityStatus || '',
+      qualityMessage,
+      createdAt: latestResult.createdAt || formatTime(Date.now()),
+      hdUrl: latestResult.hdUrl || latestResult.resultUrl || '',
+      candidates: normalizeProcessingCandidates(latestResult),
+      code: latestResult.code || '',
+      message: latestResult.message || '',
+      details: latestResult.details || [],
+      riskTips: latestResult.riskTips || []
+    };
+
+    const reviewState = deriveReviewState(result);
+    if (reviewState === 'failed') {
+      const failurePayload = buildFailurePayload({
+        ...result,
+        reasons: result.details,
+        warnings: mergedRiskWarnings,
+        suggestions: result.riskTips
+      });
+      storage.set(STORAGE_KEYS.CURRENT_PROCESS_FAILURE, failurePayload);
+      this.setData({ progressVisible: false });
+      wx.navigateTo({ url: '/pages/process-failure/process-failure' });
+      return;
+    }
+
+    storage.set(STORAGE_KEYS.CURRENT_RESULT, result);
+    this.setData({ progressVisible: false });
+    wx.navigateTo({ url: '/pages/result/result' });
   },
 
   async handleGenerate() {
@@ -180,102 +312,93 @@ Page({
       return;
     }
 
+    const selectedSizeCode = draft.selectedSizeCode || (draft.selectedScene && draft.selectedScene.sceneKey) || '';
+    const canonicalSizeCode = toCanonicalSizeCode(selectedSizeCode)
+      || (draft.selectedSizeCode === 'custom' ? 'one_inch' : '');
+    if (!canonicalSizeCode) {
+      wx.showToast({ title: '当前尺寸暂不支持，请更换尺寸', icon: 'none' });
+      return;
+    }
+
     this.setData({ generating: true });
     setFlowDraft({
       backgroundColor: normalizedBackgroundColor,
       flowType: 'idPhoto'
     });
 
+    if (draft.selectedSizeCode === 'custom') {
+      wx.showToast({ title: '当前先按一寸规格生成', icon: 'none' });
+    }
+
+    this.showProgressModal();
+    this.taskStartedAt = Date.now();
+    this.startElapsedTicker();
+
     try {
-      const selectedSizeCode = draft.selectedSizeCode || (draft.selectedScene && draft.selectedScene.sceneKey) || '';
-      const canonicalSizeCode = toCanonicalSizeCode(selectedSizeCode)
-        || (draft.selectedSizeCode === 'custom' ? 'one_inch' : '');
-      if (!canonicalSizeCode) {
-        wx.showToast({ title: '当前尺寸暂不支持，请更换尺寸', icon: 'none' });
-        return;
-      }
-      if (draft.selectedSizeCode === 'custom') {
-        // TODO(server): 服务端支持完全自定义尺寸后，改为透传 customSize 生成而非一寸兜底。
-        wx.showToast({ title: '当前先按一寸规格生成', icon: 'none' });
-      }
       const processFormData = {
         sizeCode: canonicalSizeCode,
         backgroundColor: normalizedBackgroundColor,
         enhance: false
       };
-      console.log('[editor] processPhoto payload', {
-        sourceImagePath: draft.sourceImagePath,
-        selectedSizeCode,
-        selectedScene: draft.selectedScene || null,
-        canonicalSizeCode,
-        backgroundColor: normalizedBackgroundColor,
-        formData: processFormData
-      });
-      const processed = await processPhoto(draft.sourceImagePath, processFormData);
-      const latestResult = await this.refreshTaskResult(processed.taskId, processed);
-      const sceneInfo = draft.selectedScene || {};
-      const mergedRiskWarnings = mergeRiskWarnings({
-        ...processed,
-        ...latestResult
-      });
-      const qualityMessage = latestResult.qualityMessage
-        || processed.qualityMessage
-        || latestResult.message
-        || processed.message
-        || '';
-      const result = {
-        imagePath: draft.sourceImagePath,
-        sourceImagePath: draft.sourceImagePath,
-        sourceImageUrl: draft.sourceImageUrl || draft.sourceImagePath,
-        sceneInfo,
-        sceneName: getFriendlySceneName({ sceneKey: sceneInfo.sceneKey, sceneName: sceneInfo.sceneName }, '证件照'),
-        sizeText: getFriendlySizeText(sceneInfo),
-        taskId: latestResult.taskId || processed.taskId || '',
-        status: latestResult.status || processed.status || '',
-        previewUrl: latestResult.previewUrl || processed.previewUrl || '',
-        resultUrl: latestResult.resultUrl || processed.resultUrl || '',
-        backgroundColor: latestResult.backgroundColor || processed.backgroundColor || normalizedBackgroundColor,
-        backgroundColorLabel: getColorLabel(latestResult.backgroundColor || processed.backgroundColor || normalizedBackgroundColor),
-        sizeCode: latestResult.sizeCode || processed.sizeCode || canonicalSizeCode,
-        width: latestResult.width || processed.width || sceneInfo.pixelWidth || 0,
-        height: latestResult.height || processed.height || sceneInfo.pixelHeight || 0,
-        warnings: mergedRiskWarnings,
-        qualityStatus: latestResult.qualityStatus || processed.qualityStatus || '',
-        qualityMessage,
-        createdAt: latestResult.createdAt || formatTime(Date.now()),
-        hdUrl: latestResult.hdUrl || processed.hdUrl || latestResult.resultUrl || processed.resultUrl || '',
-        candidates: normalizeProcessingCandidates(latestResult).length
-          ? normalizeProcessingCandidates(latestResult)
-          : normalizeProcessingCandidates(processed),
-        code: latestResult.code || processed.code || '',
-        message: latestResult.message || processed.message || '',
-        details: latestResult.details || processed.details || [],
-        riskTips: latestResult.riskTips || processed.riskTips || []
-      };
-      const reviewState = deriveReviewState(result);
-      console.log('[editor] generation raw result', { processed, latestResult });
-      console.log('[editor] generation mapped status', {
-        reviewState,
-        qualityStatus: result.qualityStatus,
-        status: result.status,
-        code: result.code,
-        warnings: result.warnings,
-        message: result.message
+      const createdTask = await createPhotoTask(draft.sourceImagePath, processFormData);
+      const taskId = createdTask.taskId;
+      if (!taskId) {
+        throw new Error('任务创建失败，请重试');
+      }
+
+      this.updateProgressState({
+        stageCode: createdTask.stageCode || '',
+        stageName: createdTask.stageName || '',
+        stageDescription: createdTask.stageDescription || '',
+        elapsedSeconds: 0
       });
 
-      if (reviewState === 'failed') {
-        const failurePayload = buildFailurePayload({
-          ...result,
-          reasons: result.details,
-          warnings: mergedRiskWarnings,
-          suggestions: result.riskTips
+      this.taskPoller = createTaskPoller({
+        fetchTask: getPhotoTaskStatus,
+        timeout: POLL_TIMEOUT_MS,
+        onUpdate: (snapshot) => {
+          this.updateProgressState(snapshot);
+        },
+        onTimeout: (snapshot) => {
+          this.setData({
+            progressStatus: 'timeout',
+            progressStageCode: snapshot.stageCode || this.data.progressStageCode,
+            progressStageName: snapshot.stageName || this.data.progressStageName,
+            progressStageDescription: snapshot.stageDescription || this.data.progressStageDescription,
+            progressErrorMessage: '等待时间较长，请重试。',
+            progressValue: snapshot.progress || this.data.progressValue
+          });
+        }
+      });
+
+      const pollResult = await this.taskPoller.start(taskId, createdTask);
+
+      if (pollResult.status === 'failed') {
+        this.setData({
+          progressStatus: 'failed',
+          progressStageCode: pollResult.stageCode || this.data.progressStageCode,
+          progressStageName: pollResult.stageName || this.data.progressStageName,
+          progressStageDescription: pollResult.stageDescription || this.data.progressStageDescription,
+          progressErrorMessage: pollResult.message || '处理失败，请重试。',
+          progressValue: pollResult.progress || this.data.progressValue
         });
-        storage.set(STORAGE_KEYS.CURRENT_PROCESS_FAILURE, failurePayload);
-        wx.navigateTo({ url: '/pages/process-failure/process-failure' });
         return;
       }
-      storage.set(STORAGE_KEYS.CURRENT_RESULT, result);
-      wx.navigateTo({ url: '/pages/result/result' });
+
+      if (pollResult.status === 'timeout') {
+        return;
+      }
+
+      this.setData({
+        progressStatus: 'success',
+        progressStageCode: 'success',
+        progressStageName: pollResult.stageName || '处理完成',
+        progressStageDescription: pollResult.stageDescription || '已完成，马上为你打开结果。',
+        progressValue: 100
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, SUCCESS_STAY_MS));
+      await this.finalizeSuccess(pollResult, draft, normalizedBackgroundColor, canonicalSizeCode);
     } catch (error) {
       const failurePayload = buildFailurePayload(error, {
         message: '生成失败，请重试'
@@ -290,14 +413,16 @@ Page({
         || failurePayload.warnings.length
         || failurePayload.suggestions.length;
 
+      this.setData({
+        progressStatus: 'failed',
+        progressErrorMessage: failurePayload.message || '生成失败，请重试'
+      });
+
       if (hasFailureDetails) {
-        // 兼容 HTTP 非 200 但响应体携带业务失败详情的场景，统一进入失败结果页。
         storage.set(STORAGE_KEYS.CURRENT_PROCESS_FAILURE, failurePayload);
-        wx.navigateTo({ url: '/pages/process-failure/process-failure' });
-        return;
       }
-      wx.showToast({ title: error.message || '生成失败，请重试', icon: 'none' });
     } finally {
+      this.clearProgressRuntime();
       this.setData({ generating: false });
     }
   }

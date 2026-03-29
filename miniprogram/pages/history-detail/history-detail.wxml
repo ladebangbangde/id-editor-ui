@@ -2,6 +2,18 @@
   <block wx:if="{{record}}">
     <view class="card section panel">
       <image class="preview" src="{{record.displayUrl || record.previewUrl}}" mode="aspectFit"></image>
+      <view wx:if="{{record.candidates.length}}" class="candidate-row">
+        <view
+          wx:for="{{record.candidates}}"
+          wx:key="candidateId"
+          class="candidate-item {{selectedCandidateId === item.candidateId ? 'candidate-item-active' : ''}}"
+          data-candidate-id="{{item.candidateId}}"
+          bindtap="selectCandidate"
+        >
+          <image class="candidate-thumb" src="{{item.imageUrl}}" mode="aspectFill"></image>
+          <view class="candidate-tag">{{item.sourceLabel || item.label}}</view>
+        </view>
+      </view>
     </view>
 
     <view class="card section panel">

@@ -5,10 +5,21 @@
     </view>
   </view>
 
-  <block wx:if="{{thumbUrl && !imageLoadFailed}}">
-    <image class="thumb" src="{{thumbUrl}}" mode="aspectFill" binderror="handleImageError"></image>
-  </block>
-  <view wx:else class="thumb thumb-fallback">暂无预览</view>
+  <view class="thumb-group">
+    <block wx:if="{{candidates.length}}">
+      <view
+        wx:for="{{candidates}}"
+        wx:key="candidateId"
+        class="candidate-block"
+        data-index="{{index}}"
+        catchtap="handleCandidateTap"
+      >
+        <image class="thumb {{candidates.length > 1 ? 'thumb-half' : ''}}" src="{{item.imageUrl}}" mode="aspectFill" binderror="handleImageError"></image>
+        <view wx:if="{{item.sourceLabel || item.label}}" class="candidate-label">{{item.sourceLabel || item.label}}</view>
+      </view>
+    </block>
+    <view wx:else class="thumb thumb-fallback">暂无预览</view>
+  </view>
 
   <view class="main">
     <view class="row-between">

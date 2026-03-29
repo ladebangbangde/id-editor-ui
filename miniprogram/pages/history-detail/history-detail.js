@@ -20,6 +20,28 @@ function normalizeDetail(detail = {}) {
   const warnings = getFriendlyWarnings(Array.isArray(detail.warnings) ? detail.warnings : []);
   const reviewState = deriveDisplayState(detail);
 
+  const normalizedCandidates = Array.isArray(detail.candidates)
+    ? detail.candidates
+      .map((candidate, index) => {
+        const source = String(candidate.source || '').trim().toLowerCase();
+        const sourceLabel = candidate.sourceLabel
+          || (source === 'baidu' ? '百度方案' : ((source === 'legacy' || source === 'local') ? '本地方案' : '候选方案'));
+        const imageUrl = candidate.imageUrl || candidate.previewUrl || candidate.resultUrl || candidate.hdUrl || '';
+        if (!imageUrl) return null;
+        return {
+          candidateId: candidate.candidateId || `candidate_${index + 1}`,
+          label: candidate.label || sourceLabel || `方案${index + 1}`,
+          sourceLabel,
+          imageUrl,
+          previewUrl: candidate.previewUrl || imageUrl,
+          resultUrl: candidate.resultUrl || imageUrl,
+          hdUrl: candidate.hdUrl || candidate.resultUrl || imageUrl
+        };
+      })
+      .filter(Boolean)
+      .slice(0, 2)
+    : [];
+
   return {
     taskId: detail.taskId || detail.id,
     imageId: detail.imageId || '',
@@ -49,6 +71,7 @@ function normalizeDetail(detail = {}) {
       : getFriendlyStatusText(detail.qualityStatus || detail.status || (reviewState === 'warning' ? 'WARNING' : 'SUCCESS')),
     qualityMessage: warnings[0] || getFriendlyIssueText(detail.code || '', detail.qualityMessage || ''),
     warnings,
+    candidates: normalizedCandidates,
     fileDesc: getFriendlySaveHint(reviewState),
     createdAt: formatTime(detail.createdAt)
   };
@@ -56,11 +79,13 @@ function normalizeDetail(detail = {}) {
 
 Page({
   data: {
-    record: null
+    record: null,
+    selectedCandidateId: ''
   },
 
   onLoad(options) {
     const taskId = options.taskId || options.imageId;
+    this.setData({ selectedCandidateId: options.candidateId || '' });
     if (!taskId) return;
     this.fetchDetail(taskId);
   },
@@ -68,11 +93,36 @@ Page({
   async fetchDetail(taskId) {
     try {
       const detail = await getPhotoTask(taskId);
-      this.setData({ record: normalizeDetail(detail) });
+      const record = normalizeDetail(detail);
+      const selectedCandidateId = this.data.selectedCandidateId;
+      const selectedCandidate = (record.candidates || []).find((candidate) => candidate.candidateId === selectedCandidateId)
+        || (record.candidates || [])[0]
+        || null;
+      this.setData({
+        record: {
+          ...record,
+          displayUrl: selectedCandidate ? selectedCandidate.imageUrl : record.displayUrl
+        }
+      });
     } catch (error) {
       wx.showToast({ title: '历史详情加载失败', icon: 'none' });
       this.setData({ record: null });
     }
+  },
+
+  selectCandidate(event) {
+    const { candidateId } = event.currentTarget.dataset;
+    const { record } = this.data;
+    if (!record || !candidateId) return;
+    const selectedCandidate = (record.candidates || []).find((candidate) => candidate.candidateId === candidateId);
+    if (!selectedCandidate) return;
+    this.setData({
+      selectedCandidateId: candidateId,
+      record: {
+        ...record,
+        displayUrl: selectedCandidate.imageUrl
+      }
+    });
   },
 
   async savePreview() {

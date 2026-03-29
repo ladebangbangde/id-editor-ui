@@ -4,13 +4,36 @@ const { pickBestImageUrl: pickImageFromCandidates, cleanUrl, isLikelyLocalPath }
 const { getFriendlySceneName, getFriendlySizeText, pickBestImageUrl } = require('../../utils/photo-display');
 
 function buildStatus(item = {}) {
-  if (item.status) return item.status;
-  if (item.qualityStatus === 'PASSED' || item.qualityStatus === 'WARNING') {
-    return 'success';
+  const rawStatus = String(item.status || '').trim().toLowerCase();
+  const statusMap = {
+    success: 'success',
+    succeeded: 'success',
+    completed: 'success',
+    done: 'success',
+    failed: 'failed',
+    fail: 'failed',
+    error: 'failed',
+    processing: 'processing',
+    pending: 'processing',
+    queued: 'processing',
+    running: 'processing'
+  };
+  if (rawStatus && statusMap[rawStatus]) {
+    return statusMap[rawStatus];
   }
-  if (item.qualityStatus === 'FAILED') {
-    return 'failed';
+
+  const rawQualityStatus = String(item.qualityStatus || '').trim().toLowerCase();
+  const qualityMap = {
+    passed: 'success',
+    pass: 'success',
+    warning: 'success',
+    failed: 'failed',
+    fail: 'failed'
+  };
+  if (rawQualityStatus && qualityMap[rawQualityStatus]) {
+    return qualityMap[rawQualityStatus];
   }
+
   return 'processing';
 }
 
@@ -43,6 +66,44 @@ function normalizeRecord(item = {}) {
     previewUrl,
     pickBestImageUrl(item)
   ]);
+  const normalizedCandidates = Array.isArray(item.candidates)
+    ? item.candidates
+      .map((candidate, index) => {
+        const source = String(candidate.source || '').trim().toLowerCase();
+        const sourceLabel = candidate.sourceLabel
+          || (source === 'baidu' ? '百度方案' : ((source === 'legacy' || source === 'local') ? '本地方案' : '候选方案'));
+        const imageUrl = pickImageFromCandidates([
+          candidate.imageUrl,
+          candidate.previewUrl,
+          candidate.resultUrl,
+          candidate.hdUrl
+        ]);
+        if (!imageUrl) return null;
+        return {
+          candidateId: candidate.candidateId || `${id || 'history'}_${index + 1}`,
+          label: candidate.label || sourceLabel || `方案${index + 1}`,
+          source,
+          sourceLabel,
+          imageUrl,
+          previewUrl: candidate.previewUrl || imageUrl,
+          resultUrl: candidate.resultUrl || imageUrl,
+          hdUrl: candidate.hdUrl || candidate.resultUrl || imageUrl
+        };
+      })
+      .filter(Boolean)
+    : [];
+  const displayCandidates = normalizedCandidates.length
+    ? normalizedCandidates.slice(0, 2)
+    : [{
+      candidateId: `${id || 'history'}_default`,
+      label: '主图',
+      source: '',
+      sourceLabel: '',
+      imageUrl: displayUrl,
+      previewUrl,
+      resultUrl: item.resultUrl || previewUrl || '',
+      hdUrl: item.hdUrl || item.resultUrl || previewUrl || ''
+    }];
   return {
     id,
     taskId: id,
@@ -63,6 +124,7 @@ function normalizeRecord(item = {}) {
     qualityStatus: item.qualityStatus || '',
     qualityMessage: item.qualityMessage || '',
     warnings,
+    candidates: displayCandidates,
     selected: false
   };
 }
@@ -235,7 +297,7 @@ Page({
   },
 
   handleCardTap(event) {
-    const { record } = event.detail;
+    const { record, candidate } = event.detail;
     if (!record || !record.id) return;
 
     if (this.data.manageMode) {
@@ -243,7 +305,10 @@ Page({
       return;
     }
 
-    wx.navigateTo({ url: `/pages/history-detail/history-detail?taskId=${record.taskId}` });
+    const candidateQuery = candidate && candidate.candidateId
+      ? `&candidateId=${encodeURIComponent(candidate.candidateId)}`
+      : '';
+    wx.navigateTo({ url: `/pages/history-detail/history-detail?taskId=${record.taskId}${candidateQuery}` });
   },
 
   toggleSelectById(id) {

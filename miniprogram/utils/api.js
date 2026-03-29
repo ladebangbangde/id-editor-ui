@@ -202,6 +202,43 @@ function normalizePhotoProcessFailure(error = {}) {
   };
 }
 
+function mapCandidateSourceLabel(sourceValue = '') {
+  const source = String(sourceValue || '').trim().toLowerCase();
+  if (source === 'baidu') return '百度方案';
+  if (source === 'legacy' || source === 'local') return '本地方案';
+  return source ? '候选方案' : '';
+}
+
+function normalizeCandidateItem(item = {}, index = 0) {
+  if (!item || typeof item !== 'object') return null;
+  const stageSource = item.source || item.engineKey || item.engine_key || item.provider || item.channel || '';
+  const source = String(stageSource || '').trim().toLowerCase();
+  const sourceLabel = mapCandidateSourceLabel(source);
+  const previewUrl = normalizeAssetUrl(
+    item.previewUrl || item.preview_url || item.imageUrl || item.image_url || ''
+  );
+  const resultUrl = normalizeAssetUrl(item.resultUrl || item.result_url || previewUrl || '');
+  const hdUrl = normalizeAssetUrl(item.hdUrl || item.hd_url || resultUrl || previewUrl || '');
+  const imageUrl = normalizeAssetUrl(item.imageUrl || item.image_url || previewUrl || resultUrl || hdUrl || '');
+  const label = item.label || sourceLabel || `方案${index + 1}`;
+
+  if (!imageUrl && !previewUrl && !resultUrl && !hdUrl) {
+    return null;
+  }
+
+  return {
+    ...item,
+    candidateId: item.candidateId || item.candidate_id || item.id || `${source || 'candidate'}_${index + 1}`,
+    label,
+    source,
+    sourceLabel: sourceLabel || label,
+    imageUrl,
+    previewUrl: previewUrl || imageUrl,
+    resultUrl: resultUrl || imageUrl,
+    hdUrl: hdUrl || resultUrl || imageUrl
+  };
+}
+
 function normalizeHistoryItem(item = {}) {
   const normalized = normalizeReviewFields(normalizeAssetPayload(item));
   const scene = normalizeScene(normalized.scene || {});
@@ -210,6 +247,35 @@ function normalizeHistoryItem(item = {}) {
   const heightMm = Number(normalized.heightMm || normalized.height_mm || scene.heightMm || 0);
   const backgroundColor = normalized.backgroundColor || normalized.background_color
     || result.backgroundColor || result.background_color || '';
+
+  const stageCodesRaw = normalized.stageCodes
+    || normalized.stage_codes
+    || normalized.stageHistory
+    || normalized.stage_history
+    || normalized.stages
+    || [];
+  const stageCodes = Array.isArray(stageCodesRaw)
+    ? stageCodesRaw
+      .map((entry) => {
+        if (!entry) return '';
+        if (typeof entry === 'string') return entry;
+        if (typeof entry === 'object') {
+          return entry.stageCode || entry.stage_code || entry.code || entry.stage || '';
+        }
+        return '';
+      })
+      .filter(Boolean)
+    : [];
+  const candidateRawList = normalized.candidates
+    || normalized.candidateList
+    || normalized.candidate_list
+    || (result && (result.candidates || result.candidateList || result.candidate_list))
+    || [];
+  const candidates = Array.isArray(candidateRawList)
+    ? candidateRawList
+      .map((candidate, index) => normalizeCandidateItem(candidate, index))
+      .filter(Boolean)
+    : [];
 
   return {
     ...normalized,
@@ -263,8 +329,36 @@ function normalizeHistoryItem(item = {}) {
       ? normalized.warnings
       : (Array.isArray(result.warnings) ? result.warnings : []),
     createdAt: normalized.createdAt || normalized.created_at || '',
-    status: normalized.status || normalized.taskStatus || normalized.task_status || ''
+    status: normalized.status || normalized.taskStatus || normalized.task_status || '',
+    stageCode: normalized.stageCode || normalized.stage_code || normalized.stage || '',
+    stageName: normalized.stageName || normalized.stage_name || '',
+    stageDescription: normalized.stageDescription || normalized.stage_description || '',
+    stageCodes,
+    candidates
   };
+}
+
+function createPhotoTask(filePath, payload = {}) {
+  const normalizedBackgroundColor = normalizeBackgroundColor(payload.backgroundColor);
+  const normalizedSizeCode = String(payload.sizeCode || '').trim();
+  const formData = {
+    sizeCode: normalizedSizeCode,
+    backgroundColor: normalizedBackgroundColor
+  };
+
+  if (typeof payload.enhance !== 'undefined') {
+    formData.enhance = String(payload.enhance);
+  }
+
+  return uploadFile(`${getBaseUrl()}/photo/tasks`, filePath, formData, {
+    showLoading: false,
+    showErrorToast: false
+  })
+    .then(unwrap)
+    .then((result) => normalizeHistoryItem(result))
+    .catch((error) => {
+      throw normalizePhotoProcessFailure(error);
+    });
 }
 
 function clearAuthState() {
@@ -416,6 +510,19 @@ function getPhotoTask(taskId) {
         hdUrl: normalized.hdUrl,
         printLayoutUrl: normalized.printLayoutUrl
       });
+      return normalized;
+    });
+}
+
+function getPhotoTaskStatus(taskId) {
+  return request(`${getBaseUrl()}/photo/tasks/${taskId}/status`)
+    .then(unwrap)
+    .then((payload) => {
+      const normalized = normalizeHistoryItem(payload);
+      const stageText = normalized.stageText || normalized.stage_text || '';
+      if (!normalized.stageName && stageText) {
+        normalized.stageName = stageText;
+      }
       return normalized;
     });
 }
@@ -609,6 +716,8 @@ module.exports = {
   processPhoto,
   getPhotoHistory,
   getPhotoTask,
+  getPhotoTaskStatus,
+  createPhotoTask,
   // legacy APIs, kept for compatibility only.
   uploadImage,
   generateImage,

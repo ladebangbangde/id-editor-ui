@@ -14,8 +14,9 @@
 }
 
 .size-item.active {
-  border-color: #2d6bff;
-  background: #eef3ff;
+  border-color: rgba(45, 107, 255, 0.55);
+  background: rgba(45, 107, 255, 0.12);
+  box-shadow: 0 8rpx 18rpx rgba(45, 107, 255, 0.12);
 }
 
 .size-name {
