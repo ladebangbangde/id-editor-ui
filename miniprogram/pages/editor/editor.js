@@ -137,7 +137,9 @@ Page({
     generating: false,
     progressVisible: false,
     progressStatus: 'init',
-    progressStageCode: 'received',
+    progressStageCode: '',
+    progressStageName: '',
+    progressStageDescription: '',
     progressValue: 5,
     elapsedSeconds: 0,
     progressErrorMessage: ''
@@ -199,7 +201,9 @@ Page({
     this.setData({
       progressVisible: true,
       progressStatus: 'processing',
-      progressStageCode: 'received',
+      progressStageCode: '',
+      progressStageName: '',
+      progressStageDescription: '',
       progressValue: 5,
       elapsedSeconds: 0,
       progressErrorMessage: ''
@@ -221,7 +225,7 @@ Page({
 
   updateProgressState(task = {}) {
     const stageCode = normalizeStageCode(task.stageCode || task.stage);
-    if (!stageCode) return;
+    if (!stageCode && !task.stageName && !task.stageDescription) return;
 
     const targetProgress = resolveProgressByStage(stageCode, this.data.progressValue);
     const safeProgress = Math.max(this.data.progressValue, targetProgress);
@@ -229,6 +233,8 @@ Page({
     this.setData({
       progressStatus: 'processing',
       progressStageCode: stageCode,
+      progressStageName: task.stageName || task.stage_name || this.data.progressStageName,
+      progressStageDescription: task.stageDescription || task.stage_description || this.data.progressStageDescription,
       progressValue: safeProgress,
       elapsedSeconds: typeof task.elapsedSeconds === 'number' ? task.elapsedSeconds : this.data.elapsedSeconds
     });
@@ -339,7 +345,9 @@ Page({
       }
 
       this.updateProgressState({
-        stageCode: createdTask.stageCode || 'received',
+        stageCode: createdTask.stageCode || '',
+        stageName: createdTask.stageName || '',
+        stageDescription: createdTask.stageDescription || '',
         elapsedSeconds: 0
       });
 
@@ -353,6 +361,8 @@ Page({
           this.setData({
             progressStatus: 'timeout',
             progressStageCode: snapshot.stageCode || this.data.progressStageCode,
+            progressStageName: snapshot.stageName || this.data.progressStageName,
+            progressStageDescription: snapshot.stageDescription || this.data.progressStageDescription,
             progressErrorMessage: '等待时间较长，请重试。',
             progressValue: snapshot.progress || this.data.progressValue
           });
@@ -365,6 +375,8 @@ Page({
         this.setData({
           progressStatus: 'failed',
           progressStageCode: pollResult.stageCode || this.data.progressStageCode,
+          progressStageName: pollResult.stageName || this.data.progressStageName,
+          progressStageDescription: pollResult.stageDescription || this.data.progressStageDescription,
           progressErrorMessage: pollResult.message || '处理失败，请重试。',
           progressValue: pollResult.progress || this.data.progressValue
         });
@@ -378,6 +390,8 @@ Page({
       this.setData({
         progressStatus: 'success',
         progressStageCode: 'success',
+        progressStageName: pollResult.stageName || '处理完成',
+        progressStageDescription: pollResult.stageDescription || '已完成，马上为你打开结果。',
         progressValue: 100
       });
 

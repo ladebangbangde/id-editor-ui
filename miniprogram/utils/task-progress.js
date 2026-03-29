@@ -7,7 +7,6 @@ const STAGE_PROGRESS_MAP = {
   success: 100
 };
 
-const DEFAULT_STAGE = 'received';
 const DEFAULT_INTERVAL = 1200;
 const DEFAULT_TIMEOUT = 120000;
 
@@ -27,6 +26,21 @@ function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function readStageSequence(task = {}) {
+  const list = task.stageCodes || task.stage_codes || task.stageHistory || task.stage_history || task.stages || [];
+  if (!Array.isArray(list)) return [];
+  return list
+    .map((entry) => {
+      if (!entry) return '';
+      if (typeof entry === 'string') return normalizeStageCode(entry);
+      if (typeof entry === 'object') {
+        return normalizeStageCode(entry.stageCode || entry.stage_code || entry.code || entry.stage);
+      }
+      return '';
+    })
+    .filter(Boolean);
+}
+
 function createTaskPoller(options = {}) {
   const {
     fetchTask,
@@ -42,6 +56,7 @@ function createTaskPoller(options = {}) {
   }
 
   let stopped = false;
+  const emittedStageSet = {};
 
   async function start(taskId, initialTask = {}) {
     if (!taskId) {
@@ -57,7 +72,7 @@ function createTaskPoller(options = {}) {
         const timeoutPayload = {
           taskId,
           status: 'timeout',
-          stageCode: normalizeStageCode(latestTask.stageCode) || normalizeStageCode(latestTask.stage) || DEFAULT_STAGE,
+          stageCode: normalizeStageCode(latestTask.stageCode) || normalizeStageCode(latestTask.stage) || '',
           progress: resolveProgressByStage(latestTask.stageCode || latestTask.stage, latestTask.progress),
           elapsedMs,
           elapsedSeconds: Math.floor(elapsedMs / 1000)
@@ -80,10 +95,32 @@ function createTaskPoller(options = {}) {
 
       const stageCode = normalizeStageCode(latestTask.stageCode || latestTask.stage || latestTask.currentStage);
       const status = normalizeStageCode(latestTask.status || latestTask.taskStatus || '');
+      const sequence = readStageSequence(latestTask);
+
+      sequence.forEach((code) => {
+        if (emittedStageSet[code]) return;
+        emittedStageSet[code] = true;
+        if (typeof onUpdate === 'function') {
+          onUpdate({
+            ...latestTask,
+            taskId: latestTask.taskId || taskId,
+            stageCode: code,
+            progress: resolveProgressByStage(code, latestTask.progress),
+            elapsedMs,
+            elapsedSeconds: Math.floor(elapsedMs / 1000),
+            fromStageSequence: true
+          });
+        }
+      });
+
+      if (stageCode) {
+        emittedStageSet[stageCode] = true;
+      }
+
       const payload = {
         ...latestTask,
         taskId: latestTask.taskId || taskId,
-        stageCode: stageCode || DEFAULT_STAGE,
+        stageCode: stageCode || '',
         progress: resolveProgressByStage(stageCode, latestTask.progress),
         elapsedMs,
         elapsedSeconds: Math.floor(elapsedMs / 1000)
@@ -114,7 +151,7 @@ function createTaskPoller(options = {}) {
     return {
       taskId,
       status: 'cancelled',
-      stageCode: normalizeStageCode(latestTask.stageCode) || DEFAULT_STAGE,
+      stageCode: normalizeStageCode(latestTask.stageCode) || '',
       progress: resolveProgressByStage(latestTask.stageCode, latestTask.progress),
       elapsedMs: Date.now() - startedAt,
       elapsedSeconds: Math.floor((Date.now() - startedAt) / 1000)
@@ -133,7 +170,6 @@ function createTaskPoller(options = {}) {
 
 module.exports = {
   STAGE_PROGRESS_MAP,
-  DEFAULT_STAGE,
   normalizeStageCode,
   resolveProgressByStage,
   createTaskPoller

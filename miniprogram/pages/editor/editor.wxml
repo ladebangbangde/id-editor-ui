@@ -25,6 +25,8 @@
   <progress-modal
     visible="{{progressVisible}}"
     stageCode="{{progressStageCode}}"
+    stageName="{{progressStageName}}"
+    stageDescription="{{progressStageDescription}}"
     progress="{{progressValue}}"
     elapsedSeconds="{{elapsedSeconds}}"
     status="{{progressStatus}}"

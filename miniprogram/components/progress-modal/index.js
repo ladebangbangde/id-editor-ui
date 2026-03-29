@@ -11,13 +11,15 @@ const STAGE_META = {
 const STAGE_ORDER = ['received', 'checking', 'adjusting', 'generating', 'finalizing'];
 
 function normalizeStageCode(value = '') {
-  return String(value || '').trim().toLowerCase() || 'received';
+  return String(value || '').trim().toLowerCase();
 }
 
 Component({
   properties: {
     visible: { type: Boolean, value: false },
-    stageCode: { type: String, value: 'received' },
+    stageCode: { type: String, value: '' },
+    stageName: { type: String, value: '' },
+    stageDescription: { type: String, value: '' },
     progress: { type: Number, value: 5 },
     elapsedSeconds: { type: Number, value: 0 },
     status: { type: String, value: 'processing' },
@@ -25,14 +27,20 @@ Component({
   },
 
   data: {
-    stageName: STAGE_META.received.name,
-    stageDescription: STAGE_META.received.description,
+    stageName: '正在准备处理',
+    stageDescription: '正在同步处理进度，请稍候。',
     stageList: []
   },
 
   observers: {
     stageCode(value) {
       this.syncStageMeta(value, this.properties.status);
+    },
+    stageName() {
+      this.syncStageMeta(this.properties.stageCode, this.properties.status);
+    },
+    stageDescription() {
+      this.syncStageMeta(this.properties.stageCode, this.properties.status);
     },
     status(value) {
       this.syncStageMeta(this.properties.stageCode, value);
@@ -51,7 +59,7 @@ Component({
       const normalizedStatus = String(status || '').trim().toLowerCase();
       const isFailed = normalizedStatus === 'failed' || normalizedStatus === 'timeout';
       const finalStageCode = isFailed ? 'failed' : normalizedStage;
-      const stageMeta = STAGE_META[finalStageCode] || STAGE_META.received;
+      const stageMeta = STAGE_META[finalStageCode] || {};
       const stageIndex = STAGE_ORDER.indexOf(normalizedStage);
 
       const stageList = STAGE_ORDER.map((code, index) => {
@@ -66,10 +74,10 @@ Component({
       });
 
       this.setData({
-        stageName: stageMeta.name,
+        stageName: this.properties.stageName || stageMeta.name || '正在准备处理',
         stageDescription: isFailed
           ? (this.properties.errorMessage || '请稍后重试，或重新上传照片。')
-          : stageMeta.description,
+          : (this.properties.stageDescription || stageMeta.description || '正在同步处理进度，请稍候。'),
         stageList
       });
     },

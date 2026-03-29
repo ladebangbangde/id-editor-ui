@@ -211,6 +211,25 @@ function normalizeHistoryItem(item = {}) {
   const backgroundColor = normalized.backgroundColor || normalized.background_color
     || result.backgroundColor || result.background_color || '';
 
+  const stageCodesRaw = normalized.stageCodes
+    || normalized.stage_codes
+    || normalized.stageHistory
+    || normalized.stage_history
+    || normalized.stages
+    || [];
+  const stageCodes = Array.isArray(stageCodesRaw)
+    ? stageCodesRaw
+      .map((entry) => {
+        if (!entry) return '';
+        if (typeof entry === 'string') return entry;
+        if (typeof entry === 'object') {
+          return entry.stageCode || entry.stage_code || entry.code || entry.stage || '';
+        }
+        return '';
+      })
+      .filter(Boolean)
+    : [];
+
   return {
     ...normalized,
     taskId: normalized.taskId || normalized.task_id || normalized.id || '',
@@ -266,7 +285,8 @@ function normalizeHistoryItem(item = {}) {
     status: normalized.status || normalized.taskStatus || normalized.task_status || '',
     stageCode: normalized.stageCode || normalized.stage_code || normalized.stage || '',
     stageName: normalized.stageName || normalized.stage_name || '',
-    stageDescription: normalized.stageDescription || normalized.stage_description || ''
+    stageDescription: normalized.stageDescription || normalized.stage_description || '',
+    stageCodes
   };
 }
 
