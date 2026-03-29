@@ -3,6 +3,7 @@
     "pages/home/home",
     "pages/upload/upload",
     "pages/editor/editor",
+    "pages/photo-progress/index",
     "pages/result/result",
     "pages/process-failure/process-failure",
     "pages/custom-size/custom-size",

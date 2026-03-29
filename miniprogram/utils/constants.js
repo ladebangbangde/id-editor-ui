@@ -90,6 +90,7 @@ const STORAGE_KEYS = {
   CURRENT_UPLOAD: 'current_upload',
   CURRENT_RESULT: 'current_result',
   CURRENT_PROCESS_FAILURE: 'current_process_failure',
+  CURRENT_PROGRESS_CONTEXT: 'current_progress_context',
   FLOW_DRAFT: 'id_photo_flow_draft',
   HISTORY_LIST: 'history_list'
 };
