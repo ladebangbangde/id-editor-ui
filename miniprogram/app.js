@@ -39,8 +39,8 @@ function normalizeUser(user = {}) {
 
 App({
   globalData: {
-    apiHost: 'http://127.0.0.1:30000',
-    apiBaseUrl: 'http://127.0.0.1:30000/api',
+    apiHost: 'https://photo.ldbbd.com',
+    apiBaseUrl: 'https://photo.ldbbd.com/api',
     authToken: '',
     adminToken: '',
     demoUserId: 'u_demo_001',
