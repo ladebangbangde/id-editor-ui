@@ -358,7 +358,7 @@ function getPhotoSpecs() {
     }));
 }
 
-function processPhoto(filePath, payload = {}) {
+function processPhoto(filePath, payload = {}, options = {}) {
   const normalizedBackgroundColor = normalizeBackgroundColor(payload.backgroundColor);
   const normalizedSizeCode = String(payload.sizeCode || '').trim();
   const formData = {
@@ -381,9 +381,12 @@ function processPhoto(filePath, payload = {}) {
   };
   console.log('[api.processPhoto] request payload', requestPayload);
 
+  const showLoading = Object.prototype.hasOwnProperty.call(options, 'showLoading') ? options.showLoading : true;
+  const loadingText = options.loadingText || '处理中';
+
   return uploadFile(`${getBaseUrl()}/photo/process`, filePath, formData, {
-    showLoading: true,
-    loadingText: '处理中',
+    showLoading,
+    loadingText,
     showErrorToast: false
   })
     .then(unwrap)

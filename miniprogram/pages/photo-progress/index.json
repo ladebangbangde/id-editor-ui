@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "证件照处理中",
+  "usingComponents": {
+    "primary-button": "/components/primary-button/index"
+  }
+}

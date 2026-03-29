@@ -1,0 +1,51 @@
+<view class="progress-page">
+  <view class="hero card">
+    <view class="hero-icon"></view>
+    <text class="hero-title">{{headerTitle}}</text>
+    <text class="hero-subtitle">{{headerSubtitle}}</text>
+
+    <view class="progress-wrap" wx:if="{{pageState !== 'failed' && pageState !== 'timeout'}}">
+      <view class="progress-top">
+        <text class="stage-title">{{currentStage.title}}</text>
+        <text class="progress-text">{{progressText}}</text>
+      </view>
+      <text class="stage-desc">{{currentStage.desc}}</text>
+      <view class="progress-track">
+        <view class="progress-fill" style="width: {{progressBarWidth}};"></view>
+      </view>
+    </view>
+
+    <view class="status-failure" wx:if="{{pageState === 'failed' || pageState === 'timeout'}}">
+      <text class="status-title">{{failureTitle}}</text>
+      <text class="status-desc">{{failureText}}</text>
+    </view>
+  </view>
+
+  <view class="stage-list card" wx:if="{{pageState !== 'failed' && pageState !== 'timeout'}}">
+    <view class="stage-item {{item.state}}" wx:for="{{stageItems}}" wx:key="code">
+      <view class="stage-dot {{item.state}}">
+        <text wx:if="{{item.state === 'done'}}">✓</text>
+      </view>
+      <view class="stage-meta">
+        <text class="stage-item-title">{{item.title}}</text>
+        <text class="stage-item-desc">{{item.desc}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="tips card">
+    <text>请不要退出页面，制作完成后会自动跳转到结果页。</text>
+    <text>如果照片暂时不符合要求，我们会及时告诉你原因。</text>
+  </view>
+
+  <view class="footer-actions">
+    <block wx:if="{{pageState === 'failed' || pageState === 'timeout'}}">
+      <primary-button text="重新上传" bind:tap="handleReupload"></primary-button>
+      <primary-button type="secondary" text="返回首页" bind:tap="goHome"></primary-button>
+    </block>
+    <block wx:else>
+      <primary-button type="secondary" text="继续等待" bind:tap="noop"></primary-button>
+      <primary-button type="light" text="返回首页" bind:tap="goHome"></primary-button>
+    </block>
+  </view>
+</view>
