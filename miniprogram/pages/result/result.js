@@ -2,7 +2,6 @@ const { STORAGE_KEYS, MOCK_RESULT } = require('../../utils/constants');
 const storage = require('../../utils/storage');
 const { saveImageFromUrl } = require('../../utils/save-image');
 const { getFlowDraft } = require('../../utils/flow-draft');
-const { request } = require('../../utils/request');
 const { pickBestImageUrl: pickImageFromCandidates } = require('../../utils/image-url');
 const {
   getFriendlySceneName,
@@ -20,11 +19,6 @@ const {
 } = require('../../utils/photo-status-text');
 
 const ENGINEERING_HINT_PATTERN = /(engine|backend|compare|fallback|legacy|baidu|debug|trace|pipeline)/i;
-
-function getApiBaseUrl() {
-  const app = getApp();
-  return (app && app.globalData && app.globalData.apiBaseUrl) || '';
-}
 
 function isDevMode() {
   const wxConfig = typeof __wxConfig !== 'undefined' ? __wxConfig : null;
@@ -89,6 +83,16 @@ function normalizeCandidates(result = {}) {
         candidateId,
         label,
         imageUrl,
+        previewUrl: pickImageFromCandidates([
+          candidate.previewUrl,
+          candidate.preview_url,
+          candidate.imageUrl,
+          candidate.image_url,
+          candidate.resultUrl,
+          candidate.result_url,
+          candidate.hdUrl,
+          candidate.hd_url
+        ]),
         hdUrl,
         qualityMessage,
         warnings,
@@ -102,6 +106,7 @@ function normalizeCandidates(result = {}) {
       candidateId: 'fallback_preview',
       label: '方案 A',
       imageUrl: result.previewUrl || result.preview_url || result.displayUrl || '',
+      previewUrl: result.previewUrl || result.preview_url || result.displayUrl || '',
       hdUrl: result.hdUrl || result.hd_url || result.resultUrl || result.result_url || '',
       qualityMessage: '建议放大查看边缘效果后再保存',
       warnings: []
@@ -110,6 +115,7 @@ function normalizeCandidates(result = {}) {
       candidateId: 'fallback_hd',
       label: '方案 B',
       imageUrl: result.hdUrl || result.hd_url || result.resultUrl || result.result_url || '',
+      previewUrl: result.previewUrl || result.preview_url || result.displayUrl || '',
       hdUrl: result.hdUrl || result.hd_url || result.resultUrl || result.result_url || '',
       qualityMessage: '建议检查衣领与头发细节后再保存',
       warnings: []
@@ -277,18 +283,6 @@ Page({
     await saveImageFromUrl(url, options);
   },
 
-  async confirmSaveSelection(taskId, candidateId) {
-    const apiBaseUrl = getApiBaseUrl();
-    if (!apiBaseUrl || !taskId || !candidateId) return;
-    await request(`${apiBaseUrl}/photo/tasks/${taskId}/confirm`, 'POST', {
-      taskId,
-      candidateId
-    }, {
-      showLoading: false,
-      showErrorToast: false
-    });
-  },
-
   async saveSelectedCandidate() {
     const { result, selectedCandidateId } = this.data;
     if (!selectedCandidateId) {
@@ -300,7 +294,7 @@ Page({
       ? result.candidates.find((item) => item.candidateId === selectedCandidateId)
       : null) || null;
 
-    const selectedImageUrl = selectedCandidate && (selectedCandidate.hdUrl || selectedCandidate.imageUrl);
+    const selectedImageUrl = selectedCandidate && (selectedCandidate.hdUrl || selectedCandidate.previewUrl);
 
     if (!selectedCandidate || !selectedImageUrl) {
       wx.showToast({ title: '当前图片暂不可保存，请稍后重试', icon: 'none' });
@@ -308,7 +302,6 @@ Page({
     }
 
     try {
-      await this.confirmSaveSelection(result.taskId, selectedCandidate.candidateId);
       await this.saveAsset(selectedImageUrl, {
         loadingText: '正在保存图片',
         successText: '图片已保存到相册'
