@@ -5,9 +5,13 @@ const { createTaskPoller, resolveProgressByStage, normalizeStageCode } = require
 const storage = require('../../utils/storage');
 const { STORAGE_KEYS } = require('../../utils/constants');
 const { getFlowDraft, setFlowDraft } = require('../../utils/flow-draft');
-const { toCanonicalSizeCode } = require('../../utils/size-codes');
+const {
+  normalizeBackgroundColorForApi,
+  getBackgroundColorLabel,
+  normalizeSizeCodeForApi,
+  normalizeEditDraftToPhotoRequest
+} = require('../../utils/photo-edit-contract');
 
-const ALLOWED_BACKGROUND_COLORS = ['blue', 'white', 'red'];
 const POLL_TIMEOUT_MS = 120000;
 const SUCCESS_STAY_MS = 800;
 
@@ -142,17 +146,6 @@ function deriveReviewState(result = {}) {
   return 'passed';
 }
 
-function normalizeBackgroundColor(value = '') {
-  const raw = String(value || '').trim();
-  if (!raw) return '';
-  const lowered = raw.toLowerCase();
-  if (ALLOWED_BACKGROUND_COLORS.includes(lowered)) return lowered;
-  if (raw === '白色' || raw === '白底') return 'white';
-  if (raw === '蓝色' || raw === '蓝底') return 'blue';
-  if (raw === '红色' || raw === '红底') return 'red';
-  return '';
-}
-
 Page({
   data: {
     draft: {},
@@ -174,7 +167,7 @@ Page({
 
   onShow() {
     const draft = getFlowDraft();
-    const selectedColor = normalizeBackgroundColor(draft.backgroundColor) || 'white';
+    const selectedColor = normalizeBackgroundColorForApi(draft.backgroundColor) || 'white';
     const remakeCandidates = normalizeRemakeCandidates(draft.remakeCandidates || draft.candidates || []);
     const isHistoryRemake = Boolean(draft.fromHistoryTaskId);
     const remakeSelectedCandidateId = draft.remakeSelectedCandidateId
@@ -185,6 +178,8 @@ Page({
       || draft.sourceImagePath
       || draft.sourceImageUrl
       || '';
+    const canonicalSizeCode = normalizeSizeCodeForApi(draft);
+    const backgroundColorLabel = getBackgroundColorLabel(selectedColor);
 
     if (isHistoryRemake) {
       wx.setNavigationBarTitle({ title: '重新编辑证件照' });
@@ -204,6 +199,11 @@ Page({
     if (isHistoryRemake) {
       setFlowDraft({
         remakeSelectedCandidateId,
+        selectedCandidateId: remakeSelectedCandidateId,
+        selectedSizeCode: draft.selectedSizeCode || canonicalSizeCode,
+        backgroundColor: selectedColor,
+        backgroundColorLabel,
+        remakeBackgroundColorLabel: backgroundColorLabel,
         sourceImageUrl: (selectedCandidate && selectedCandidate.imageUrl) || draft.sourceImageUrl || '',
         sourceImagePath: draft.sourceImagePath || ''
       });
@@ -221,7 +221,11 @@ Page({
   onColorChange(event) {
     const selectedColor = event.detail.value;
     this.setData({ selectedColor });
-    setFlowDraft({ backgroundColor: selectedColor });
+    setFlowDraft({
+      backgroundColor: normalizeBackgroundColorForApi(selectedColor),
+      backgroundColorLabel: getBackgroundColorLabel(selectedColor),
+      remakeBackgroundColorLabel: getBackgroundColorLabel(selectedColor)
+    });
   },
 
   onSelectRemakeCandidate(event) {
@@ -235,6 +239,7 @@ Page({
     });
     setFlowDraft({
       remakeSelectedCandidateId: candidateId,
+      selectedCandidateId: candidateId,
       sourceImageUrl: selectedCandidate.imageUrl,
       sourceImagePath: ''
     });
@@ -422,15 +427,16 @@ Page({
       return;
     }
 
-    const normalizedBackgroundColor = normalizeBackgroundColor(selectedColor || freshDraft.backgroundColor);
-    if (!normalizedBackgroundColor) {
+    const requestPayload = normalizeEditDraftToPhotoRequest({
+      ...freshDraft,
+      backgroundColor: selectedColor || freshDraft.backgroundColor
+    });
+    if (!requestPayload.backgroundColor) {
       wx.showToast({ title: '背景色参数不合法，请重新选择', icon: 'none' });
       return;
     }
 
-    const selectedSizeCode = freshDraft.selectedSizeCode || (freshDraft.selectedScene && freshDraft.selectedScene.sceneKey) || '';
-    const canonicalSizeCode = toCanonicalSizeCode(selectedSizeCode)
-      || (freshDraft.selectedSizeCode === 'custom' ? 'one_inch' : '');
+    const canonicalSizeCode = requestPayload.sizeCode || normalizeSizeCodeForApi(freshDraft);
     if (!canonicalSizeCode) {
       wx.showToast({ title: '当前尺寸暂不支持，请更换尺寸', icon: 'none' });
       return;
@@ -440,11 +446,15 @@ Page({
     const draft = {
       ...freshDraft,
       sourceImagePath,
-      backgroundColor: normalizedBackgroundColor
+      backgroundColor: requestPayload.backgroundColor,
+      selectedSizeCode: canonicalSizeCode
     };
 
     setFlowDraft({
-      backgroundColor: normalizedBackgroundColor,
+      backgroundColor: requestPayload.backgroundColor,
+      backgroundColorLabel: getBackgroundColorLabel(requestPayload.backgroundColor),
+      remakeBackgroundColorLabel: getBackgroundColorLabel(requestPayload.backgroundColor),
+      selectedSizeCode: canonicalSizeCode,
       flowType: 'idPhoto',
       sourceImagePath
     });
@@ -460,7 +470,7 @@ Page({
     try {
       const processFormData = {
         sizeCode: canonicalSizeCode,
-        backgroundColor: normalizedBackgroundColor,
+        backgroundColor: requestPayload.backgroundColor,
         fromHistoryTaskId: draft.fromHistoryTaskId || ''
       };
 
@@ -483,7 +493,7 @@ Page({
             progressStageDescription: taskSnapshot.stageDescription || taskSnapshot.stage_description || ''
           });
           setTimeout(async () => {
-            await this.finalizeSuccess(taskSnapshot, draft, normalizedBackgroundColor, canonicalSizeCode);
+            await this.finalizeSuccess(taskSnapshot, draft, requestPayload.backgroundColor, canonicalSizeCode);
             this.setData({ generating: false });
           }, SUCCESS_STAY_MS);
         },

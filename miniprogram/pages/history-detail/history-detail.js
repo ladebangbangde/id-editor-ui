@@ -1,7 +1,8 @@
 const { getPhotoTask } = require('../../utils/api');
-const { formatTime, getColorLabel } = require('../../utils/format');
+const { formatTime } = require('../../utils/format');
 const { saveImageFromUrl } = require('../../utils/save-image');
 const { setFlowDraft } = require('../../utils/flow-draft');
+const { normalizeHistoryRecordToEditDraft, getBackgroundColorLabel } = require('../../utils/photo-edit-contract');
 const {
   getFriendlySceneName,
   getFriendlySceneHint,
@@ -51,7 +52,7 @@ function normalizeDetail(detail = {}) {
     sizeCode: detail.sizeCode || '',
     backgroundColorValue: detail.backgroundColor || '',
     backgroundColorLabel: detail.backgroundColorLabel
-      || (detail.backgroundColor ? getColorLabel(detail.backgroundColor) : '')
+      || (detail.backgroundColor ? getBackgroundColorLabel(detail.backgroundColor) : '')
       || detail.backgroundColor
       || '--',
     previewUrl: detail.previewUrl || detail.resultUrl || detail.originalUrl || '',
@@ -154,26 +155,8 @@ Page({
   remake() {
     const { record, selectedCandidateId } = this.data;
     if (!record) return;
-    const selectedCandidate = (record.candidates || []).find((candidate) => candidate.candidateId === selectedCandidateId)
-      || (record.candidates || [])[0]
-      || null;
-    setFlowDraft({
-      flowType: 'idPhoto',
-      flowMode: 'template',
-      needSelectSize: false,
-      selectedScene: record.sceneInfo || null,
-      selectedSizeCode: record.sizeCode || (record.sceneInfo && record.sceneInfo.sceneKey) || '',
-      backgroundColor: record.backgroundColorValue || 'white',
-      backgroundColorLabel: record.backgroundColorLabel || '',
-      fromHistoryTaskId: record.taskId || '',
-      remakeSceneName: record.sceneName || '',
-      remakeSizeText: record.sizeText || '',
-      remakeBackgroundColorLabel: record.backgroundColorLabel || '',
-      remakeCandidates: record.candidates || [],
-      remakeSelectedCandidateId: selectedCandidate ? selectedCandidate.candidateId : '',
-      sourceImageUrl: (selectedCandidate && selectedCandidate.imageUrl) || record.sourceImageUrl || record.displayUrl || '',
-      sourceImagePath: ''
-    });
+    const draft = normalizeHistoryRecordToEditDraft(record, { selectedCandidateId });
+    setFlowDraft(draft);
     wx.navigateTo({ url: '/pages/editor/editor' });
   },
 

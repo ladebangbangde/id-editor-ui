@@ -18,7 +18,15 @@ function createDefaultDraft() {
     remakeSceneName: '',
     remakeSizeText: '',
     remakeBackgroundColorLabel: '',
-    backgroundColorLabel: ''
+    backgroundColorLabel: '',
+    selectedCandidateId: '',
+    displayMeta: {
+      sceneName: '',
+      sizeText: '',
+      backgroundColorLabel: '',
+      currentCandidatePreview: '',
+      candidates: []
+    }
   };
 }
 
@@ -28,7 +36,8 @@ function normalizeDraft(draft = {}) {
     ...(draft || {}),
     selectedScene: draft && typeof draft.selectedScene === 'object' ? draft.selectedScene : null,
     customSize: draft && typeof draft.customSize === 'object' ? draft.customSize : null,
-    remakeCandidates: Array.isArray(draft && draft.remakeCandidates) ? draft.remakeCandidates : []
+    remakeCandidates: Array.isArray(draft && draft.remakeCandidates) ? draft.remakeCandidates : [],
+    displayMeta: draft && typeof draft.displayMeta === 'object' ? draft.displayMeta : createDefaultDraft().displayMeta
   };
 }
 

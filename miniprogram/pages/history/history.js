@@ -1,7 +1,8 @@
 const { getPhotoHistory } = require('../../utils/api');
-const { formatTime, getColorLabel } = require('../../utils/format');
+const { formatTime } = require('../../utils/format');
 const { pickBestImageUrl: pickImageFromCandidates, cleanUrl, isLikelyLocalPath } = require('../../utils/image-url');
 const { getFriendlySceneName, getFriendlySizeText, pickBestImageUrl } = require('../../utils/photo-display');
+const { getBackgroundColorLabel } = require('../../utils/photo-edit-contract');
 
 function buildStatus(item = {}) {
   const rawStatus = String(item.status || '').trim().toLowerCase();
@@ -44,7 +45,7 @@ function normalizeRecord(item = {}) {
   const id = item.taskId || item.imageId || item.id;
   const warnings = Array.isArray(item.warnings) ? item.warnings : [];
   const backgroundColor = item.backgroundColorLabel
-    || (item.backgroundColor ? getColorLabel(item.backgroundColor) : '')
+    || (item.backgroundColor ? getBackgroundColorLabel(item.backgroundColor) : '')
     || item.backgroundColor
     || '--';
   const friendlyName = getFriendlySceneName(item, '证件照');
