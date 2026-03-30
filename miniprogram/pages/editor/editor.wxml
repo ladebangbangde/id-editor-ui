@@ -1,27 +1,54 @@
 <view class="container">
-  <view class="card section panel">
-    <view class="title-lg">参数配置</view>
-    <view class="text-muted">支持重新选尺寸并切换底色。</view>
+  <view wx:if="{{isHistoryRemake}}" class="card section panel remake-header">
+    <view class="title-lg">重新编辑证件照</view>
+    <view class="text-muted">当前正在使用历史记录 {{draft.fromHistoryTaskId || '--'}} 的参数，可继续调整并重新生成。</view>
+    <view class="inherit-tags">
+      <view class="inherit-tag">已继承：{{draft.remakeSizeText || draft.selectedScene.sceneName || '尺寸参数'}}</view>
+      <view class="inherit-tag">背景：{{draft.remakeBackgroundColorLabel || draft.backgroundColorLabel || '默认底色'}}</view>
+    </view>
   </view>
 
   <view class="card section panel">
-    <view class="title-md">原图</view>
-    <image wx:if="{{draft.sourceImagePath}}" class="preview" src="{{draft.sourceImagePath}}" mode="aspectFit"></image>
+    <view class="title-md">当前使用图片</view>
+    <image wx:if="{{remakeDisplayImageUrl || draft.sourceImagePath}}" class="preview" src="{{remakeDisplayImageUrl || draft.sourceImagePath}}" mode="aspectFit"></image>
     <view wx:else class="text-muted">还没有原图，请先上传</view>
   </view>
 
-  <view class="card section panel">
-    <view class="title-md">当前尺寸</view>
-    <view class="meta-row"><text>{{draft.selectedScene.sceneName || '未选择尺寸'}}</text><text>{{draft.selectedScene.widthMm || '--'}}×{{draft.selectedScene.heightMm || '--'}}mm</text></view>
-    <primary-button text="返回重新选尺寸" type="secondary" bind:tap="goSelectSize"></primary-button>
+  <view wx:if="{{isHistoryRemake && remakeCandidates.length > 1}}" class="card section panel">
+    <view class="title-md">选择基础图</view>
+    <view class="text-muted">切换不同候选方案后再重新生成。</view>
+    <view class="candidate-row">
+      <view
+        wx:for="{{remakeCandidates}}"
+        wx:key="candidateId"
+        class="candidate-item {{remakeSelectedCandidateId === item.candidateId ? 'candidate-item-active' : ''}}"
+        data-candidate-id="{{item.candidateId}}"
+        bindtap="onSelectRemakeCandidate"
+      >
+        <image class="candidate-thumb" src="{{item.imageUrl}}" mode="aspectFill"></image>
+        <view class="candidate-tag">{{item.sourceLabel || item.label}}</view>
+      </view>
+    </view>
   </view>
 
   <view class="card section panel">
-    <view class="title-md">背景色</view>
+    <view class="title-md">参数区</view>
+    <view class="meta-row"><text>当前尺寸</text><text>{{draft.selectedScene.sceneName || draft.remakeSizeText || '未选择尺寸'}}</text></view>
+    <view class="meta-row"><text>规格(mm)</text><text>{{draft.selectedScene.widthMm || '--'}}×{{draft.selectedScene.heightMm || '--'}}mm</text></view>
+    <view class="meta-row"><text>背景色</text><text>{{draft.remakeBackgroundColorLabel || draft.backgroundColorLabel || '--'}}</text></view>
+    <primary-button text="调整尺寸" type="secondary" bind:tap="goSelectSize"></primary-button>
+  </view>
+
+  <view class="card section panel">
+    <view class="title-md">背景色调整</view>
     <color-picker value="{{selectedColor}}" bind:change="onColorChange"></color-picker>
   </view>
 
-  <primary-button text="生成结果" loading="{{generating}}" bind:tap="handleGenerate"></primary-button>
+  <primary-button text="{{isHistoryRemake ? '重新生成证件照' : '生成结果'}}" loading="{{generating}}" bind:tap="handleGenerate"></primary-button>
+  <view wx:if="{{isHistoryRemake}}" class="section">
+    <primary-button text="返回历史详情" type="secondary" bind:tap="goHistoryDetail"></primary-button>
+  </view>
+
   <progress-modal
     visible="{{progressVisible}}"
     stageCode="{{progressStageCode}}"

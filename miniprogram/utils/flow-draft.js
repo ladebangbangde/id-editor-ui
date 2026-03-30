@@ -12,7 +12,13 @@ function createDefaultDraft() {
     selectedSizeCode: '',
     customSize: null,
     backgroundColor: 'white',
-    fromHistoryTaskId: ''
+    fromHistoryTaskId: '',
+    remakeCandidates: [],
+    remakeSelectedCandidateId: '',
+    remakeSceneName: '',
+    remakeSizeText: '',
+    remakeBackgroundColorLabel: '',
+    backgroundColorLabel: ''
   };
 }
 
@@ -21,7 +27,8 @@ function normalizeDraft(draft = {}) {
     ...createDefaultDraft(),
     ...(draft || {}),
     selectedScene: draft && typeof draft.selectedScene === 'object' ? draft.selectedScene : null,
-    customSize: draft && typeof draft.customSize === 'object' ? draft.customSize : null
+    customSize: draft && typeof draft.customSize === 'object' ? draft.customSize : null,
+    remakeCandidates: Array.isArray(draft && draft.remakeCandidates) ? draft.remakeCandidates : []
   };
 }
 

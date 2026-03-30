@@ -20,7 +20,7 @@
       <view class="meta-row"><text>照片类型</text><text>{{record.sceneName}}</text></view>
       <view class="meta-row"><text>适用说明</text><text>{{record.sceneHint || '适合常见证件照场景'}}</text></view>
       <view class="meta-row"><text>尺寸信息</text><text>{{record.sizeText}}</text></view>
-      <view class="meta-row"><text>背景颜色</text><text>{{record.backgroundColor}}</text></view>
+      <view class="meta-row"><text>背景颜色</text><text>{{record.backgroundColorLabel}}</text></view>
       <view class="meta-row"><text>照片状态</text><text>{{record.qualityStatus || '--'}}</text></view>
       <view class="meta-row"><text>质量提示</text><text>{{record.qualityMessage || '请看一眼照片细节，满意就可以保存啦'}}</text></view>
       <view class="meta-row"><text>保存说明</text><text>{{record.fileDesc}}</text></view>

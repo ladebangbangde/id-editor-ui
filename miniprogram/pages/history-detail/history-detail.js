@@ -49,7 +49,8 @@ function normalizeDetail(detail = {}) {
     sceneHint: getFriendlySceneHint(detail),
     sizeText: getFriendlySizeText(detail),
     sizeCode: detail.sizeCode || '',
-    backgroundColor: detail.backgroundColorLabel
+    backgroundColorValue: detail.backgroundColor || '',
+    backgroundColorLabel: detail.backgroundColorLabel
       || (detail.backgroundColor ? getColorLabel(detail.backgroundColor) : '')
       || detail.backgroundColor
       || '--',
@@ -151,18 +152,27 @@ Page({
   },
 
   remake() {
-    const { record } = this.data;
+    const { record, selectedCandidateId } = this.data;
     if (!record) return;
+    const selectedCandidate = (record.candidates || []).find((candidate) => candidate.candidateId === selectedCandidateId)
+      || (record.candidates || [])[0]
+      || null;
     setFlowDraft({
-      sourceImagePath: record.sourceImagePath || '',
-      sourceImageUrl: record.sourceImageUrl || record.displayUrl || '',
       flowType: 'idPhoto',
       flowMode: 'template',
       needSelectSize: false,
       selectedScene: record.sceneInfo || null,
       selectedSizeCode: record.sizeCode || (record.sceneInfo && record.sceneInfo.sceneKey) || '',
-      backgroundColor: record.backgroundColor || 'white',
-      fromHistoryTaskId: record.taskId || ''
+      backgroundColor: record.backgroundColorValue || 'white',
+      backgroundColorLabel: record.backgroundColorLabel || '',
+      fromHistoryTaskId: record.taskId || '',
+      remakeSceneName: record.sceneName || '',
+      remakeSizeText: record.sizeText || '',
+      remakeBackgroundColorLabel: record.backgroundColorLabel || '',
+      remakeCandidates: record.candidates || [],
+      remakeSelectedCandidateId: selectedCandidate ? selectedCandidate.candidateId : '',
+      sourceImageUrl: (selectedCandidate && selectedCandidate.imageUrl) || record.sourceImageUrl || record.displayUrl || '',
+      sourceImagePath: ''
     });
     wx.navigateTo({ url: '/pages/editor/editor' });
   },
