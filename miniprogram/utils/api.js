@@ -1,5 +1,6 @@
 const { request, uploadFile, normalizeErrorPayload } = require('./request');
 const { COLOR_OPTIONS } = require('./constants');
+const { normalizeBackgroundColorValue, getColorLabel } = require('./format');
 
 function getBaseUrl() {
   return getApp().globalData.apiBaseUrl;
@@ -114,15 +115,14 @@ function normalizeAssetPayload(payload = {}) {
 }
 
 function normalizeBackgroundColor(value = '') {
-  const normalized = String(value || '').trim().toLowerCase();
-  if (!normalized) return '';
-  const option = COLOR_OPTIONS.find((item) => item.value === normalized);
+  const normalized = normalizeBackgroundColorValue(value);
+  if (normalized) return normalized;
+
+  const fallback = String(value || '').trim().toLowerCase();
+  if (!fallback) return '';
+  const option = COLOR_OPTIONS.find((item) => item.value === fallback);
   if (option) return option.value;
-
-  const labelMatched = COLOR_OPTIONS.find((item) => String(item.label || '').trim() === String(value || '').trim());
-  if (labelMatched) return labelMatched.value;
-
-  return normalized;
+  return fallback;
 }
 
 function normalizeReviewFields(payload = {}) {
@@ -245,8 +245,10 @@ function normalizeHistoryItem(item = {}) {
   const result = normalizeReviewFields(normalizeAssetPayload(normalized.result || {}));
   const widthMm = Number(normalized.widthMm || normalized.width_mm || scene.widthMm || 0);
   const heightMm = Number(normalized.heightMm || normalized.height_mm || scene.heightMm || 0);
-  const backgroundColor = normalized.backgroundColor || normalized.background_color
-    || result.backgroundColor || result.background_color || '';
+  const backgroundColor = normalizeBackgroundColor(
+    normalized.backgroundColor || normalized.background_color
+      || result.backgroundColor || result.background_color || ''
+  );
 
   const stageCodesRaw = normalized.stageCodes
     || normalized.stage_codes
@@ -290,7 +292,7 @@ function normalizeHistoryItem(item = {}) {
     sizeText: normalized.sizeText || normalized.size_text || normalized.size
       || (widthMm && heightMm ? `${widthMm}×${heightMm}mm` : ''),
     backgroundColor,
-    backgroundColorLabel: normalized.backgroundColorLabel || normalized.background_color_label || backgroundColor,
+    backgroundColorLabel: getColorLabel(normalized.backgroundColorLabel || normalized.background_color_label || backgroundColor),
     previewUrl: normalized.previewUrl || normalized.preview_url
       || result.previewUrl || result.preview_url
       || normalized.originalUrl || normalized.original_url || '',

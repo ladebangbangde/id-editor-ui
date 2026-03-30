@@ -27,7 +27,7 @@
       <text class="status">{{statusText}}</text>
     </view>
     <view class="meta">尺寸：{{record.sizeText}}</view>
-    <view class="meta">背景：{{record.backgroundColor}}</view>
+    <view class="meta">背景：{{record.backgroundDisplay || record.backgroundColorLabel || record.backgroundColor || "--"}}</view>
     <view class="meta">时间：{{record.createdAt}}</view>
 
     <view wx:if="{{!manageMode}}" class="action-row">

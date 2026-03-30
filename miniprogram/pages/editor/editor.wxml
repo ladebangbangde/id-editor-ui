@@ -12,12 +12,14 @@
 
   <view class="card section panel">
     <view class="title-md">当前尺寸</view>
-    <view class="meta-row"><text>{{draft.selectedScene.sceneName || '未选择尺寸'}}</text><text>{{draft.selectedScene.widthMm || '--'}}×{{draft.selectedScene.heightMm || '--'}}mm</text></view>
+    <view class="meta-row"><text>{{draft.sceneName || draft.selectedScene.sceneName || '未选择尺寸'}}</text><text>{{draft.selectedScene.widthMm || '--'}}×{{draft.selectedScene.heightMm || '--'}}mm</text></view>
+    <view class="text-muted">{{draft.sizeText || '请选择证件照尺寸'}}</view>
     <primary-button text="返回重新选尺寸" type="secondary" bind:tap="goSelectSize"></primary-button>
   </view>
 
   <view class="card section panel">
     <view class="title-md">背景色</view>
+    <view class="text-muted">当前：{{draft.backgroundColorLabel || '白色'}}</view>
     <color-picker value="{{selectedColor}}" bind:change="onColorChange"></color-picker>
   </view>
 

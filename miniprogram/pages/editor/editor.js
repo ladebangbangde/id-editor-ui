@@ -1,4 +1,4 @@
-const { getColorLabel, formatTime } = require('../../utils/format');
+const { getColorLabel, formatTime, normalizeBackgroundColorValue } = require('../../utils/format');
 const { getFriendlySceneName, getFriendlySizeText } = require('../../utils/photo-display');
 const { createPhotoTask, getPhotoTask, getPhotoTaskStatus } = require('../../utils/api');
 const { createTaskPoller, resolveProgressByStage, normalizeStageCode } = require('../../utils/task-progress');
@@ -7,7 +7,6 @@ const { STORAGE_KEYS } = require('../../utils/constants');
 const { getFlowDraft, setFlowDraft } = require('../../utils/flow-draft');
 const { toCanonicalSizeCode } = require('../../utils/size-codes');
 
-const ALLOWED_BACKGROUND_COLORS = ['blue', 'white', 'red'];
 const POLL_TIMEOUT_MS = 120000;
 const SUCCESS_STAY_MS = 800;
 
@@ -103,6 +102,19 @@ function buildFailurePayload(payload = {}, fallback = {}) {
   };
 }
 
+function hasStructuredFailureDetails(failurePayload = {}, payload = {}) {
+  const hasBusinessContent = Boolean(payload && (
+    payload.isBusinessError
+    || payload.success === false
+    || typeof payload.code !== 'undefined'
+    || (payload.data && typeof payload.data === 'object')
+  ));
+  return hasBusinessContent
+    || failurePayload.reasons.length > 0
+    || failurePayload.warnings.length > 0
+    || failurePayload.suggestions.length > 0;
+}
+
 function deriveReviewState(result = {}) {
   const quality = String(result.qualityStatus || '').toUpperCase();
   const status = String(result.status || '').toUpperCase();
@@ -117,17 +129,6 @@ function deriveReviewState(result = {}) {
     return 'warning';
   }
   return 'passed';
-}
-
-function normalizeBackgroundColor(value = '') {
-  const raw = String(value || '').trim();
-  if (!raw) return '';
-  const lowered = raw.toLowerCase();
-  if (ALLOWED_BACKGROUND_COLORS.includes(lowered)) return lowered;
-  if (raw === '白色') return 'white';
-  if (raw === '蓝色') return 'blue';
-  if (raw === '红色') return 'red';
-  return '';
 }
 
 Page({
@@ -147,8 +148,23 @@ Page({
 
   onShow() {
     const draft = getFlowDraft();
-    const selectedColor = draft.backgroundColor || 'white';
-    this.setData({ draft, selectedColor });
+    const selectedColor = normalizeBackgroundColorValue(draft.backgroundColor || draft.backgroundColorLabel) || 'white';
+    const backgroundColorLabel = getColorLabel(selectedColor);
+    const mergedDraft = {
+      ...draft,
+      sourceImagePath: draft.sourceImagePath || draft.selectedCandidateImageUrl || draft.sourceImageUrl || '',
+      backgroundColor: selectedColor,
+      backgroundColorLabel,
+      sceneName: draft.sceneName || getFriendlySceneName(draft.selectedScene || {}, '证件照'),
+      sizeText: draft.sizeText || getFriendlySizeText(draft.selectedScene || {})
+    };
+    this.setData({ draft: mergedDraft, selectedColor });
+    setFlowDraft({
+      backgroundColor: selectedColor,
+      backgroundColorLabel,
+      sceneName: mergedDraft.sceneName,
+      sizeText: mergedDraft.sizeText
+    });
   },
 
   onHide() {
@@ -161,8 +177,16 @@ Page({
 
   onColorChange(event) {
     const selectedColor = event.detail.value;
-    this.setData({ selectedColor });
-    setFlowDraft({ backgroundColor: selectedColor });
+    const backgroundColorLabel = getColorLabel(selectedColor);
+    this.setData({
+      selectedColor,
+      'draft.backgroundColor': selectedColor,
+      'draft.backgroundColorLabel': backgroundColorLabel
+    });
+    setFlowDraft({
+      backgroundColor: selectedColor,
+      backgroundColorLabel
+    });
   },
 
   onRetryGenerate() {
@@ -294,6 +318,17 @@ Page({
     wx.navigateTo({ url: '/pages/result/result' });
   },
 
+  routeToFailurePage(payload = {}, fallback = {}) {
+    const failurePayload = buildFailurePayload(payload, fallback);
+    if (!hasStructuredFailureDetails(failurePayload, payload)) {
+      return false;
+    }
+    storage.set(STORAGE_KEYS.CURRENT_PROCESS_FAILURE, failurePayload);
+    this.setData({ progressVisible: false });
+    wx.navigateTo({ url: '/pages/process-failure/process-failure' });
+    return true;
+  },
+
   async handleGenerate() {
     const { generating, selectedColor, draft } = this.data;
     if (generating) return;
@@ -306,7 +341,9 @@ Page({
       return;
     }
 
-    const normalizedBackgroundColor = normalizeBackgroundColor(selectedColor || draft.backgroundColor);
+    const normalizedBackgroundColor = normalizeBackgroundColorValue(
+      selectedColor || draft.backgroundColor || draft.backgroundColorLabel
+    );
     if (!normalizedBackgroundColor) {
       wx.showToast({ title: '背景色参数不合法，请重新选择', icon: 'none' });
       return;
@@ -382,6 +419,17 @@ Page({
           progressErrorMessage: pollResult.message || '处理失败，请重试。',
           progressValue: pollResult.progress || this.data.progressValue
         });
+        const latestFailedResult = await this.refreshTaskResult(taskId, pollResult);
+        const routed = this.routeToFailurePage(latestFailedResult, {
+          taskId,
+          message: pollResult.message || '处理失败，请重试。'
+        });
+        if (!routed) {
+          this.routeToFailurePage(pollResult, {
+            taskId,
+            message: pollResult.message || '处理失败，请重试。'
+          });
+        }
         return;
       }
 
@@ -400,27 +448,17 @@ Page({
       await new Promise((resolve) => setTimeout(resolve, SUCCESS_STAY_MS));
       await this.finalizeSuccess(pollResult, draft, normalizedBackgroundColor, canonicalSizeCode);
     } catch (error) {
+      const fallbackMessage = '生成失败，请重试';
       const failurePayload = buildFailurePayload(error, {
-        message: '生成失败，请重试'
+        message: fallbackMessage
       });
-      const hasBusinessContent = Boolean(error && (
-        error.isBusinessError
-        || error.success === false
-        || typeof error.code !== 'undefined'
-        || (error.data && typeof error.data === 'object')
-      ));
-      const hasFailureDetails = hasBusinessContent || failurePayload.reasons.length
-        || failurePayload.warnings.length
-        || failurePayload.suggestions.length;
 
       this.setData({
         progressStatus: 'failed',
-        progressErrorMessage: failurePayload.message || '生成失败，请重试'
+        progressErrorMessage: failurePayload.message || fallbackMessage
       });
 
-      if (hasFailureDetails) {
-        storage.set(STORAGE_KEYS.CURRENT_PROCESS_FAILURE, failurePayload);
-      }
+      this.routeToFailurePage(error, { message: fallbackMessage });
     } finally {
       this.clearProgressRuntime();
       this.setData({ generating: false });

@@ -1,5 +1,5 @@
 const { getPhotoHistory } = require('../../utils/api');
-const { formatTime, getColorLabel } = require('../../utils/format');
+const { formatTime, getColorLabel, normalizeBackgroundColorValue } = require('../../utils/format');
 const { pickBestImageUrl: pickImageFromCandidates, cleanUrl, isLikelyLocalPath } = require('../../utils/image-url');
 const { getFriendlySceneName, getFriendlySizeText, pickBestImageUrl } = require('../../utils/photo-display');
 
@@ -43,10 +43,9 @@ const DELETE_STORAGE_KEY = 'history_deleted_ids';
 function normalizeRecord(item = {}) {
   const id = item.taskId || item.imageId || item.id;
   const warnings = Array.isArray(item.warnings) ? item.warnings : [];
-  const backgroundColor = item.backgroundColorLabel
-    || (item.backgroundColor ? getColorLabel(item.backgroundColor) : '')
-    || item.backgroundColor
-    || '--';
+  const backgroundColorValue = normalizeBackgroundColorValue(item.backgroundColor || item.backgroundColorLabel || '');
+  const backgroundColorLabel = getColorLabel(backgroundColorValue || item.backgroundColorLabel || item.backgroundColor);
+  const backgroundColor = backgroundColorLabel || '--';
   const friendlyName = getFriendlySceneName(item, '证件照');
   const friendlySizeText = getFriendlySizeText(item);
   const previewUrl = pickImageFromCandidates([
@@ -114,7 +113,9 @@ function normalizeRecord(item = {}) {
     sizeText: friendlySizeText,
     sizeCode: item.sizeCode || '',
     background: backgroundColor,
-    backgroundColor,
+    backgroundColor: backgroundColorValue || '',
+    backgroundColorLabel,
+    backgroundDisplay: backgroundColor,
     imageUrl: displayUrl,
     previewUrl,
     displayUrl,
@@ -221,7 +222,9 @@ Page({
           size,
           sizeText: size,
           background,
-          backgroundColor: background,
+          backgroundColor: normalizeBackgroundColorValue(background || item.backgroundColor),
+          backgroundColorLabel: background || item.backgroundColorLabel || getColorLabel(background),
+          backgroundDisplay: background || item.backgroundDisplay,
           selected: false
         };
       });
@@ -398,7 +401,9 @@ Page({
           ...payload,
           sceneName: payload.name,
           sizeText: payload.size,
-          backgroundColor: payload.background
+          backgroundColor: normalizeBackgroundColorValue(payload.background),
+          backgroundColorLabel: payload.background,
+          backgroundDisplay: payload.background
         };
       });
 

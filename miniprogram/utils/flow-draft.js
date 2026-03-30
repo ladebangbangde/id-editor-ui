@@ -12,16 +12,27 @@ function createDefaultDraft() {
     selectedSizeCode: '',
     customSize: null,
     backgroundColor: 'white',
+    backgroundColorLabel: '白色',
+    sceneName: '',
+    sizeText: '',
+    candidates: [],
+    selectedCandidateId: '',
+    selectedCandidateImageUrl: '',
     fromHistoryTaskId: ''
   };
 }
 
 function normalizeDraft(draft = {}) {
+  const normalizedCandidates = Array.isArray(draft && draft.candidates)
+    ? draft.candidates.filter((item) => item && typeof item === 'object')
+    : [];
+
   return {
     ...createDefaultDraft(),
     ...(draft || {}),
     selectedScene: draft && typeof draft.selectedScene === 'object' ? draft.selectedScene : null,
-    customSize: draft && typeof draft.customSize === 'object' ? draft.customSize : null
+    customSize: draft && typeof draft.customSize === 'object' ? draft.customSize : null,
+    candidates: normalizedCandidates
   };
 }
 

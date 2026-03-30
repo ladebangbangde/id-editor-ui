@@ -1,5 +1,5 @@
 const { getPhotoTask } = require('../../utils/api');
-const { formatTime, getColorLabel } = require('../../utils/format');
+const { formatTime, getColorLabel, normalizeBackgroundColorValue } = require('../../utils/format');
 const { saveImageFromUrl } = require('../../utils/save-image');
 const { setFlowDraft } = require('../../utils/flow-draft');
 const {
@@ -49,10 +49,8 @@ function normalizeDetail(detail = {}) {
     sceneHint: getFriendlySceneHint(detail),
     sizeText: getFriendlySizeText(detail),
     sizeCode: detail.sizeCode || '',
-    backgroundColor: detail.backgroundColorLabel
-      || (detail.backgroundColor ? getColorLabel(detail.backgroundColor) : '')
-      || detail.backgroundColor
-      || '--',
+    backgroundColor: normalizeBackgroundColorValue(detail.backgroundColor || detail.backgroundColorLabel || ''),
+    backgroundColorLabel: getColorLabel(detail.backgroundColorLabel || detail.backgroundColor),
     previewUrl: detail.previewUrl || detail.resultUrl || detail.originalUrl || '',
     resultUrl: detail.resultUrl || detail.previewUrl || '',
     hdUrl: detail.hdUrl || detail.resultUrl || detail.previewUrl || '',
@@ -99,6 +97,7 @@ Page({
         || (record.candidates || [])[0]
         || null;
       this.setData({
+        selectedCandidateId: selectedCandidate ? selectedCandidate.candidateId : '',
         record: {
           ...record,
           displayUrl: selectedCandidate ? selectedCandidate.imageUrl : record.displayUrl
@@ -151,17 +150,30 @@ Page({
   },
 
   remake() {
-    const { record } = this.data;
+    const { record, selectedCandidateId } = this.data;
     if (!record) return;
+    const selectedCandidate = (record.candidates || []).find((item) => item.candidateId === selectedCandidateId)
+      || (record.candidates || [])[0]
+      || null;
+    const backgroundColor = normalizeBackgroundColorValue(record.backgroundColor || record.backgroundColorLabel || '') || 'white';
+    const sceneInfo = record.sceneInfo || null;
+    const sizeCode = record.sizeCode || (sceneInfo && sceneInfo.sceneKey) || '';
+
     setFlowDraft({
       sourceImagePath: record.sourceImagePath || '',
-      sourceImageUrl: record.sourceImageUrl || record.displayUrl || '',
+      sourceImageUrl: record.sourceImageUrl || (selectedCandidate && selectedCandidate.imageUrl) || record.displayUrl || '',
       flowType: 'idPhoto',
       flowMode: 'template',
       needSelectSize: false,
-      selectedScene: record.sceneInfo || null,
-      selectedSizeCode: record.sizeCode || (record.sceneInfo && record.sceneInfo.sceneKey) || '',
-      backgroundColor: record.backgroundColor || 'white',
+      selectedScene: sceneInfo,
+      selectedSizeCode: sizeCode,
+      sceneName: record.sceneName || '',
+      sizeText: record.sizeText || '',
+      backgroundColor,
+      backgroundColorLabel: getColorLabel(backgroundColor),
+      candidates: Array.isArray(record.candidates) ? record.candidates : [],
+      selectedCandidateId: (selectedCandidate && selectedCandidate.candidateId) || '',
+      selectedCandidateImageUrl: (selectedCandidate && selectedCandidate.imageUrl) || '',
       fromHistoryTaskId: record.taskId || ''
     });
     wx.navigateTo({ url: '/pages/editor/editor' });
