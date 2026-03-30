@@ -193,7 +193,16 @@ Page({
       isHistoryRemake,
       remakeCandidates,
       remakeSelectedCandidateId,
-      remakeDisplayImageUrl
+      remakeDisplayImageUrl,
+      generating: false,
+      progressVisible: false,
+      progressStatus: 'init',
+      progressStageCode: '',
+      progressStageName: '',
+      progressStageDescription: '',
+      progressValue: 5,
+      elapsedSeconds: 0,
+      progressErrorMessage: ''
     });
 
     if (isHistoryRemake) {
@@ -212,6 +221,10 @@ Page({
 
   onHide() {
     this.clearProgressRuntime();
+    this.setData({
+      generating: false,
+      progressVisible: false
+    });
   },
 
   onUnload() {
