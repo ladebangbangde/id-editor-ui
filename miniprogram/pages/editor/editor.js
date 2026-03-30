@@ -490,42 +490,80 @@ Page({
       const task = await createPhotoTask(sourceImagePath, processFormData);
 
       const poller = createTaskPoller({
-        taskId: task.taskId,
-        timeoutMs: POLL_TIMEOUT_MS,
-        fetcher: async () => getPhotoTaskStatus(task.taskId),
-        onProgress: (taskSnapshot) => {
+        fetchTask: (taskId) => getPhotoTaskStatus(taskId),
+        timeout: POLL_TIMEOUT_MS,
+        onUpdate: (taskSnapshot) => {
           this.updateProgressState(taskSnapshot);
         },
-        onSuccess: async (taskSnapshot) => {
-          this.clearProgressRuntime();
+        onTimeout: () => {
           this.setData({
-            progressStatus: 'success',
-            progressValue: 100,
-            progressStageCode: normalizeStageCode(taskSnapshot.stageCode || taskSnapshot.stage),
-            progressStageName: taskSnapshot.stageName || taskSnapshot.stage_name || '生成完成',
-            progressStageDescription: taskSnapshot.stageDescription || taskSnapshot.stage_description || ''
-          });
-          setTimeout(async () => {
-            await this.finalizeSuccess(taskSnapshot, draft, requestPayload.backgroundColor, canonicalSizeCode);
-            this.setData({ generating: false });
-          }, SUCCESS_STAY_MS);
-        },
-        onFailure: (error, taskSnapshot) => {
-          this.clearProgressRuntime();
-          const fallbackMessage = (taskSnapshot && (taskSnapshot.message || taskSnapshot.qualityMessage))
-            || (error && error.message)
-            || '生成失败，请稍后重试';
-          this.setData({
-            generating: false,
             progressStatus: 'error',
-            progressErrorMessage: fallbackMessage,
+            progressErrorMessage: '生成超时，请稍后重试',
+            progressValue: Math.min(99, this.data.progressValue)
+          });
+        },
+        onError: (error) => {
+          this.setData({
+            progressStatus: 'error',
+            progressErrorMessage: (error && error.message) || '生成失败，请稍后重试',
             progressValue: Math.min(99, this.data.progressValue)
           });
         }
       });
 
       this.taskPoller = poller;
-      poller.start();
+      const finalSnapshot = await poller.start(task.taskId, task);
+      this.clearProgressRuntime();
+
+      if (finalSnapshot && finalSnapshot.status === 'success') {
+        this.setData({
+          progressStatus: 'success',
+          progressValue: 100,
+          progressStageCode: normalizeStageCode(finalSnapshot.stageCode || finalSnapshot.stage),
+          progressStageName: finalSnapshot.stageName || finalSnapshot.stage_name || '生成完成',
+          progressStageDescription: finalSnapshot.stageDescription || finalSnapshot.stage_description || ''
+        });
+
+        await new Promise((resolve) => setTimeout(resolve, SUCCESS_STAY_MS));
+        await this.finalizeSuccess(finalSnapshot, draft, requestPayload.backgroundColor, canonicalSizeCode);
+        this.setData({ generating: false });
+        return;
+      }
+
+      if (finalSnapshot && finalSnapshot.status === 'failed') {
+        const failurePayload = buildFailurePayload(finalSnapshot, {
+          taskId: finalSnapshot.taskId || task.taskId,
+          message: finalSnapshot.message || finalSnapshot.qualityMessage || '生成失败，请稍后重试'
+        });
+        storage.set(STORAGE_KEYS.CURRENT_PROCESS_FAILURE, failurePayload);
+        this.setData({
+          generating: false,
+          progressVisible: false,
+          progressStatus: 'error',
+          progressErrorMessage: failurePayload.message || '生成失败，请稍后重试',
+          progressValue: Math.min(99, this.data.progressValue)
+        });
+        wx.navigateTo({ url: '/pages/process-failure/process-failure' });
+        return;
+      }
+
+      if (finalSnapshot && finalSnapshot.status === 'timeout') {
+        this.setData({
+          generating: false,
+          progressStatus: 'error',
+          progressErrorMessage: '生成超时，请稍后重试',
+          progressValue: Math.min(99, this.data.progressValue)
+        });
+        wx.showToast({ title: '生成超时，请稍后重试', icon: 'none' });
+        return;
+      }
+
+      this.setData({
+        generating: false,
+        progressStatus: 'error',
+        progressErrorMessage: '生成未完成，请重试',
+        progressValue: Math.min(99, this.data.progressValue)
+      });
     } catch (error) {
       this.clearProgressRuntime();
       this.setData({
