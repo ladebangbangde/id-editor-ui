@@ -18,31 +18,40 @@ const HOME_TABS = [
 
 const MAIN_ACTIONS = [
   {
-    key: 'photo',
-    title: '拍摄证件照',
-    subtitle: '点按直接拍摄',
-    iconClass: 'icon-camera',
-    iconType: 'camera',
-    cardClass: 'main-card-camera',
-    badge: '拍摄',
-    routeType: 'upload'
-  },
-  {
     key: 'background',
     title: '一键换底色',
-    subtitle: '智能换底',
+    subtitle: '智能识别发丝边缘',
     iconClass: 'icon-color',
     iconType: 'palette',
     cardClass: 'main-card-color',
-    badge: '换底',
+    badge: '推荐',
     routeType: 'background'
+  },
+  {
+    key: 'custom-size',
+    title: '裁剪/尺寸处理',
+    subtitle: '自定义尺寸与比例',
+    iconClass: 'icon-crop',
+    iconType: 'crop',
+    cardClass: 'main-card-crop',
+    badge: '工具',
+    routeType: 'custom-size'
+  },
+  {
+    key: 'history',
+    title: '历史记录',
+    subtitle: '快速找回已处理照片',
+    iconClass: 'icon-history',
+    iconType: 'history',
+    cardClass: 'main-card-history',
+    badge: '常用',
+    routeType: 'history'
   }
 ];
 
 function getHomeBrandContent() {
   return {
-    subtitle: '标准寸照与换底色',
-    tags: ['常用尺寸', '快速出图']
+    subtitle: '常用证件照尺寸快速制作'
   };
 }
 
@@ -375,7 +384,8 @@ Page({
     templateList: [],
     searchKeyword: '',
     searchActive: false,
-    isEmpty: false
+    isEmpty: false,
+    showAllTemplates: false
   },
 
   onLoad() {
@@ -404,7 +414,8 @@ Page({
       error: false,
       errorMessage: '',
       activeTab: currentTab.key,
-      activeTabLabel: currentTab.label
+      activeTabLabel: currentTab.label,
+      showAllTemplates: false
     });
 
     try {
@@ -482,6 +493,11 @@ Page({
     this.loadHomeTemplates(this.data.activeTab);
   },
 
+
+  handleToggleTemplateView() {
+    this.setData({ showAllTemplates: !this.data.showAllTemplates });
+  },
+
   goCustomSize() {
     wx.navigateTo({ url: '/pages/custom-size/custom-size' });
   },
@@ -503,6 +519,11 @@ Page({
     if (action.routeType === 'upload') {
       resetFlowDraft({ flowType: 'idPhoto', flowMode: 'free', needSelectSize: true });
       wx.navigateTo({ url: '/pages/upload/upload?flowMode=free&needSelectSize=1&from=home-photo&entry=camera&cameraOnly=1' });
+      return;
+    }
+
+    if (action.routeType === 'history') {
+      wx.navigateTo({ url: '/pages/history/history' });
       return;
     }
 
