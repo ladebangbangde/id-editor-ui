@@ -2,6 +2,8 @@ const { getHomeTemplateConfig } = require('../../utils/api');
 const { getFriendlySceneName, getFriendlySceneHint } = require('../../utils/photo-display');
 const { resetFlowDraft } = require('../../utils/flow-draft');
 const { toCanonicalSizeCode, buildSceneBySizeCode } = require('../../utils/size-codes');
+const { debounce } = require('../../utils/debounce');
+const { getCache, setCache } = require('../../utils/page-cache');
 
 const HOME_TABS = [
   { key: 'popular', label: '热门尺寸' },
@@ -361,6 +363,9 @@ function matchTemplateKeyword(item = {}, keyword = '') {
   return searchText.includes(normalizedKeyword);
 }
 
+const HOME_CACHE_KEY_PREFIX = 'home_templates';
+const HOME_CACHE_TTL = 30000;
+
 Page({
   data: {
     brandContent: getHomeBrandContent(),
@@ -375,11 +380,16 @@ Page({
     templateList: [],
     searchKeyword: '',
     searchActive: false,
-    isEmpty: false
+    isEmpty: false,
+    templateRenderLimit: 8,
+    actionLocked: false
   },
 
   onLoad() {
-    this.loadHomeTemplates();
+    this.debouncedSearch = debounce((keyword) => {
+      this.applyTemplateFilter(this.data.allTemplateList, keyword);
+    }, 200);
+    this.loadHomeTemplates(this.data.activeTab, { allowCache: true });
   },
 
   applyTemplateFilter(sourceList = this.data.allTemplateList, keyword = this.data.searchKeyword) {
@@ -388,27 +398,52 @@ Page({
       ? sourceList.filter((item) => matchTemplateKeyword(item, normalizedKeyword))
       : sourceList;
 
+    const renderList = normalizedKeyword
+      ? nextList
+      : nextList.slice(0, this.data.templateRenderLimit);
+
     this.setData({
-      templateList: nextList,
+      templateList: renderList,
       searchKeyword: normalizedKeyword,
       searchActive: Boolean(normalizedKeyword),
       isEmpty: nextList.length === 0
     });
+
+    if (!normalizedKeyword && nextList.length > renderList.length) {
+      clearTimeout(this.templateFlushTimer);
+      this.templateFlushTimer = setTimeout(() => {
+        if (this.data.searchKeyword) return;
+        this.setData({ templateList: nextList });
+      }, 80);
+    }
   },
 
-  async loadHomeTemplates(tabKey = this.data.activeTab) {
+  async loadHomeTemplates(tabKey = this.data.activeTab, options = {}) {
     const currentTab = this.data.tabs.find((item) => item.key === tabKey) || this.data.tabs[0];
 
+    const cacheKey = `${HOME_CACHE_KEY_PREFIX}:${currentTab.key}`;
+    const cached = options.allowCache ? getCache(cacheKey) : null;
+
     this.setData({
-      loading: true,
+      loading: !cached,
       error: false,
       errorMessage: '',
       activeTab: currentTab.key,
       activeTabLabel: currentTab.label
     });
 
+    if (cached) {
+      this.setData({
+        tabs: cached.tabs || this.data.tabs,
+        allTemplateList: cached.allTemplateList || [],
+        loading: false
+      });
+      this.applyTemplateFilter(cached.allTemplateList || [], this.data.searchKeyword);
+      return;
+    }
+
     try {
-      const response = await getHomeTemplateConfig(currentTab.key);
+      const response = await getHomeTemplateConfig(currentTab.key, { dedupeKey: `home-${currentTab.key}` });
       const serverTabs = response.tabs;
       const serverTemplates = response.templates;
       const nextTabs = Array.isArray(serverTabs) && serverTabs.length ? serverTabs : this.data.tabs;
@@ -421,6 +456,7 @@ Page({
         allTemplateList: normalizedList,
         loading: false
       });
+      setCache(cacheKey, { tabs: nextTabs, allTemplateList: normalizedList }, HOME_CACHE_TTL);
       this.applyTemplateFilter(normalizedList, this.data.searchKeyword);
     } catch (error) {
       const fallbackList = getMockTemplatesByTab(currentTab.key);
@@ -443,12 +479,13 @@ Page({
     if (!key || key === this.data.activeTab || this.data.loading) {
       return;
     }
-    this.loadHomeTemplates(key);
+    this.loadHomeTemplates(key, { allowCache: true });
   },
 
   handleSearchInput(event) {
     const keyword = event.detail.value || '';
-    this.applyTemplateFilter(this.data.allTemplateList, keyword);
+    this.setData({ searchKeyword: keyword });
+    this.debouncedSearch(keyword);
   },
 
   handleSearchClear() {
@@ -456,8 +493,11 @@ Page({
   },
 
   handleMainActionTap(event) {
+    if (this.data.actionLocked) return;
     const { item } = event.currentTarget.dataset;
+    this.setData({ actionLocked: true });
     this.navigateByAction(item);
+    setTimeout(() => this.setData({ actionLocked: false }), 500);
   },
 
 
@@ -479,7 +519,7 @@ Page({
   },
 
   handleRetry() {
-    this.loadHomeTemplates(this.data.activeTab);
+    this.loadHomeTemplates(this.data.activeTab, { allowCache: false });
   },
 
   goCustomSize() {
@@ -488,6 +528,10 @@ Page({
 
   goFaq() {
     wx.navigateTo({ url: '/pages/faq/faq' });
+  },
+
+  onUnload() {
+    clearTimeout(this.templateFlushTimer);
   },
 
   navigateByAction(action = {}) {

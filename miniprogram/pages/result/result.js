@@ -3,6 +3,9 @@ const storage = require('../../utils/storage');
 const { saveImageFromUrl } = require('../../utils/save-image');
 const { getFlowDraft } = require('../../utils/flow-draft');
 const { pickBestImageUrl: pickImageFromCandidates } = require('../../utils/image-url');
+const { getPreviewImage, getHdImage } = require('../../utils/image-resource');
+const { getCache, setCache } = require('../../utils/page-cache');
+const { withSubmitLock } = require('../../utils/submit-lock');
 const {
   getFriendlySceneName,
   getFriendlySceneHint,
@@ -56,10 +59,10 @@ function normalizeCandidates(result = {}) {
       const candidateId = String(candidate.candidateId || candidate.candidate_id || `candidate_${index + 1}`).trim();
       const label = sanitizeHintText(candidate.label, '') || `方案 ${index === 0 ? 'A' : 'B'}`;
       const imageUrl = pickImageFromCandidates([
-        candidate.imageUrl,
-        candidate.image_url,
         candidate.previewUrl,
         candidate.preview_url,
+        candidate.imageUrl,
+        candidate.image_url,
         candidate.resultUrl,
         candidate.result_url,
         candidate.hdUrl,
@@ -218,8 +221,9 @@ function normalizeResult(result = {}) {
   const leftCard = candidates[0] || null;
   const rightCard = candidates[1] || null;
   const displayUrl = pickImageFromCandidates([
-    leftCard && leftCard.imageUrl,
-    rightCard && rightCard.imageUrl,
+    leftCard && leftCard.previewUrl,
+    rightCard && rightCard.previewUrl,
+    getPreviewImage(result),
     result.displayUrl,
     pickBestImageUrl(result)
   ]);
@@ -257,25 +261,33 @@ Page({
     result: null,
     selectedCandidateId: '',
     imageFailMap: {},
-    savingCandidate: false
+    savingCandidate: false,
+    savingLayout: false
   },
 
   onShow() {
     const rawResult = storage.get(STORAGE_KEYS.CURRENT_RESULT, null) || MOCK_RESULT;
     const draft = getFlowDraft();
-    const normalized = normalizeResult({
+    const cacheKey = `result:${rawResult.taskId || rawResult.imageId || 'latest'}`;
+    const cached = getCache(cacheKey);
+    const normalized = cached || normalizeResult({
       ...rawResult,
       sourceImageUrl: rawResult.sourceImageUrl || draft.sourceImageUrl || draft.sourceImagePath || '',
-      displayUrl: pickBestImageUrl(rawResult)
+      displayUrl: getPreviewImage(rawResult)
     });
+
+    if (!cached) {
+      setCache(cacheKey, normalized, 45000);
+    }
 
     const defaultSelected = (normalized.candidates.find((item) => item.imageUrl) || {}).candidateId || '';
 
     this.setData({
       result: normalized,
-      selectedCandidateId: defaultSelected,
+      selectedCandidateId: this.data.selectedCandidateId || defaultSelected,
       imageFailMap: {},
-      savingCandidate: false
+      savingCandidate: false,
+      savingLayout: false
     });
   },
 
@@ -298,12 +310,8 @@ Page({
   },
 
   async saveSelectedCandidate() {
-    if (this.data.savingCandidate) {
-      debugLog('saveSelectedCandidate skipped by lock', { selectedCandidateId: this.data.selectedCandidateId });
-      return;
-    }
-
-    const { result, selectedCandidateId } = this.data;
+    return withSubmitLock(this, 'savingCandidate', async () => {
+      const { result, selectedCandidateId } = this.data;
     if (!selectedCandidateId) {
       wx.showToast({ title: '请先选择要保存的图片', icon: 'none' });
       return;
@@ -313,33 +321,32 @@ Page({
       ? result.candidates.find((item) => item.candidateId === selectedCandidateId)
       : null) || null;
 
-    const selectedImageUrl = selectedCandidate && (selectedCandidate.hdUrl || selectedCandidate.previewUrl);
+    const selectedImageUrl = selectedCandidate && getHdImage(selectedCandidate);
 
     if (!selectedCandidate || !selectedImageUrl) {
       wx.showToast({ title: '当前图片暂不可保存，请稍后重试', icon: 'none' });
       return;
     }
 
-    this.setData({ savingCandidate: true });
-
-    try {
-      await this.saveAsset(selectedImageUrl, {
-        loadingText: '正在保存图片',
-        successText: '图片已保存到相册'
-      });
-    } catch (error) {
-      wx.showToast({ title: error.message || '保存失败，请稍后重试', icon: 'none' });
-    } finally {
-      this.setData({ savingCandidate: false });
-    }
+      try {
+        await this.saveAsset(selectedImageUrl, {
+          loadingText: '正在保存图片',
+          successText: '图片已保存到相册'
+        });
+      } catch (error) {
+        wx.showToast({ title: error.message || '保存失败，请稍后重试', icon: 'none' });
+      }
+    });
   },
 
-  saveLayout() {
-    const { result } = this.data;
-    this.saveAsset(result && (result.printLayoutUrl || result.layoutUrl), {
-      emptyText: '这次结果里还没有排版图',
-      loadingText: '正在保存排版图',
-      successText: '排版图已保存到相册'
+  async saveLayout() {
+    return withSubmitLock(this, 'savingLayout', async () => {
+      const { result } = this.data;
+      await this.saveAsset(result && (result.printLayoutUrl || result.layoutUrl), {
+        emptyText: '这次结果里还没有排版图',
+        loadingText: '正在保存排版图',
+        successText: '排版图已保存到相册'
+      });
     });
   },
 

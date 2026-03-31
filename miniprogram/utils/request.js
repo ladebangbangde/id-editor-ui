@@ -1,3 +1,5 @@
+const { runWithDedupe } = require('./request-dedupe');
+
 function getAppSafe() {
   try {
     return getApp();
@@ -201,19 +203,21 @@ async function request(url, method = 'GET', data = {}, options = {}) {
     loadingText = '加载中',
     header = {},
     showErrorToast = true,
+    dedupeKey = '',
     handleUnauthorized: shouldHandleUnauthorized = true
   } = options;
 
-  await ensureAuthReady(options);
+  const executor = async () => {
+    await ensureAuthReady(options);
 
-  if (showLoading) {
-    wx.showLoading({ title: loadingText, mask: true });
-  }
+    if (showLoading) {
+      wx.showLoading({ title: loadingText, mask: true });
+    }
 
-  logWxLoginRequest(url, method, data);
+    logWxLoginRequest(url, method, data);
 
-  return new Promise((resolve, reject) => {
-    wx.request({
+    return new Promise((resolve, reject) => {
+      wx.request({
       url,
       method,
       data,
@@ -274,8 +278,14 @@ async function request(url, method = 'GET', data = {}, options = {}) {
       complete() {
         if (showLoading) wx.hideLoading();
       }
+      });
     });
-  });
+  };
+
+  if (dedupeKey) {
+    return runWithDedupe(`req:${method}:${url}:${dedupeKey}`, executor);
+  }
+  return executor();
 }
 
 async function uploadFile(url, filePath, formData = {}, options = {}) {
@@ -365,8 +375,8 @@ async function uploadFile(url, filePath, formData = {}, options = {}) {
       complete() {
         if (showLoading) wx.hideLoading();
       }
+      });
     });
-  });
 }
 
 module.exports = {

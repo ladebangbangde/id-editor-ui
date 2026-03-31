@@ -41,6 +41,13 @@
     </view>
   </block>
 
+  <view wx:if="{{list.length && loadingMore}}" class="card section empty">
+    <view class="text-muted">正在加载更多...</view>
+  </view>
+  <view wx:elif="{{list.length && !hasMore}}" class="card section empty">
+    <view class="text-muted">已加载全部历史记录</view>
+  </view>
+
   <view wx:if="{{manageMode && list.length}}" class="manage-bar-safe"></view>
   <view wx:if="{{manageMode && list.length}}" class="manage-bar">
     <view class="manage-summary">已选 {{selectedIds.length}} 项</view>

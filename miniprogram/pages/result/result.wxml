@@ -38,7 +38,7 @@
           <image
             class="candidate-image"
             src="{{item.imageUrl}}"
-            mode="aspectFit"
+            mode="aspectFit" lazy-load="{{true}}"
             data-candidate-id="{{item.candidateId}}"
             binderror="handleCandidateImageError"
           ></image>

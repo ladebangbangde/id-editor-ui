@@ -1,45 +1,30 @@
 const { getPhotoHistory } = require('../../utils/api');
 const { formatTime } = require('../../utils/format');
-const { pickBestImageUrl: pickImageFromCandidates, cleanUrl, isLikelyLocalPath } = require('../../utils/image-url');
-const { getFriendlySceneName, getFriendlySizeText, pickBestImageUrl } = require('../../utils/photo-display');
+const { cleanUrl, isLikelyLocalPath } = require('../../utils/image-url');
+const { getFriendlySceneName, getFriendlySizeText } = require('../../utils/photo-display');
 const { getBackgroundColorLabel } = require('../../utils/photo-edit-contract');
+const { getPreviewImage } = require('../../utils/image-resource');
+const { getCache, setCache } = require('../../utils/page-cache');
 
 function buildStatus(item = {}) {
   const rawStatus = String(item.status || '').trim().toLowerCase();
   const statusMap = {
-    success: 'success',
-    succeeded: 'success',
-    completed: 'success',
-    done: 'success',
-    failed: 'failed',
-    fail: 'failed',
-    error: 'failed',
-    processing: 'processing',
-    pending: 'processing',
-    queued: 'processing',
-    running: 'processing'
+    success: 'success', succeeded: 'success', completed: 'success', done: 'success',
+    failed: 'failed', fail: 'failed', error: 'failed',
+    processing: 'processing', pending: 'processing', queued: 'processing', running: 'processing'
   };
-  if (rawStatus && statusMap[rawStatus]) {
-    return statusMap[rawStatus];
-  }
+  if (rawStatus && statusMap[rawStatus]) return statusMap[rawStatus];
 
   const rawQualityStatus = String(item.qualityStatus || '').trim().toLowerCase();
-  const qualityMap = {
-    passed: 'success',
-    pass: 'success',
-    warning: 'success',
-    failed: 'failed',
-    fail: 'failed'
-  };
-  if (rawQualityStatus && qualityMap[rawQualityStatus]) {
-    return qualityMap[rawQualityStatus];
-  }
-
+  const qualityMap = { passed: 'success', pass: 'success', warning: 'success', failed: 'failed', fail: 'failed' };
+  if (rawQualityStatus && qualityMap[rawQualityStatus]) return qualityMap[rawQualityStatus];
   return 'processing';
 }
 
 const EDIT_STORAGE_KEY = 'history_edit_map';
 const DELETE_STORAGE_KEY = 'history_deleted_ids';
+const HISTORY_CACHE_KEY = 'history:list:first-page';
+const HISTORY_CACHE_TTL = 20000;
 
 function normalizeRecord(item = {}) {
   const id = item.taskId || item.imageId || item.id;
@@ -50,45 +35,21 @@ function normalizeRecord(item = {}) {
     || '--';
   const friendlyName = getFriendlySceneName(item, '证件照');
   const friendlySizeText = getFriendlySizeText(item);
-  const previewUrl = pickImageFromCandidates([
-    item.previewUrl,
-    item.preview_url,
-    item.result && item.result.previewUrl,
-    item.result && item.result.preview_url,
-    item.resultUrl,
-    item.result_url,
-    item.hdUrl,
-    item.hd_url,
-    item.originalUrl,
-    item.original_url
-  ]);
-  const displayUrl = pickImageFromCandidates([
-    item.displayUrl,
-    previewUrl,
-    pickBestImageUrl(item)
-  ]);
+  const previewUrl = getPreviewImage(item);
   const normalizedCandidates = Array.isArray(item.candidates)
     ? item.candidates
       .map((candidate, index) => {
         const source = String(candidate.source || '').trim().toLowerCase();
         const sourceLabel = candidate.sourceLabel
           || (source === 'baidu' ? '百度方案' : ((source === 'legacy' || source === 'local') ? '本地方案' : '候选方案'));
-        const imageUrl = pickImageFromCandidates([
-          candidate.imageUrl,
-          candidate.previewUrl,
-          candidate.resultUrl,
-          candidate.hdUrl
-        ]);
+        const imageUrl = getPreviewImage(candidate);
         if (!imageUrl) return null;
         return {
           candidateId: candidate.candidateId || `${id || 'history'}_${index + 1}`,
           label: candidate.label || sourceLabel || `方案${index + 1}`,
           source,
           sourceLabel,
-          imageUrl,
-          previewUrl: candidate.previewUrl || imageUrl,
-          resultUrl: candidate.resultUrl || imageUrl,
-          hdUrl: candidate.hdUrl || candidate.resultUrl || imageUrl
+          imageUrl
         };
       })
       .filter(Boolean)
@@ -100,11 +61,9 @@ function normalizeRecord(item = {}) {
       label: '主图',
       source: '',
       sourceLabel: '',
-      imageUrl: displayUrl,
-      previewUrl,
-      resultUrl: item.resultUrl || previewUrl || '',
-      hdUrl: item.hdUrl || item.resultUrl || previewUrl || ''
+      imageUrl: previewUrl
     }];
+
   return {
     id,
     taskId: id,
@@ -116,9 +75,9 @@ function normalizeRecord(item = {}) {
     sizeCode: item.sizeCode || '',
     background: backgroundColor,
     backgroundColor,
-    imageUrl: displayUrl,
+    imageUrl: previewUrl,
     previewUrl,
-    displayUrl,
+    displayUrl: previewUrl,
     resultUrl: item.resultUrl || '',
     createdAt: formatTime(item.createdAt),
     status: buildStatus(item),
@@ -169,8 +128,10 @@ Page({
     loadFailed: false,
     loadErrorMessage: '',
     page: 1,
-    pageSize: 20,
+    pageSize: 12,
     total: 0,
+    hasMore: true,
+    loadingMore: false,
     manageMode: false,
     selectedIds: [],
     checkAll: false,
@@ -180,11 +141,42 @@ Page({
       size: '',
       background: ''
     },
-    submitting: false
+    submitting: false,
+    deleting: false
+  },
+
+  onLoad() {
+    const cached = getCache(HISTORY_CACHE_KEY);
+    if (cached && Array.isArray(cached.list) && cached.list.length) {
+      this.setData({
+        list: cached.list,
+        total: cached.total || cached.list.length,
+        page: cached.page || 1,
+        hasMore: Boolean(cached.hasMore),
+        loadFailed: false
+      });
+      this.hasLoaded = true;
+    }
   },
 
   onShow() {
-    this.fetchHistory();
+    if (!this.hasLoaded) {
+      this.fetchHistory({ reset: true, showLoading: true });
+      this.hasLoaded = true;
+      return;
+    }
+    if (this.shouldRefresh) {
+      this.fetchHistory({ reset: true, showLoading: false });
+      this.shouldRefresh = false;
+    }
+  },
+
+  onPullDownRefresh() {
+    this.fetchHistory({ reset: true, showLoading: false, fromPullDown: true });
+  },
+
+  onReachBottom() {
+    this.fetchHistory({ reset: false, showLoading: false });
   },
 
   getEditedMap() {
@@ -243,45 +235,60 @@ Page({
     });
   },
 
-  async fetchHistory(showLoading = true) {
-    const { page, pageSize } = this.data;
-    if (showLoading) {
-      this.setData({ loading: true, loadFailed: false, loadErrorMessage: '' });
-    }
+  async fetchHistory({ reset = false, showLoading = true, fromPullDown = false } = {}) {
+    if (this.data.loading || this.data.loadingMore) return;
+    if (!reset && !this.data.hasMore) return;
+
+    const nextPage = reset ? 1 : this.data.page + 1;
+    this.setData({
+      loadFailed: false,
+      loadErrorMessage: '',
+      ...(showLoading ? { loading: true } : {}),
+      ...(!showLoading ? { loadingMore: !reset } : {})
+    });
 
     try {
-      const data = await getPhotoHistory(page, pageSize);
-      console.log('[history] normalized history payload', data);
-      const list = this.applyLocalMutations((data.list || []).map(normalizeRecord));
-      console.log('[history] final record image bindings', list.map((item) => ({
-        id: item.id,
-        previewUrl: item.previewUrl,
-        displayUrl: item.displayUrl
-      })));
-      list.forEach((item) => {
-        logImageUrlRisk('previewUrl', item.previewUrl, item.id);
-      });
-      this.syncSelection(list, this.data.selectedIds);
+      const data = await getPhotoHistory(nextPage, this.data.pageSize, { dedupeKey: `history-${nextPage}` });
+      const incomingList = this.applyLocalMutations((data.list || []).map(normalizeRecord));
+      incomingList.forEach((item) => logImageUrlRisk('previewUrl', item.previewUrl, item.id));
+
+      const mergedList = reset ? incomingList : this.data.list.concat(incomingList);
+      const total = Number(data.total || mergedList.length || 0);
+      const hasMore = incomingList.length >= this.data.pageSize && mergedList.length < total;
+      this.syncSelection(mergedList, reset ? [] : this.data.selectedIds);
       this.setData({
         loadFailed: false,
         loadErrorMessage: '',
-        total: Number(data.total || list.length || 0),
-        page: Number(data.page || page || 1),
-        pageSize: Number(data.pageSize || pageSize || 20)
+        total,
+        page: Number(data.page || nextPage),
+        pageSize: Number(data.pageSize || this.data.pageSize),
+        hasMore
       });
+      setCache(HISTORY_CACHE_KEY, {
+        list: mergedList,
+        total,
+        page: Number(data.page || nextPage),
+        hasMore
+      }, HISTORY_CACHE_TTL);
     } catch (error) {
+      if (reset) {
+        this.setData({
+          list: [],
+          selectedIds: [],
+          checkAll: false
+        });
+      }
       this.setData({
-        list: [],
-        selectedIds: [],
-        checkAll: false,
         loadFailed: true,
         loadErrorMessage: error.message || '历史记录加载失败'
       });
       wx.showToast({ title: '历史记录加载失败', icon: 'none' });
     } finally {
-      if (showLoading) {
-        this.setData({ loading: false });
-      }
+      this.setData({
+        loading: false,
+        loadingMore: false
+      });
+      if (fromPullDown) wx.stopPullDownRefresh();
     }
   },
 
@@ -369,6 +376,7 @@ Page({
   },
 
   async submitEdit() {
+    if (this.data.submitting) return;
     const { editingItem, editForm, list } = this.data;
     if (!editingItem) return;
 
@@ -392,19 +400,19 @@ Page({
       editMap[editingItem.id] = payload;
       this.saveEditedMap(editMap);
 
-      const nextList = list.map((item) => {
-        if (item.id !== editingItem.id) return item;
-        return {
-          ...item,
-          ...payload,
-          sceneName: payload.name,
-          sizeText: payload.size,
-          backgroundColor: payload.background
-        };
-      });
+      const index = list.findIndex((item) => item.id === editingItem.id);
+      if (index >= 0) {
+        this.setData({
+          [`list[${index}].name`]: payload.name,
+          [`list[${index}].sceneName`]: payload.name,
+          [`list[${index}].size`]: payload.size,
+          [`list[${index}].sizeText`]: payload.size,
+          [`list[${index}].background`]: payload.background,
+          [`list[${index}].backgroundColor`]: payload.background
+        });
+      }
 
       this.setData({
-        list: nextList,
         editingItem: null,
         editForm: {
           name: '',
@@ -412,6 +420,7 @@ Page({
           background: ''
         }
       });
+      this.shouldRefresh = true;
       wx.showToast({ title: '编辑成功', icon: 'success' });
     } catch (error) {
       wx.showToast({ title: '编辑失败，请稍后重试', icon: 'none' });
@@ -423,7 +432,7 @@ Page({
 
   confirmDelete(event) {
     const { record } = event.detail;
-    if (!record || !record.id) return;
+    if (!record || !record.id || this.data.deleting) return;
 
     wx.showModal({
       title: '删除确认',
@@ -437,6 +446,7 @@ Page({
   },
 
   confirmBatchDelete() {
+    if (this.data.deleting) return;
     const count = this.data.selectedIds.length;
     if (!count) {
       wx.showToast({ title: '请先选择记录', icon: 'none' });
@@ -455,8 +465,9 @@ Page({
   },
 
   async deleteRecords(ids = []) {
-    if (!ids.length) return;
+    if (!ids.length || this.data.deleting) return;
 
+    this.setData({ deleting: true });
     wx.showLoading({ title: '删除中', mask: true });
     try {
       await Promise.resolve();
@@ -474,14 +485,17 @@ Page({
 
       this.setData({
         manageMode: shouldExitManageMode ? false : this.data.manageMode,
-        editingItem: null
+        editingItem: null,
+        total: Math.max(0, this.data.total - ids.length)
       });
       this.syncSelection(nextList, nextSelectedIds);
+      this.shouldRefresh = true;
       wx.showToast({ title: '删除成功', icon: 'success' });
     } catch (error) {
       wx.showToast({ title: '删除失败，请稍后重试', icon: 'none' });
     } finally {
       wx.hideLoading();
+      this.setData({ deleting: false });
     }
   },
 

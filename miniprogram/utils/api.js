@@ -483,8 +483,9 @@ function processPhoto(filePath, payload = {}) {
     });
 }
 
-function getPhotoTask(taskId) {
-  return request(`${getBaseUrl()}/photo/tasks/${taskId}`)
+function getPhotoTask(taskId, options = {}) {
+  const dedupeKey = options.dedupeKey || `task-${taskId}`;
+  return request(`${getBaseUrl()}/photo/tasks/${taskId}`, 'GET', {}, { dedupeKey })
     .then(unwrap)
     .then((payload) => {
       console.log('[api.getPhotoTask] raw response', payload);
@@ -500,8 +501,9 @@ function getPhotoTask(taskId) {
     });
 }
 
-function getPhotoTaskStatus(taskId) {
-  return request(`${getBaseUrl()}/photo/tasks/${taskId}/status`)
+function getPhotoTaskStatus(taskId, options = {}) {
+  const dedupeKey = options.dedupeKey || `task-status-${taskId}`;
+  return request(`${getBaseUrl()}/photo/tasks/${taskId}/status`, 'GET', {}, { dedupeKey })
     .then(unwrap)
     .then((payload) => {
       const normalized = normalizeHistoryItem(payload);
@@ -513,8 +515,9 @@ function getPhotoTaskStatus(taskId) {
     });
 }
 
-function getPhotoHistory(page = 1, pageSize = 10) {
-  return request(`${getBaseUrl()}/photo/history?page=${page}&pageSize=${pageSize}`)
+function getPhotoHistory(page = 1, pageSize = 10, options = {}) {
+  const dedupeKey = options.dedupeKey || `history-${page}-${pageSize}`;
+  return request(`${getBaseUrl()}/photo/history?page=${page}&pageSize=${pageSize}`, 'GET', {}, { dedupeKey })
     .then((res) => {
       const payload = res && res.data ? res.data : res;
       console.log('[api.getPhotoHistory] raw payload', payload);
@@ -586,9 +589,10 @@ function getPhotoHistory(page = 1, pageSize = 10) {
     });
 }
 
-function getHomeTemplateConfig(category = '') {
+function getHomeTemplateConfig(category = '', options = {}) {
   const query = category ? `?category=${encodeURIComponent(category)}` : '';
-  return request(`${getBaseUrl()}/home/templates${query}`)
+  const dedupeKey = options.dedupeKey || `home-template-${category || 'all'}`;
+  return request(`${getBaseUrl()}/home/templates${query}`, 'GET', {}, { dedupeKey })
     .then(unwrap)
     .then((payload) => ({
       ...payload,

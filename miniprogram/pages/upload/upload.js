@@ -1,8 +1,8 @@
 const { SCENE_TEMPLATES } = require('../../utils/constants');
 const { getFlowDraft, setFlowDraft } = require('../../utils/flow-draft');
 const { toCanonicalSizeCode, buildSceneBySizeCode } = require('../../utils/size-codes');
+const { preprocessUploadImage } = require('../../utils/image-preprocess');
 
-const MAX_IMAGE_SIZE = 15 * 1024 * 1024;
 
 function resolveSceneInfo(options = {}, draft = {}) {
   if (draft.selectedScene) {
@@ -28,7 +28,8 @@ Page({
     selectedSizeCode: '',
     // 避免短时间重复点击导致 chooseMedia 被调用两次，出现“二次弹窗”。
     isPickingImage: false,
-    cameraOnly: false
+    cameraOnly: false,
+    nextStepLocked: false
   },
 
   onLoad(options) {
@@ -133,27 +134,31 @@ Page({
       count: 1,
       mediaType: ['image'],
       sourceType,
-      success: (res) => {
+      success: async (res) => {
         const file = (res.tempFiles && res.tempFiles[0]) || {};
         if (!file.tempFilePath) {
           wx.showToast({ title: '未获取到图片，请重试', icon: 'none' });
           return;
         }
-        if (file.size && file.size > MAX_IMAGE_SIZE) {
-          wx.showToast({ title: '图片过大，请选择 15MB 内图片', icon: 'none' });
-          return;
-        }
 
-        this.setData({ imagePath: file.tempFilePath });
-        setFlowDraft({
-          sourceImagePath: file.tempFilePath,
-          sourceImageUrl: file.tempFilePath,
-          flowType: 'idPhoto',
-          flowMode: this.data.flowMode,
-          needSelectSize: this.data.needSelectSize,
-          selectedSizeCode: this.data.selectedSizeCode || '',
-          selectedScene: this.data.sceneInfo || null
-        });
+        try {
+          const processed = await preprocessUploadImage(file);
+          this.setData({ imagePath: processed.filePath });
+          if (processed.compressed) {
+            wx.showToast({ title: '已自动优化图片体积', icon: 'none' });
+          }
+          setFlowDraft({
+            sourceImagePath: processed.filePath,
+            sourceImageUrl: processed.filePath,
+            flowType: 'idPhoto',
+            flowMode: this.data.flowMode,
+            needSelectSize: this.data.needSelectSize,
+            selectedSizeCode: this.data.selectedSizeCode || '',
+            selectedScene: this.data.sceneInfo || null
+          });
+        } catch (error) {
+          wx.showToast({ title: error.message || '图片处理失败，请换一张试试', icon: 'none' });
+        }
       },
       fail: () => {
         // 用户取消选择时不弹错误提示，避免打断操作。
@@ -166,10 +171,12 @@ Page({
   },
 
   nextStep() {
+    if (this.data.nextStepLocked) return;
     if (!this.data.imagePath) {
       wx.showToast({ title: '请先上传照片', icon: 'none' });
       return;
     }
+    this.setData({ nextStepLocked: true });
     setFlowDraft({
       sourceImagePath: this.data.imagePath,
       sourceImageUrl: this.data.imagePath,
@@ -180,8 +187,10 @@ Page({
     });
     if (this.data.needSelectSize) {
       wx.navigateTo({ url: '/pages/custom-size/custom-size' });
+      setTimeout(() => this.setData({ nextStepLocked: false }), 500);
       return;
     }
     wx.navigateTo({ url: '/pages/editor/editor' });
+    setTimeout(() => this.setData({ nextStepLocked: false }), 500);
   }
 });

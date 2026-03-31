@@ -1,17 +1,9 @@
 const { getStatusLabel } = require('../../utils/format');
 const { pickBestImageUrl: pickImageFromCandidates, cleanUrl, isLikelyLocalPath } = require('../../utils/image-url');
+const { getPreviewImage } = require('../../utils/image-resource');
 
 function buildThumbUrl(record = {}) {
-  return pickImageFromCandidates([
-    record.displayUrl,
-    record.previewUrl,
-    record.preview_url,
-    record.imageUrl,
-    record.resultUrl,
-    record.result_url,
-    record.hdUrl,
-    record.originalUrl
-  ]);
+  return getPreviewImage(record);
 }
 
 function normalizeCardCandidates(record = {}) {
@@ -27,12 +19,7 @@ function normalizeCardCandidates(record = {}) {
   }
   return rawList
     .map((item, index) => {
-      const imageUrl = pickImageFromCandidates([
-        item.imageUrl,
-        item.previewUrl,
-        item.resultUrl,
-        item.hdUrl
-      ]);
+      const imageUrl = getPreviewImage(item);
       if (!imageUrl) return null;
       return {
         candidateId: item.candidateId || `${record.id || 'record'}_${index + 1}`,
