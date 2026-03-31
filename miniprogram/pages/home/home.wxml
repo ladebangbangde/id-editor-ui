@@ -1,56 +1,78 @@
 <view class="container home-page">
-  <view class="card section brand-bar">
-    <view class="brand-main">
-      <view class="brand-title-row">
-        <view class="brand-mark">
-          <view class="brand-mark-dot"></view>
-          <view class="brand-mark-card"></view>
-        </view>
-        <view>
-          <view class="brand-title">棒棒证件照生成</view>
-          <view class="brand-subtitle">{{brandContent.subtitle}}</view>
-        </view>
+  <view class="hero-panel fade-up delay-1">
+    <view class="hero-badge">ID PHOTO</view>
+    <view class="hero-title">棒棒证件照</view>
+    <view class="hero-subtitle">{{brandContent.subtitle}}</view>
+  </view>
+
+  <view class="search-wrap fade-up delay-2">
+    <view class="search-bar">
+      <view class="search-icon">
+        <view class="search-icon-circle"></view>
+        <view class="search-icon-handle"></view>
       </view>
-      <view class="brand-status">
-        <view class="status-dot"></view>
-        <text>已就绪</text>
-      </view>
-    </view>
-    <view class="brand-tags">
-      <view wx:for="{{brandContent.tags}}" wx:key="*this" class="tag brand-tag">{{item}}</view>
+      <input
+        class="search-input"
+        type="text"
+        confirm-type="search"
+        placeholder="搜索尺寸 / 场景"
+        value="{{searchKeyword}}"
+        bindinput="handleSearchInput"
+      />
+      <view wx:if="{{searchKeyword}}" class="search-clear" bindtap="handleSearchClear">清空</view>
     </view>
   </view>
 
-  <view class="card section size-focus-card">
-    <view class="section-head size-section-head">
-      <view class="section-title-wrap">
-        <view class="section-icon section-icon-size">
-          <view class="size-icon-card"></view>
-          <view class="size-icon-ruler"></view>
-        </view>
-        <view>
-          <view class="title-md">尺寸模板</view>
-          <view class="text-muted section-subtitle">先选尺寸，再进入编辑更省心</view>
-        </view>
+  <view class="section feature-section fade-up delay-3">
+    <view class="section-head feature-section-head">
+      <view>
+        <view class="title-md">快捷功能</view>
+        <view class="text-muted section-subtitle">上传后可直接进入对应流程</view>
       </view>
     </view>
-
-    <view class="size-search-wrap">
-      <view class="search-bar">
-        <view class="search-icon">
-          <view class="search-icon-circle"></view>
-          <view class="search-icon-handle"></view>
+    <view class="main-grid">
+      <view
+        wx:for="{{mainActions}}"
+        wx:key="key"
+        class="card main-card {{item.cardClass}}"
+        data-item="{{item}}"
+        bindtap="handleMainActionTap"
+      >
+        <view class="main-card-head">
+          <view class="main-icon {{item.iconClass}}">
+            <view wx:if="{{item.iconType === 'palette'}}" class="icon-palette-shape">
+              <view class="icon-palette-main"></view>
+              <view class="icon-palette-hole"></view>
+              <view class="icon-palette-dot dot-one"></view>
+              <view class="icon-palette-dot dot-two"></view>
+              <view class="icon-palette-dot dot-three"></view>
+            </view>
+            <view wx:elif="{{item.iconType === 'crop'}}" class="icon-crop-shape">
+              <view class="icon-crop-corner corner-lt"></view>
+              <view class="icon-crop-corner corner-rt"></view>
+              <view class="icon-crop-corner corner-lb"></view>
+              <view class="icon-crop-corner corner-rb"></view>
+            </view>
+            <view wx:elif="{{item.iconType === 'history'}}" class="icon-history-shape">
+              <view class="icon-history-ring"></view>
+              <view class="icon-history-hand"></view>
+            </view>
+          </view>
+          <view wx:if="{{item.badge}}" class="main-badge">{{item.badge}}</view>
         </view>
-        <input
-          class="search-input"
-          type="text"
-          confirm-type="search"
-          placeholder="搜索尺寸 / 场景"
-          value="{{searchKeyword}}"
-          bindinput="handleSearchInput"
-        />
-        <view wx:if="{{searchKeyword}}" class="search-clear" bindtap="handleSearchClear">清空</view>
+        <view class="main-title">{{item.title}}</view>
+        <view class="text-muted main-desc">{{item.subtitle}}</view>
       </view>
+    </view>
+  </view>
+
+  <view class="card section size-focus-card fade-up delay-4">
+    <view class="section-head size-section-head">
+      <view>
+        <view class="title-md size-main-title">热门尺寸模板</view>
+        <view class="text-muted section-subtitle">常用报名 / 考试 / 签证 / 简历尺寸</view>
+      </view>
+      <view class="all-entry" bindtap="handleToggleTemplateView">{{showAllTemplates ? '收起' : '查看全部'}}</view>
     </view>
 
     <view class="section tab-scroll-wrap size-tab-scroll-wrap">
@@ -100,7 +122,7 @@
     <block wx:else>
       <view class="template-grid size-template-grid">
         <view
-          wx:for="{{templateList}}"
+          wx:for="{{showAllTemplates ? templateList : templateList.slice(0, 4)}}"
           wx:key="sceneKey"
           class="card template-card"
           data-item="{{item}}"
@@ -113,75 +135,26 @@
                   <view class="template-icon-photo"></view>
                 </view>
                 <view class="template-title">{{item.name}}</view>
-                <view wx:if="{{item.hot}}" class="hot-badge">热门</view>
+                <view wx:if="{{item.hot}}" class="hot-badge">推荐</view>
               </view>
-              <view class="text-muted template-size">{{item.pixelText}}</view>
+              <view class="template-size">{{item.pixelText}}</view>
             </view>
             <view class="template-arrow">›</view>
           </view>
           <view class="tag-row">
             <view wx:for="{{item.displayTags}}" wx:key="*this" class="tag template-tag">{{item}}</view>
           </view>
+          <view class="template-tip">{{item.tip}}</view>
         </view>
       </view>
     </block>
   </view>
 
-  <view class="section feature-section">
-    <view class="section-head feature-section-head">
-      <view class="section-title-wrap">
-        <view class="section-icon section-icon-tools">
-          <view class="tools-icon-camera"></view>
-          <view class="tools-icon-spark"></view>
-        </view>
-        <view>
-          <view class="title-md">快捷功能</view>
-          <view class="text-muted section-subtitle">拍照与换底仍保留在这里</view>
-        </view>
-      </view>
-    </view>
-    <view class="main-grid">
-      <view
-        wx:for="{{mainActions}}"
-        wx:key="key"
-        class="card main-card {{item.cardClass}}"
-        data-item="{{item}}"
-        bindtap="handleMainActionTap"
-      >
-        <view class="main-card-head">
-          <view class="main-icon {{item.iconClass}}">
-            <view wx:if="{{item.iconType === 'camera'}}" class="icon-camera-shape">
-              <view class="icon-camera-top"></view>
-              <view class="icon-camera-body"></view>
-              <view class="icon-camera-lens"></view>
-            </view>
-            <view wx:elif="{{item.iconType === 'palette'}}" class="icon-palette-shape">
-              <view class="icon-palette-main"></view>
-              <view class="icon-palette-hole"></view>
-              <view class="icon-palette-dot dot-one"></view>
-              <view class="icon-palette-dot dot-two"></view>
-              <view class="icon-palette-dot dot-three"></view>
-            </view>
-          </view>
-          <view wx:if="{{item.badge}}" class="main-badge">{{item.badge}}</view>
-        </view>
-        <view class="main-title">{{item.title}}</view>
-        <view class="text-muted main-desc">{{item.subtitle}}</view>
-      </view>
-    </view>
-  </view>
-
   <view class="card section knowledge-card" bindtap="goFaq">
     <view class="knowledge-copy">
-      <view class="knowledge-title-row">
-        <view class="section-icon section-icon-knowledge">
-          <view class="knowledge-icon-book"></view>
-          <view class="knowledge-icon-star"></view>
-        </view>
-        <view class="title-md">常见问题</view>
-      </view>
-      <view class="text-muted knowledge-desc">尺寸、底色说明</view>
+      <view class="title-md">常见问题</view>
+      <view class="text-muted knowledge-desc">尺寸、底色与上传规范说明</view>
     </view>
-    <view class="knowledge-cat">🐱</view>
+    <view class="knowledge-arrow">查看</view>
   </view>
 </view>
