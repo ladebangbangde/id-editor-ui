@@ -244,7 +244,8 @@ Page({
   data: {
     result: null,
     selectedCandidateId: '',
-    imageFailMap: {}
+    imageFailMap: {},
+    savingCandidate: false
   },
 
   onShow() {
@@ -261,7 +262,8 @@ Page({
     this.setData({
       result: normalized,
       selectedCandidateId: defaultSelected,
-      imageFailMap: {}
+      imageFailMap: {},
+      savingCandidate: false
     });
   },
 
@@ -284,6 +286,11 @@ Page({
   },
 
   async saveSelectedCandidate() {
+    if (this.data.savingCandidate) {
+      debugLog('saveSelectedCandidate skipped by lock', { selectedCandidateId: this.data.selectedCandidateId });
+      return;
+    }
+
     const { result, selectedCandidateId } = this.data;
     if (!selectedCandidateId) {
       wx.showToast({ title: '请先选择要保存的图片', icon: 'none' });
@@ -301,6 +308,8 @@ Page({
       return;
     }
 
+    this.setData({ savingCandidate: true });
+
     try {
       await this.saveAsset(selectedImageUrl, {
         loadingText: '正在保存图片',
@@ -308,6 +317,8 @@ Page({
       });
     } catch (error) {
       wx.showToast({ title: error.message || '保存失败，请稍后重试', icon: 'none' });
+    } finally {
+      this.setData({ savingCandidate: false });
     }
   },
 

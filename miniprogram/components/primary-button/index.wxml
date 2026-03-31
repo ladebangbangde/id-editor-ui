@@ -1,6 +1,6 @@
 <button
   class="btn btn-{{type}} {{disabled || loading ? 'disabled' : ''}}"
-  bindtap="handleTap"
+  catchtap="handleTap"
   loading="{{loading}}"
   disabled="{{disabled||loading}}"
   hover-class="btn-hover"
