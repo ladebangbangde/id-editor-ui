@@ -20,6 +20,12 @@ const {
 
 const ENGINEERING_HINT_PATTERN = /(engine|backend|compare|fallback|legacy|baidu|debug|trace|pipeline)/i;
 
+function getCandidateImageDedupKey(url = '') {
+  const normalized = String(url || '').trim();
+  if (!normalized) return '';
+  return normalized.replace(/[?#].*$/, '');
+}
+
 function isDevMode() {
   const wxConfig = typeof __wxConfig !== 'undefined' ? __wxConfig : null;
   if (wxConfig && wxConfig.envVersion === 'develop') return true;
@@ -142,12 +148,17 @@ function normalizeCandidates(result = {}) {
   const uniqueCandidates = merged.filter((item) => {
     const imageUrl = item && item.imageUrl;
     if (!imageUrl) return false;
-    if (seenImageUrls.has(imageUrl)) return false;
-    seenImageUrls.add(imageUrl);
+    const dedupKey = getCandidateImageDedupKey(imageUrl);
+    if (!dedupKey) return false;
+    if (seenImageUrls.has(dedupKey)) return false;
+    seenImageUrls.add(dedupKey);
     return true;
   });
 
-  debugLog('dedup candidate urls', uniqueCandidates.map((item) => item.imageUrl));
+  debugLog('dedup candidate urls', uniqueCandidates.map((item) => ({
+    imageUrl: item.imageUrl,
+    dedupKey: getCandidateImageDedupKey(item.imageUrl)
+  })));
 
   const cards = uniqueCandidates.slice(0, 2).map((item, index) => ({
     ...item,
