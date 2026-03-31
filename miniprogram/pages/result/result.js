@@ -50,6 +50,7 @@ function normalizeCandidateWarnings(candidate = {}) {
 
 function normalizeCandidates(result = {}) {
   const sourceList = Array.isArray(result.candidates) ? result.candidates : [];
+  debugLog('raw candidates', sourceList);
   const candidates = sourceList
     .map((candidate, index) => {
       const candidateId = String(candidate.candidateId || candidate.candidate_id || `candidate_${index + 1}`).trim();
@@ -137,17 +138,28 @@ function normalizeCandidates(result = {}) {
     });
   }
 
-  const cards = merged.slice(0, 2).map((item, index) => ({
+  const seenImageUrls = new Set();
+  const uniqueCandidates = merged.filter((item) => {
+    const imageUrl = item && item.imageUrl;
+    if (!imageUrl) return false;
+    if (seenImageUrls.has(imageUrl)) return false;
+    seenImageUrls.add(imageUrl);
+    return true;
+  });
+
+  debugLog('dedup candidate urls', uniqueCandidates.map((item) => item.imageUrl));
+
+  const cards = uniqueCandidates.slice(0, 2).map((item, index) => ({
     ...item,
-    label: item.label || `方案 ${index === 0 ? 'A' : 'B'}`,
+    label: `方案 ${index === 0 ? 'A' : 'B'}`,
     candidateId: item.candidateId || `candidate_${index + 1}`,
-    fallbackText: item.fallbackText || `${item.label || `方案 ${index === 0 ? 'A' : 'B'}`}加载失败或暂未生成，请稍后重试`
+    fallbackText: item.fallbackText || `方案 ${index === 0 ? 'A' : 'B'}加载失败或暂未生成，请稍后重试`
   }));
 
-  debugLog('raw candidates', sourceList);
-  debugLog('candidate cards', cards.map((item) => ({
+  debugLog('final candidate cards', cards.map((item) => ({
     slot: item.slot,
     candidateId: item.candidateId,
+    label: item.label,
     imageUrl: item.imageUrl,
     hdUrl: item.hdUrl
   })));

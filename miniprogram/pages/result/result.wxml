@@ -15,7 +15,9 @@
 
   <view class="card section panel">
     <view class="title-md">请选择要保存的图片</view>
-    <view class="text-muted compare-hint">左右均为正式候选结果，请选择你更满意的一张后保存</view>
+    <view class="text-muted compare-hint">
+      {{result.candidates.length === 1 ? '当前已生成 1 张可保存图片，请确认效果后保存' : '左右均为正式候选结果，请选择你更满意的一张后保存'}}
+    </view>
 
     <view class="candidate-list">
       <view
