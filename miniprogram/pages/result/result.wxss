@@ -73,6 +73,20 @@
 .meta-value-emphasis { color: #0f172a; font-weight: 600; text-align: right; }
 .button-row { display: flex; gap: 12rpx; }
 .button-item { flex: 1; }
+.share-entry { margin-top: -2rpx; }
+.share-btn {
+  width: 100%;
+  border: 2rpx solid #d8e3ff;
+  border-radius: 20rpx;
+  background: #ffffff;
+  color: #315efb;
+  font-size: 30rpx;
+  font-weight: 600;
+  line-height: 88rpx;
+}
+.share-btn::after {
+  border: none;
+}
 .quality-banner { border-width: 1rpx; border-style: solid; }
 .quality-banner-warning { background: #fff7ed; border-color: #fdba74; }
 .quality-banner-passed { background: #f0fdf4; border-color: #86efac; }

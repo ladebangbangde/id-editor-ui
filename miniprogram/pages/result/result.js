@@ -289,6 +289,51 @@ Page({
       savingCandidate: false,
       savingLayout: false
     });
+
+    wx.showShareMenu({
+      menus: ['shareAppMessage', 'shareTimeline']
+    });
+  },
+
+  buildSharePayload() {
+    const { result, selectedCandidateId } = this.data;
+    const candidates = result && Array.isArray(result.candidates) ? result.candidates : [];
+    const selectedCandidate = candidates.find((item) => item && item.candidateId === selectedCandidateId) || candidates[0] || null;
+    const sceneName = (result && result.sceneName) || '证件照';
+    const sizeText = (result && result.sizeText) || '';
+    const title = sizeText
+      ? `我刚用棒棒证件照生成了${sceneName}（${sizeText}）`
+      : `我刚用棒棒证件照生成了一张标准${sceneName}`;
+    const imageUrl = pickImageFromCandidates([
+      selectedCandidate && (selectedCandidate.previewUrl || selectedCandidate.imageUrl || selectedCandidate.hdUrl),
+      result && result.displayUrl,
+      selectedCandidate && selectedCandidate.hdUrl,
+      result && (result.previewUrl || result.resultUrl || result.hdUrl)
+    ]);
+
+    return {
+      title,
+      path: '/pages/home/home?from=share_result',
+      imageUrl
+    };
+  },
+
+  onShareAppMessage() {
+    const payload = this.buildSharePayload();
+    return {
+      title: payload.title || '我刚用棒棒证件照生成了一张标准证件照',
+      path: payload.path || '/pages/home/home',
+      imageUrl: payload.imageUrl || undefined
+    };
+  },
+
+  onShareTimeline() {
+    const payload = this.buildSharePayload();
+    return {
+      title: payload.title || '棒棒证件照｜一键生成规范证件照',
+      query: 'from=share_timeline_result',
+      imageUrl: payload.imageUrl || undefined
+    };
   },
 
   handleCandidateImageError(event) {

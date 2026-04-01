@@ -389,7 +389,26 @@ Page({
     this.debouncedSearch = debounce((keyword) => {
       this.applyTemplateFilter(this.data.allTemplateList, keyword);
     }, 200);
+    wx.showShareMenu({
+      menus: ['shareAppMessage', 'shareTimeline']
+    });
     this.loadHomeTemplates(this.data.activeTab, { allowCache: true });
+  },
+
+  onShareAppMessage() {
+    return {
+      title: '棒棒证件照｜标准尺寸一键生成，快速出图',
+      path: '/pages/home/home',
+      imageUrl: undefined
+    };
+  },
+
+  onShareTimeline() {
+    return {
+      title: '棒棒证件照｜标准尺寸一键生成，快速出图',
+      query: 'from=share_timeline_home',
+      imageUrl: undefined
+    };
   },
 
   applyTemplateFilter(sourceList = this.data.allTemplateList, keyword = this.data.searchKeyword) {

@@ -81,6 +81,9 @@
   <view wx:if="{{result.printLayoutUrl}}" class="section">
     <primary-button text="保存排版图" type="secondary" bind:tap="saveLayout"></primary-button>
   </view>
+  <view class="section share-entry">
+    <button class="share-btn" open-type="share">分享给朋友</button>
+  </view>
   <view class="card section faq-card" bindtap="goFaq">
     <view class="faq-title">常见问题 / 小知识</view>
     <view class="text-muted faq-desc">不确定该选哪种尺寸，或者想知道白底、蓝底怎么选？点这里看看，很快就懂。</view>

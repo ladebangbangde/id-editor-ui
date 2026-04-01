@@ -88,8 +88,48 @@ Page({
   onLoad(options) {
     const taskId = options.taskId || options.imageId;
     this.setData({ selectedCandidateId: options.candidateId || '' });
+    wx.showShareMenu({
+      menus: ['shareAppMessage', 'shareTimeline']
+    });
     if (!taskId) return;
     this.fetchDetail(taskId);
+  },
+
+  buildSharePayload() {
+    const { record, selectedCandidateId } = this.data;
+    const candidates = record && Array.isArray(record.candidates) ? record.candidates : [];
+    const selectedCandidate = candidates.find((item) => item && item.candidateId === selectedCandidateId) || candidates[0] || null;
+    const sceneName = (record && record.sceneName) || '证件照';
+    const sizeText = (record && record.sizeText) || '';
+    const title = sizeText
+      ? `这张${sceneName}（${sizeText}）是我在棒棒证件照做的`
+      : `这张标准${sceneName}是我在棒棒证件照做的`;
+    const imageUrl = (selectedCandidate && (selectedCandidate.previewUrl || selectedCandidate.imageUrl || selectedCandidate.hdUrl))
+      || (record && (record.displayUrl || record.previewUrl || record.resultUrl || record.hdUrl))
+      || '';
+    return {
+      title,
+      path: '/pages/home/home?from=share_history_detail',
+      imageUrl
+    };
+  },
+
+  onShareAppMessage() {
+    const payload = this.buildSharePayload();
+    return {
+      title: payload.title || '我在棒棒证件照做了一张标准证件照',
+      path: payload.path || '/pages/home/home',
+      imageUrl: payload.imageUrl || undefined
+    };
+  },
+
+  onShareTimeline() {
+    const payload = this.buildSharePayload();
+    return {
+      title: payload.title || '棒棒证件照｜一键生成规范证件照',
+      query: 'from=share_timeline_history_detail',
+      imageUrl: payload.imageUrl || undefined
+    };
   },
 
   async fetchDetail(taskId) {
