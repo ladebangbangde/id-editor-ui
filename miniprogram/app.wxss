@@ -1,6 +1,8 @@
+@import "styles/theme.wxss";
+
 page {
-  background: #f4f6f9;
-  color: #111827;
+  background: var(--bg-page);
+  color: var(--text-primary);
   font-size: 28rpx;
   line-height: 1.5;
   box-sizing: border-box;
@@ -39,13 +41,13 @@ input {
 .title-lg {
   font-size: 34rpx;
   font-weight: 700;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .title-md {
   font-size: 30rpx;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .text-body {

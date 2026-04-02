@@ -519,6 +519,10 @@ Page({
     setTimeout(() => this.setData({ actionLocked: false }), 500);
   },
 
+  handleStartCreate() {
+    this.navigateByAction({ routeType: 'upload' });
+  },
+
 
   handleTemplateTap(event) {
     const { item } = event.currentTarget.dataset;
