@@ -27,7 +27,7 @@ function normalizeDetail(detail = {}) {
         const source = String(candidate.source || '').trim().toLowerCase();
         const sourceLabel = candidate.sourceLabel
           || (source === 'baidu' ? '百度方案' : ((source === 'legacy' || source === 'local') ? '本地方案' : '候选方案'));
-        const imageUrl = candidate.imageUrl || candidate.previewUrl || candidate.resultUrl || candidate.hdUrl || '';
+        const imageUrl = candidate.resultUrl || candidate.hdUrl || candidate.imageUrl || candidate.previewUrl || '';
         if (!imageUrl) return null;
         return {
           candidateId: candidate.candidateId || `candidate_${index + 1}`,
@@ -104,8 +104,8 @@ Page({
     const title = sizeText
       ? `这张${sceneName}（${sizeText}）是我在棒棒证件照做的`
       : `这张标准${sceneName}是我在棒棒证件照做的`;
-    const imageUrl = (selectedCandidate && (selectedCandidate.previewUrl || selectedCandidate.imageUrl || selectedCandidate.hdUrl))
-      || (record && (record.displayUrl || record.previewUrl || record.resultUrl || record.hdUrl))
+    const imageUrl = (selectedCandidate && (selectedCandidate.resultUrl || selectedCandidate.hdUrl || selectedCandidate.imageUrl || selectedCandidate.previewUrl))
+      || (record && (record.resultUrl || record.hdUrl || record.displayUrl || record.previewUrl))
       || '';
     return {
       title,

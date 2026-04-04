@@ -202,12 +202,16 @@ function normalizeCandidateItem(item = {}, index = 0) {
   const stageSource = item.source || item.engineKey || item.engine_key || item.provider || item.channel || '';
   const source = String(stageSource || '').trim().toLowerCase();
   const sourceLabel = mapCandidateSourceLabel(source);
-  const previewUrl = normalizeAssetUrl(
-    item.previewUrl || item.preview_url || item.imageUrl || item.image_url || ''
+  const resultUrl = normalizeAssetUrl(
+    item.resultUrl || item.result_url || item.imageUrl || item.image_url || ''
   );
-  const resultUrl = normalizeAssetUrl(item.resultUrl || item.result_url || previewUrl || '');
-  const hdUrl = normalizeAssetUrl(item.hdUrl || item.hd_url || resultUrl || previewUrl || '');
-  const imageUrl = normalizeAssetUrl(item.imageUrl || item.image_url || previewUrl || resultUrl || hdUrl || '');
+  const hdUrl = normalizeAssetUrl(item.hdUrl || item.hd_url || resultUrl || '');
+  const imageUrl = normalizeAssetUrl(
+    item.imageUrl || item.image_url || resultUrl || hdUrl || item.previewUrl || item.preview_url || ''
+  );
+  const previewUrl = normalizeAssetUrl(
+    item.previewUrl || item.preview_url || imageUrl || resultUrl || hdUrl || ''
+  );
   const label = item.label || sourceLabel || `方案${index + 1}`;
 
   if (!imageUrl && !previewUrl && !resultUrl && !hdUrl) {

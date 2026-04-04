@@ -59,14 +59,14 @@ function normalizeCandidates(result = {}) {
       const candidateId = String(candidate.candidateId || candidate.candidate_id || `candidate_${index + 1}`).trim();
       const label = sanitizeHintText(candidate.label, '') || `方案 ${index === 0 ? 'A' : 'B'}`;
       const imageUrl = pickImageFromCandidates([
-        candidate.previewUrl,
-        candidate.preview_url,
-        candidate.imageUrl,
-        candidate.image_url,
         candidate.resultUrl,
         candidate.result_url,
         candidate.hdUrl,
-        candidate.hd_url
+        candidate.hd_url,
+        candidate.imageUrl,
+        candidate.image_url,
+        candidate.previewUrl,
+        candidate.preview_url
       ]);
       const hdUrl = pickImageFromCandidates([
         candidate.hdUrl,
@@ -88,14 +88,14 @@ function normalizeCandidates(result = {}) {
         label,
         imageUrl,
         previewUrl: pickImageFromCandidates([
-          candidate.previewUrl,
-          candidate.preview_url,
-          candidate.imageUrl,
-          candidate.image_url,
           candidate.resultUrl,
           candidate.result_url,
           candidate.hdUrl,
-          candidate.hd_url
+          candidate.hd_url,
+          candidate.imageUrl,
+          candidate.image_url,
+          candidate.previewUrl,
+          candidate.preview_url
         ]),
         hdUrl,
         qualityMessage,
@@ -109,8 +109,8 @@ function normalizeCandidates(result = {}) {
     {
       candidateId: 'fallback_preview',
       label: '方案 A',
-      imageUrl: result.previewUrl || result.preview_url || result.displayUrl || '',
-      previewUrl: result.previewUrl || result.preview_url || result.displayUrl || '',
+      imageUrl: result.resultUrl || result.result_url || result.hdUrl || result.hd_url || result.previewUrl || result.preview_url || result.displayUrl || '',
+      previewUrl: result.previewUrl || result.preview_url || result.resultUrl || result.result_url || result.displayUrl || '',
       hdUrl: result.hdUrl || result.hd_url || result.resultUrl || result.result_url || '',
       qualityMessage: '建议放大查看边缘效果后再保存',
       warnings: []
