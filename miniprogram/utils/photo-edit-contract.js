@@ -65,7 +65,7 @@ function normalizeCandidateList(candidates = []) {
   return candidates
     .map((candidate, index) => {
       const source = String(candidate.source || '').trim().toLowerCase();
-      const imageUrl = candidate.imageUrl || candidate.previewUrl || candidate.resultUrl || candidate.hdUrl || '';
+      const imageUrl = candidate.resultUrl || candidate.hdUrl || candidate.imageUrl || candidate.previewUrl || '';
       if (!imageUrl) return null;
       return {
         candidateId: candidate.candidateId || `candidate_${index + 1}`,
