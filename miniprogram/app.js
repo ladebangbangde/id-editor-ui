@@ -2,6 +2,19 @@ const { healthCheck, getMe, wxLogin } = require('./utils/api');
 
 const AUTH_TOKEN_STORAGE_KEY = 'auth_token';
 const AUTH_ME_STORAGE_KEY = 'auth_me';
+const AUTH_STORAGE_KEYS = [
+  AUTH_TOKEN_STORAGE_KEY,
+  'accessToken',
+  'token',
+  'refreshToken',
+  AUTH_ME_STORAGE_KEY,
+  'userInfo',
+  'currentUser',
+  'loginExpired',
+  'authCache',
+  'sessionCache'
+];
+const AUTH_EXPIRED_BUSINESS_CODE = 9003;
 
 function wxMiniLogin() {
   return new Promise((resolve, reject) => {
@@ -35,6 +48,10 @@ function normalizeUser(user = {}) {
     avatarUrl,
     gender: Number.isFinite(gender) ? gender : 0
   };
+}
+
+function isTokenExpiredText(message = '') {
+  return /token\s*已过期/i.test(String(message || ''));
 }
 
 App({
@@ -94,8 +111,42 @@ App({
     this.emitAuthStateChange();
   },
 
+  getAccessToken() {
+    const runtimeToken = this.globalData.authToken || '';
+    if (runtimeToken) {
+      return runtimeToken;
+    }
+    return wx.getStorageSync(AUTH_TOKEN_STORAGE_KEY) || '';
+  },
+
+  setAccessToken(token = '') {
+    const nextToken = token || '';
+    this.setAuthState({ authToken: nextToken });
+
+    if (nextToken) {
+      wx.setStorageSync(AUTH_TOKEN_STORAGE_KEY, nextToken);
+    } else {
+      wx.removeStorageSync(AUTH_TOKEN_STORAGE_KEY);
+      wx.removeStorageSync('accessToken');
+      wx.removeStorageSync('token');
+    }
+  },
+
+  clearAuthStorage() {
+    AUTH_STORAGE_KEYS.forEach((key) => wx.removeStorageSync(key));
+  },
+
+  resetUserState() {
+    this.setAuthState({
+      authToken: '',
+      me: null,
+      authError: '',
+      authStatus: 'anonymous'
+    });
+  },
+
   restoreAuthState() {
-    const token = wx.getStorageSync(AUTH_TOKEN_STORAGE_KEY) || '';
+    const token = this.getAccessToken();
     const me = normalizeUser(wx.getStorageSync(AUTH_ME_STORAGE_KEY));
 
     this.setAuthState({
@@ -111,67 +162,45 @@ App({
 
   persistAuthState({ token = '', me = null } = {}) {
     const normalizedMe = normalizeUser(me);
-    console.info('[auth] persistAuthState(before)', {
-      authToken: token || '',
-      authLoading: this.globalData.authLoading,
-      authReady: this.globalData.authReady,
-      authStatus: this.globalData.authStatus,
-      me: normalizedMe
-    });
+    this.setAccessToken(token || '');
 
     this.setAuthState({
-      authToken: token || '',
       me: normalizedMe,
       authReady: true,
       authError: '',
       authStatus: token ? 'authenticated' : 'anonymous'
     });
 
-    console.info('[auth] persistAuthState(after)', {
-      authToken: this.globalData.authToken,
-      authLoading: this.globalData.authLoading,
-      authReady: this.globalData.authReady,
-      authStatus: this.globalData.authStatus,
-      me: this.globalData.me
-    });
-
-    if (token) {
-      wx.setStorageSync(AUTH_TOKEN_STORAGE_KEY, token);
-    } else {
-      wx.removeStorageSync(AUTH_TOKEN_STORAGE_KEY);
-    }
-
     if (normalizedMe) {
       wx.setStorageSync(AUTH_ME_STORAGE_KEY, normalizedMe);
     } else {
       wx.removeStorageSync(AUTH_ME_STORAGE_KEY);
+      wx.removeStorageSync('userInfo');
+      wx.removeStorageSync('currentUser');
     }
   },
 
   clearAuthState(options = {}) {
     const { keepError = false } = options;
-
+    this.clearAuthStorage();
+    this.resetUserState();
     this.setAuthState({
-      authToken: '',
-      me: null,
       authReady: true,
-      authError: keepError ? this.globalData.authError : '',
-      authStatus: 'anonymous'
+      authLoading: false,
+      authError: keepError ? this.globalData.authError : ''
     });
-
-    wx.removeStorageSync(AUTH_TOKEN_STORAGE_KEY);
-    wx.removeStorageSync(AUTH_ME_STORAGE_KEY);
   },
 
   isUnauthorizedError(error = {}) {
-    const statusCode = Number(
-      error.statusCode
-      || error.code
-      || (error.data && error.data.code)
-      || 0
-    );
+    if (!error || typeof error !== 'object') return false;
+    const statusCode = Number(error.statusCode || error.code || 0);
+    const businessCode = Number(error.businessCode || error.bizCode || error.code || 0);
+    const message = error.message || error.msg || '';
 
-    return statusCode === 401;
+    return statusCode === 401
+      || businessCode === AUTH_EXPIRED_BUSINESS_CODE
+      || error.isAuthError
+      || isTokenExpiredText(message);
   },
 
   async bootstrap() {
@@ -183,77 +212,42 @@ App({
     });
 
     try {
-      await this.ensureLogin({ silent: true });
+      await this.syncLoginStatus();
     } catch (error) {
       console.warn('bootstrap auth failed', error);
-    } finally {
-      this.setAuthState({
-        authReady: true,
-        authLoading: false,
-        authStatus: this.globalData.authToken ? 'authenticated' : 'anonymous'
-      });
     }
 
     await healthPromise;
   },
 
   async ensureLogin(options = {}) {
-    const { force = false } = options;
+    const { force = false, profile = {} } = options;
 
-    if (this.authPromise && !force) {
-      return this.authPromise;
+    if (this.loginPromise && !force) {
+      return this.loginPromise;
     }
 
     if (force) {
-      this.authPromise = null;
+      this.loginPromise = null;
     }
 
-    this.authPromise = this.loginFlow(options)
+    this.loginPromise = this.loginFlow({ profile })
       .finally(() => {
-        this.authPromise = null;
+        // 登录单飞锁必须在 finally 释放，避免失败后永久阻塞。
+        this.loginPromise = null;
       });
 
-    return this.authPromise;
+    return this.loginPromise;
   },
 
   async loginFlow(options = {}) {
-    const { force = false, profile = {} } = options;
-
-    this.setAuthState({
-      authLoading: true,
-      authError: '',
-      authStatus: 'loading'
-    });
-
-    if (!force) {
-      this.restoreAuthState();
-      this.setAuthState({
-        authLoading: true,
-        authStatus: 'loading'
-      });
-    }
+    const { profile = {} } = options;
+    console.info('[auth] relogin start');
 
     try {
-      if (this.globalData.authToken && !force) {
-        try {
-          const me = normalizeUser(await getMe());
-          this.persistAuthState({
-            token: this.globalData.authToken,
-            me
-          });
-          return me;
-        } catch (error) {
-          console.warn('getMe failed, relogin required', error);
-          this.clearAuthState({ keepError: true });
-        }
-      }
-
       const loginRes = await wxMiniLogin();
       const code = loginRes && loginRes.code;
-      console.info('[auth] wx.login raw response before wxLogin:', loginRes);
-      console.info('[auth] wx.login code before wxLogin:', code);
       if (!code) {
-        console.error('[auth] wx.login missing code, raw response:', loginRes);
         throw new Error('微信登录失败，请重试');
       }
 
@@ -263,58 +257,118 @@ App({
         avatarUrl: profile.avatarUrl || '',
         gender: typeof profile.gender === 'undefined' ? 0 : Number(profile.gender || 0)
       };
-      console.info('[auth] /api/auth/wx-login request payload:', wxLoginPayload);
 
       const authPayload = await wxLogin(wxLoginPayload);
-
       const token = authPayload.token || authPayload.authToken || authPayload.accessToken || '';
-      const me = normalizeUser(authPayload.user || authPayload.me || authPayload.profile || authPayload);
 
       if (!token) {
         throw new Error('登录成功但未获取到凭证');
       }
 
-      this.persistAuthState({ token, me });
-      return this.globalData.me;
+      this.setAccessToken(token);
+      console.info('[auth] relogin success');
+      return token;
     } catch (error) {
-      this.clearAuthState({ keepError: true });
-      this.setAuthState({
-        authError: error.message || '登录失败，请稍后重试',
-        authStatus: 'anonymous'
-      });
+      console.warn('[auth] relogin failed', error);
       throw error;
-    } finally {
-      this.setAuthState({
-        authLoading: false,
-        authReady: true,
-        authStatus: this.globalData.authToken ? 'authenticated' : 'anonymous'
-      });
-      console.info('[auth] loginFlow(finally)', {
-        authToken: this.globalData.authToken,
-        authLoading: this.globalData.authLoading,
-        authReady: this.globalData.authReady,
-        authStatus: this.globalData.authStatus,
-        me: this.globalData.me
-      });
     }
   },
 
-  async handleUnauthorized(error = {}) {
-    this.clearAuthState({ keepError: true });
-    this.setAuthState({
-      authError: error.message || '登录状态已失效，请重新登录',
-      authLoading: false,
-      authReady: true,
-      authStatus: 'anonymous'
+  async fetchMeAndPersist() {
+    const me = normalizeUser(await getMe());
+    this.persistAuthState({
+      token: this.getAccessToken(),
+      me
     });
+    console.info('[auth] auth/me success', {
+      userId: (me && (me.userId || me.id || me.openId || '')) || ''
+    });
+    return me;
+  },
+
+  async syncLoginStatus() {
+    if (this.syncLoginPromise) {
+      return this.syncLoginPromise;
+    }
+
+    this.syncLoginPromise = (async () => {
+      console.info('[auth] sync login start');
+      this.setAuthState({
+        authLoading: true,
+        authReady: false,
+        authError: '',
+        authStatus: 'loading'
+      });
+
+      let hasRetried = false;
+
+      try {
+        let token = this.getAccessToken();
+
+        while (true) {
+          if (!token) {
+            await this.ensureLogin({ force: hasRetried });
+            token = this.getAccessToken();
+          }
+
+          try {
+            return await this.fetchMeAndPersist();
+          } catch (error) {
+            if (!this.isUnauthorizedError(error) || hasRetried) {
+              throw error;
+            }
+
+            console.warn('[auth] auth/me unauthorized', {
+              statusCode: error.statusCode || 0,
+              businessCode: error.businessCode || error.code || 0,
+              message: error.message || ''
+            });
+
+            hasRetried = true;
+            this.clearAuthStorage();
+            this.resetUserState();
+            token = '';
+          }
+        }
+      } catch (error) {
+        this.clearAuthStorage();
+        this.resetUserState();
+        this.setAuthState({
+          authError: error.message || '登录已失效，请重新进入页面',
+          authStatus: 'anonymous'
+        });
+        throw error;
+      } finally {
+        // 启动同步态必须在 finally 收口，避免页面“正在同步登录状态”卡死。
+        this.setAuthState({
+          authLoading: false,
+          authReady: true,
+          authStatus: this.globalData.authToken ? 'authenticated' : 'anonymous'
+        });
+        console.info('[auth] sync login finished', {
+          status: this.globalData.authStatus,
+          hasToken: Boolean(this.globalData.authToken)
+        });
+      }
+    })().finally(() => {
+      this.syncLoginPromise = null;
+    });
+
+    return this.syncLoginPromise;
+  },
+
+  async handleUnauthorized(error = {}) {
+    if (!this.isUnauthorizedError(error)) {
+      return Promise.reject(error);
+    }
 
     if (this.reloginPromise) {
       return this.reloginPromise;
     }
 
-    this.reloginPromise = this.ensureLogin({ force: true, silent: true })
+    this.reloginPromise = this.syncLoginStatus()
       .catch((reloginError) => {
-        console.warn('relogin failed', reloginError);
+        console.warn('[auth] handleUnauthorized relogin failed', reloginError);
         return null;
       })
       .finally(() => {
@@ -325,11 +379,15 @@ App({
   },
 
   async loginWithWechat(profile = {}) {
-    return this.ensureLogin({ force: true, profile });
+    this.clearAuthStorage();
+    this.resetUserState();
+    await this.ensureLogin({ force: true, profile });
+    return this.syncLoginStatus();
   },
 
   async logout() {
-    this.clearAuthState();
+    this.clearAuthStorage();
+    this.resetUserState();
     this.setAuthState({
       authLoading: false,
       authReady: true,
