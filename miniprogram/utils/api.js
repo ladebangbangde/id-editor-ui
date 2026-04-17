@@ -355,9 +355,17 @@ function clearAuthState() {
   }
 }
 
-function healthCheck() {
-  const app = getApp();
-  return request(`${app.globalData.apiHost}/health`, 'GET', {}, {
+function healthCheck(appInstance) {
+  const app = appInstance || ((typeof getApp === 'function' && getApp()) || null);
+  const globalData = app && app.globalData ? app.globalData : null;
+  const apiHost = globalData && globalData.apiHost ? globalData.apiHost : '';
+
+  if (!apiHost) {
+    console.warn('[api] healthCheck skipped because app/globalData unavailable');
+    return Promise.resolve(null);
+  }
+
+  return request(`${apiHost}/health`, 'GET', {}, {
     skipAuth: true
   });
 }

@@ -206,7 +206,7 @@ App({
   async bootstrap() {
     this.restoreAuthState();
 
-    const healthPromise = healthCheck().catch((error) => {
+    const healthPromise = healthCheck(this).catch((error) => {
       console.warn('healthCheck failed', error);
       return null;
     });
@@ -297,7 +297,7 @@ App({
         authLoading: true,
         authReady: false,
         authError: '',
-        authStatus: 'loading'
+        authStatus: 'restoring'
       });
 
       let hasRetried = false;

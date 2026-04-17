@@ -45,23 +45,33 @@ function normalizeList(list) {
     .filter(Boolean);
 }
 
+function asObject(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {};
+  }
+  return value;
+}
+
 function pickPayloadFromResponse(payload = {}) {
-  if (!payload || typeof payload !== 'object') return {};
-  const responseData = payload.response && payload.response.data;
-  if (responseData && typeof responseData === 'object') {
+  const payloadObj = asObject(payload);
+  if (!Object.keys(payloadObj).length) return {};
+  const responseData = asObject(payloadObj.response).data;
+  if (responseData && typeof responseData === 'object' && !Array.isArray(responseData)) {
     return responseData;
   }
-  if (payload.data && typeof payload.data === 'object') {
-    return payload.data;
+  const innerData = asObject(payloadObj).data;
+  if (innerData && typeof innerData === 'object' && !Array.isArray(innerData)) {
+    return innerData;
   }
-  return payload;
+  return payloadObj;
 }
 
 function pickMessage(payload = {}, fallbackMessage = '请求失败') {
-  const business = pickPayloadFromResponse(payload);
-  const data = business && typeof business.data === 'object' ? business.data : {};
-  return payload.message
-    || payload.msg
+  const payloadObj = asObject(payload);
+  const business = pickPayloadFromResponse(payloadObj);
+  const data = asObject(asObject(business).data);
+  return payloadObj.message
+    || payloadObj.msg
     || business.message
     || business.msg
     || data.message
@@ -71,41 +81,46 @@ function pickMessage(payload = {}, fallbackMessage = '请求失败') {
 
 function normalizeErrorPayload(payload = {}, fallbackMessage = '请求失败') {
   const business = pickPayloadFromResponse(payload);
-  const data = business && typeof business.data === 'object' ? business.data : {};
-  const nestedData = data && typeof data.data === 'object' ? data.data : {};
-  const statusCode = Number(payload.statusCode || business.statusCode || 0);
+  const businessObj = asObject(business);
+  const payloadObj = asObject(payload);
+  const data = asObject(businessObj.data);
+  const nestedData = asObject(data.data);
+  if (!Object.keys(businessObj).length && !Object.keys(payloadObj).length) {
+    console.warn('[request] normalizeErrorPayload fallback for empty payload');
+  }
+  const statusCode = Number(payloadObj.statusCode || businessObj.statusCode || 0);
   const businessCode = Number(
-    payload.businessCode
-    || business.businessCode
-    || business.code
+    payloadObj.businessCode
+    || businessObj.businessCode
+    || businessObj.code
     || data.businessCode
     || data.code
     || 0
   );
   const reasons = normalizeList(
-    business.reasons || data.reasons || nestedData.reasons || payload.reasons
+    businessObj.reasons || data.reasons || nestedData.reasons || payloadObj.reasons
   );
   const warnings = normalizeList(
-    business.warnings || data.warnings || nestedData.warnings || payload.warnings
+    businessObj.warnings || data.warnings || nestedData.warnings || payloadObj.warnings
   );
   const suggestions = normalizeList(
-    business.suggestions || data.suggestions || nestedData.suggestions || payload.suggestions
+    businessObj.suggestions || data.suggestions || nestedData.suggestions || payloadObj.suggestions
   );
 
   return {
-    ...business,
-    ...payload,
-    message: pickMessage(business, fallbackMessage),
-    code: business.code || payload.code || businessCode || statusCode || '',
+    ...businessObj,
+    ...payloadObj,
+    message: pickMessage(payloadObj, fallbackMessage),
+    code: businessObj.code || payloadObj.code || businessCode || statusCode || '',
     businessCode,
     statusCode,
-    data: Object.keys(data).length ? data : (business.data || {}),
-    taskId: business.taskId || payload.taskId || data.taskId || nestedData.taskId || '',
+    data: Object.keys(data).length ? data : asObject(businessObj.data),
+    taskId: businessObj.taskId || payloadObj.taskId || data.taskId || nestedData.taskId || '',
     reasons,
     warnings,
     suggestions,
-    detailTitle: business.detailTitle || payload.detailTitle || data.detailTitle || nestedData.detailTitle || data.title || '',
-    detailSummary: business.detailSummary || payload.detailSummary || data.detailSummary || nestedData.detailSummary || data.summary || '',
+    detailTitle: businessObj.detailTitle || payloadObj.detailTitle || data.detailTitle || nestedData.detailTitle || data.title || '',
+    detailSummary: businessObj.detailSummary || payloadObj.detailSummary || data.detailSummary || nestedData.detailSummary || data.summary || '',
     isBusinessError: true,
     isAuthError: statusCode === 401
       || businessCode === AUTH_EXPIRED_BUSINESS_CODE
