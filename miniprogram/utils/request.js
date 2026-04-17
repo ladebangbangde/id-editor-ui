@@ -1,4 +1,5 @@
 const { runWithDedupe } = require('./request-dedupe');
+const AUTH_EXPIRED_BUSINESS_CODE = 9003;
 
 function getAppSafe() {
   try {
@@ -44,23 +45,33 @@ function normalizeList(list) {
     .filter(Boolean);
 }
 
+function asObject(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {};
+  }
+  return value;
+}
+
 function pickPayloadFromResponse(payload = {}) {
-  if (!payload || typeof payload !== 'object') return {};
-  const responseData = payload.response && payload.response.data;
-  if (responseData && typeof responseData === 'object') {
+  const payloadObj = asObject(payload);
+  if (!Object.keys(payloadObj).length) return {};
+  const responseData = asObject(payloadObj.response).data;
+  if (responseData && typeof responseData === 'object' && !Array.isArray(responseData)) {
     return responseData;
   }
-  if (payload.data && typeof payload.data === 'object') {
-    return payload.data;
+  const innerData = asObject(payloadObj).data;
+  if (innerData && typeof innerData === 'object' && !Array.isArray(innerData)) {
+    return innerData;
   }
-  return payload;
+  return payloadObj;
 }
 
 function pickMessage(payload = {}, fallbackMessage = '请求失败') {
-  const business = pickPayloadFromResponse(payload);
-  const data = business && typeof business.data === 'object' ? business.data : {};
-  return payload.message
-    || payload.msg
+  const payloadObj = asObject(payload);
+  const business = pickPayloadFromResponse(payloadObj);
+  const data = asObject(asObject(business).data);
+  return payloadObj.message
+    || payloadObj.msg
     || business.message
     || business.msg
     || data.message
@@ -70,35 +81,56 @@ function pickMessage(payload = {}, fallbackMessage = '请求失败') {
 
 function normalizeErrorPayload(payload = {}, fallbackMessage = '请求失败') {
   const business = pickPayloadFromResponse(payload);
-  const data = business && typeof business.data === 'object' ? business.data : {};
-  const nestedData = data && typeof data.data === 'object' ? data.data : {};
-  const statusCode = Number(payload.statusCode || business.statusCode || business.code || data.code || 0);
+  const businessObj = asObject(business);
+  const payloadObj = asObject(payload);
+  const data = asObject(businessObj.data);
+  const nestedData = asObject(data.data);
+  if (!Object.keys(businessObj).length && !Object.keys(payloadObj).length) {
+    console.warn('[request] normalizeErrorPayload fallback for empty payload');
+  }
+  const statusCode = Number(payloadObj.statusCode || businessObj.statusCode || 0);
+  const businessCode = Number(
+    payloadObj.businessCode
+    || businessObj.businessCode
+    || businessObj.code
+    || data.businessCode
+    || data.code
+    || 0
+  );
   const reasons = normalizeList(
-    business.reasons || data.reasons || nestedData.reasons || payload.reasons
+    businessObj.reasons || data.reasons || nestedData.reasons || payloadObj.reasons
   );
   const warnings = normalizeList(
-    business.warnings || data.warnings || nestedData.warnings || payload.warnings
+    businessObj.warnings || data.warnings || nestedData.warnings || payloadObj.warnings
   );
   const suggestions = normalizeList(
-    business.suggestions || data.suggestions || nestedData.suggestions || payload.suggestions
+    businessObj.suggestions || data.suggestions || nestedData.suggestions || payloadObj.suggestions
   );
 
   return {
-    ...business,
-    ...payload,
-    message: pickMessage(business, fallbackMessage),
-    code: business.code || payload.code || statusCode || '',
+    ...businessObj,
+    ...payloadObj,
+    message: pickMessage(payloadObj, fallbackMessage),
+    code: businessObj.code || payloadObj.code || businessCode || statusCode || '',
+    businessCode,
     statusCode,
-    data: Object.keys(data).length ? data : (business.data || {}),
-    taskId: business.taskId || payload.taskId || data.taskId || nestedData.taskId || '',
+    data: Object.keys(data).length ? data : asObject(businessObj.data),
+    taskId: businessObj.taskId || payloadObj.taskId || data.taskId || nestedData.taskId || '',
     reasons,
     warnings,
     suggestions,
-    detailTitle: business.detailTitle || payload.detailTitle || data.detailTitle || nestedData.detailTitle || data.title || '',
-    detailSummary: business.detailSummary || payload.detailSummary || data.detailSummary || nestedData.detailSummary || data.summary || '',
+    detailTitle: businessObj.detailTitle || payloadObj.detailTitle || data.detailTitle || nestedData.detailTitle || data.title || '',
+    detailSummary: businessObj.detailSummary || payloadObj.detailSummary || data.detailSummary || nestedData.detailSummary || data.summary || '',
     isBusinessError: true,
     isAuthError: statusCode === 401
+      || businessCode === AUTH_EXPIRED_BUSINESS_CODE
+      || /token\s*已过期/i.test(pickMessage(payload, fallbackMessage))
   };
+}
+
+function isAuthExpiredPayload(payload = {}) {
+  const normalized = normalizeErrorPayload(payload, '登录状态已失效');
+  return Boolean(normalized.isAuthError);
 }
 
 function rejectWithError(reject, payload, fallbackMessage, shouldToast) {
@@ -126,7 +158,7 @@ async function ensureAuthReady(options = {}) {
   }
 
   const app = getAppSafe();
-  if (!app || !app.globalData || typeof app.ensureLogin !== 'function') {
+  if (!app || !app.globalData || typeof app.syncLoginStatus !== 'function') {
     return;
   }
 
@@ -149,7 +181,7 @@ async function ensureAuthReady(options = {}) {
   }
 
   try {
-    await app.ensureLogin({ silent: true });
+    await app.syncLoginStatus();
   } catch (error) {
     console.warn('ensureLogin before request failed', error);
   }
@@ -171,6 +203,12 @@ function handleUnauthorized(payload = {}, options = {}) {
 
 function isWxLoginRequest(url = '') {
   return String(url).indexOf('/api/auth/wx-login') !== -1;
+}
+
+function isAuthLoginRequest(url = '') {
+  const fullUrl = String(url || '');
+  return fullUrl.indexOf('/api/auth/wx-login') !== -1
+    || fullUrl.indexOf('/api/auth/login') !== -1;
 }
 
 function logWxLoginRequest(url, method, data) {
@@ -227,11 +265,16 @@ async function request(url, method = 'GET', data = {}, options = {}) {
 
         if (res.statusCode >= 200 && res.statusCode < 300) {
           if (body.success === false) {
-            const errorCode = Number(body.code || (body.data && body.data.code) || 0);
+            const errorCode = Number(body.code || body.businessCode || (body.data && body.data.code) || 0);
             logWxLoginResponseError(url, 200, body);
-            if (errorCode === 401 && shouldHandleUnauthorized) {
-              handleUnauthorized(normalizeErrorPayload(body, '登录状态已失效'), { showErrorToast });
-              rejectWithError(reject, body, '登录状态已失效', false);
+            if (errorCode === 401 || isAuthExpiredPayload(body)) {
+              const authError = normalizeErrorPayload(body, '登录状态已失效');
+              if (shouldHandleUnauthorized && !isAuthLoginRequest(url)) {
+                handleUnauthorized(authError, { showErrorToast });
+              }
+              authError.name = 'AuthExpiredError';
+              authError.isAuthExpired = true;
+              reject(authError);
               return;
             }
 
@@ -242,18 +285,20 @@ async function request(url, method = 'GET', data = {}, options = {}) {
           return;
         }
 
-        if (res.statusCode === 401) {
+        if (res.statusCode === 401 || isAuthExpiredPayload(body)) {
           logWxLoginResponseError(url, res.statusCode, body);
           const payload = {
             ...body,
             statusCode: res.statusCode
           };
+          const authError = normalizeErrorPayload(payload, '登录状态已失效');
+          authError.name = 'AuthExpiredError';
+          authError.isAuthExpired = true;
 
-          if (shouldHandleUnauthorized) {
-            handleUnauthorized(normalizeErrorPayload(payload, '登录状态已失效'), { showErrorToast });
+          if (shouldHandleUnauthorized && !isAuthLoginRequest(url)) {
+            handleUnauthorized(authError, { showErrorToast });
           }
-
-          rejectWithError(reject, payload, pickMessage(payload, '登录状态已失效'), false);
+          reject(authError);
           return;
         }
 
@@ -315,11 +360,16 @@ async function uploadFile(url, filePath, formData = {}, options = {}) {
           const body = parseUploadResponse(res.data);
           if (res.statusCode >= 200 && res.statusCode < 300) {
             if (body.success === false) {
-              const errorCode = Number(body.code || (body.data && body.data.code) || 0);
+              const errorCode = Number(body.code || body.businessCode || (body.data && body.data.code) || 0);
               logWxLoginResponseError(url, 200, body);
-              if (errorCode === 401 && shouldHandleUnauthorized) {
-                handleUnauthorized(normalizeErrorPayload(body, '登录状态已失效'), { showErrorToast });
-                rejectWithError(reject, body, '登录状态已失效', false);
+              if (errorCode === 401 || isAuthExpiredPayload(body)) {
+                const authError = normalizeErrorPayload(body, '登录状态已失效');
+                authError.name = 'AuthExpiredError';
+                authError.isAuthExpired = true;
+                if (shouldHandleUnauthorized && !isAuthLoginRequest(url)) {
+                  handleUnauthorized(authError, { showErrorToast });
+                }
+                reject(authError);
                 return;
               }
 
@@ -330,18 +380,21 @@ async function uploadFile(url, filePath, formData = {}, options = {}) {
             return;
           }
 
-          if (res.statusCode === 401) {
+          if (res.statusCode === 401 || isAuthExpiredPayload(body)) {
             logWxLoginResponseError(url, res.statusCode, body);
             const payload = {
               ...body,
               statusCode: res.statusCode
             };
+            const authError = normalizeErrorPayload(payload, '登录状态已失效');
+            authError.name = 'AuthExpiredError';
+            authError.isAuthExpired = true;
 
-            if (shouldHandleUnauthorized) {
-              handleUnauthorized(normalizeErrorPayload(payload, '登录状态已失效'), { showErrorToast });
+            if (shouldHandleUnauthorized && !isAuthLoginRequest(url)) {
+              handleUnauthorized(authError, { showErrorToast });
             }
 
-            rejectWithError(reject, payload, pickMessage(payload, '登录状态已失效'), false);
+            reject(authError);
             return;
           }
 

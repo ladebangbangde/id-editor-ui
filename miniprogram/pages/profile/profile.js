@@ -13,7 +13,9 @@ function buildProfileState(app) {
   const isLoggedIn = Boolean(authToken || hasMe);
   const isAuthenticatedState = authStatus === 'authenticated';
   const hasStableLogin = isLoggedIn && (isAuthenticatedState || authReady);
-  const isLoginPending = !hasStableLogin && (authLoading || !authReady || authStatus === 'loading' || authStatus === 'restoring');
+  const isLoginPending = !hasStableLogin
+    && !loginError
+    && (authLoading || !authReady || authStatus === 'loading' || authStatus === 'restoring');
 
   return {
     authStatus: isLoginPending ? 'loading' : (isLoggedIn ? 'authenticated' : 'anonymous'),
@@ -25,7 +27,9 @@ function buildProfileState(app) {
     avatarText,
     welcomeText: isLoginPending
       ? '正在同步登录状态，请稍候'
-      : (isLoggedIn ? '欢迎回来，继续制作你的证件照' : '登录后可同步你的作品与记录'),
+      : (loginError
+        ? '登录已失效，请重新进入页面或点击微信登录重试'
+        : (isLoggedIn ? '欢迎回来，继续制作你的证件照' : '登录后可同步你的作品与记录')),
     statusText: isLoginPending ? '登录中' : (isLoggedIn ? '已登录' : '未登录'),
     loginActionText: loginError ? '重新登录' : '微信登录',
     statusBadgeClass: isLoggedIn ? 'login-badge-success' : (isLoginPending ? 'login-badge-pending' : 'login-badge-default'),
