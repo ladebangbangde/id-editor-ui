@@ -5,25 +5,25 @@
     <view class="about-sub">制作不易,如果这个小工具帮到了你，欢迎随手支持一下呀。</view>
   </view>
 
-  <view class="card section support-card">
-    <view class="support-title">微信收款码</view>
+<!--  <view class="card section support-card">-->
+<!--    <view class="support-title">微信收款码</view>-->
 
-    <block wx:if="{{qrCodeSrc}}">
-      <view class="qr-row">
-        <view class="cat cat-left">🐱</view>
-        <image class="pay-qrcode" src="{{qrCodeSrc}}" mode="widthFix"></image>
-        <view class="cat cat-right">🐾</view>
-      </view>
-      <view class="support-tip">扫码即可支持，感谢每一份喜欢与鼓励。</view>
-    </block>
+<!--    <block wx:if="{{qrCodeSrc}}">-->
+<!--      <view class="qr-row">-->
+<!--        <view class="cat cat-left">🐱</view>-->
+<!--        <image class="pay-qrcode" src="{{qrCodeSrc}}" mode="widthFix"></image>-->
+<!--        <view class="cat cat-right">🐾</view>-->
+<!--      </view>-->
+<!--      <view class="support-tip">扫码即可支持，感谢每一份喜欢与鼓励。</view>-->
+<!--    </block>-->
 
-    <block wx:else>
-      <view class="qr-placeholder">
-        <view class="placeholder-title">还没配置收款码图片</view>
-        <view class="placeholder-step">1. 把 jpg/png 放到 miniprogram/assets/ 目录</view>
-        <view class="placeholder-step">2. 在 pages/about/about.js 里填写路径</view>
-        <view class="placeholder-step">3. 例如：/assets/wechat-pay.jpg</view>
-      </view>
-    </block>
-  </view>
+<!--    <block wx:else>-->
+<!--      <view class="qr-placeholder">-->
+<!--        <view class="placeholder-title">还没配置收款码图片</view>-->
+<!--        <view class="placeholder-step">1. 把 jpg/png 放到 miniprogram/assets/ 目录</view>-->
+<!--        <view class="placeholder-step">2. 在 pages/about/about.js 里填写路径</view>-->
+<!--        <view class="placeholder-step">3. 例如：/assets/wechat-pay.jpg</view>-->
+<!--      </view>-->
+<!--    </block>-->
+<!--  </view>-->
 </view>

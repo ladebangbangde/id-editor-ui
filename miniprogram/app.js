@@ -298,7 +298,7 @@ App({
         authReady: false,
         authError: '',
         authStatus: 'restoring'
-      });
+       });
 
       let hasRetried = false;
 
