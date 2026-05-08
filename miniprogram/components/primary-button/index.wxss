@@ -33,6 +33,18 @@
   box-shadow: 0 14rpx 28rpx rgba(79, 124, 255, 0.24);
 }
 
+
+.btn-warm-primary {
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--warm-500) 0%, var(--warm-600) 100%);
+  box-shadow: var(--shadow-warm);
+}
+
+.btn-warm-primary.btn-hover {
+  opacity: 0.98;
+  transform: translateY(1rpx) scale(0.995);
+}
+
 .btn-secondary {
   color: #315efb;
   background: #ffffff;

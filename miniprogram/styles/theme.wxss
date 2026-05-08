@@ -1,0 +1,22 @@
+page {
+  --bg-page: #f7f5f2;
+  --surface-card: #ffffff;
+  --surface-muted: #fffaf3;
+  --text-primary: #1f2937;
+  --text-secondary: #5f6b7a;
+  --text-tertiary: #7e8795;
+
+  --warm-50: #fff8ee;
+  --warm-100: #fff1df;
+  --warm-200: #ffe1c2;
+  --warm-300: #ffcfa3;
+  --warm-400: #ffba82;
+  --warm-500: #f39a61;
+  --warm-600: #dc7f47;
+
+  --accent-blue-500: #4f6fe8;
+  --accent-blue-400: #6f8df4;
+
+  --shadow-soft: 0 12rpx 30rpx rgba(51, 65, 85, 0.08);
+  --shadow-warm: 0 14rpx 34rpx rgba(222, 133, 72, 0.18);
+}

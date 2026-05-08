@@ -19,6 +19,9 @@
     <view class="brand-tags">
       <view wx:for="{{brandContent.tags}}" wx:key="*this" class="tag brand-tag">{{item}}</view>
     </view>
+    <view class="brand-cta-wrap">
+      <primary-button text="开始制作证件照" type="warm-primary" bind:tap="handleStartCreate"></primary-button>
+    </view>
   </view>
 
   <view class="card section size-focus-card">
@@ -82,7 +85,7 @@
         <view class="title-md">模板加载失败</view>
         <view class="text-muted">{{errorMessage}}</view>
         <view class="state-action">
-          <primary-button text="重新加载" bind:tap="handleRetry"></primary-button>
+          <primary-button text="重新加载" type="warm-primary" bind:tap="handleRetry"></primary-button>
         </view>
       </view>
     </block>
@@ -92,7 +95,7 @@
         <view class="title-md">{{searchActive ? '暂无结果' : '暂无模板'}}</view>
         <view class="text-muted">{{searchActive ? '换个关键词试试' : '试试其他分类'}}</view>
         <view class="state-action" wx:if="{{searchActive}}">
-          <primary-button text="清空搜索" bind:tap="handleSearchClear"></primary-button>
+          <primary-button text="清空搜索" type="warm-primary" bind:tap="handleSearchClear"></primary-button>
         </view>
       </view>
     </block>
